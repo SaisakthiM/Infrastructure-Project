@@ -139,3 +139,14 @@ terraform.tfstate.backup
 *.tfstate
 *.tfstate.backup
 terraform.locl.hcl
+
+# Build outputs
+social-platform
+social-platform.exe
+dist/
+
+# Go toolchain
+vendor/
+
+# Config (never commit)
+~/.social-platform/
