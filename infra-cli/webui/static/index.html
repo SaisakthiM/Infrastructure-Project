@@ -6,7 +6,21 @@
 <title>social-platform — Infra Dashboard</title>
 <link rel="stylesheet" href="/vendor/xterm.css" />
 <script src="/vendor/xterm.js"></script>
-<script src="/vendor/xterm-addon-fit.js"></script>
+<script>
+// Minimal fit helper — resizes the terminal to fill its container.
+function fitTerm(t) {
+  try {
+    const el = t.element && t.element.parentElement;
+    if (!el) return;
+    const core = t._core;
+    const dim  = core._renderService && core._renderService.dimensions;
+    if (!dim || !dim.css || !dim.css.cell || !dim.css.cell.width) return;
+    const cols = Math.max(2,  Math.floor(el.clientWidth  / dim.css.cell.width));
+    const rows = Math.max(1,  Math.floor(el.clientHeight / dim.css.cell.height));
+    if (t.cols !== cols || t.rows !== rows) t.resize(cols, rows);
+  } catch(e) { /* ignore if internals differ */ }
+}
+</script>
 <style>
   :root {
     --bg:      #0d1117;
@@ -507,13 +521,10 @@ function getTerm(id) {
     convertEol: true,
   });
 
-  const fitAddon = new FitAddon();
-  t.loadAddon(fitAddon);
   t.open(container);
-  fitAddon.fit();
+  fitTerm(t);
 
-  // Refit on resize.
-  window.addEventListener('resize', () => fitAddon.fit());
+  window.addEventListener('resize', () => fitTerm(t));
 
   terms[id] = t;
   return t;
@@ -580,10 +591,7 @@ function showPanel(name, el) {
   if (termIds[name]) {
     requestAnimationFrame(() => {
       const t = getTerm(termIds[name]);
-      if (t && t._addonManager) {
-        // refit after panel becomes visible
-        try { t._addonManager._addons.forEach(a => a.instance && a.instance.fit && a.instance.fit()); } catch{}
-      }
+      if (t) fitTerm(t);
     });
   }
   if (name === 'configure') loadConfig();
