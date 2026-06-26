@@ -229,6 +229,8 @@ func executeCommand(cfg *config.Config, req runRequest, job *Job) error {
 		return fmt.Errorf("unknown command: %s", req.Command)
 	}
 
+	deploy.RefreshHelmRepos()
+
 	cmd := exec.Command("terragrunt", args...)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()

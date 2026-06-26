@@ -110,6 +110,8 @@ func runInDir(cfg *config.Config, env Environment, binary string, args ...string
 		return fmt.Errorf("%s not found — run 'social-platform install' to install prerequisites", binary)
 	}
 
+	RefreshHelmRepos()
+
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
@@ -150,6 +152,25 @@ func runInDir(cfg *config.Config, env Environment, binary string, args ...string
 
 func RunInDirRaw(cfg *config.Config, env Environment, binary string, args ...string) error {
 	return runInDir(cfg, env, binary, args...)
+}
+
+// RefreshHelmRepos runs `helm repo update` before terragrunt so a stale or
+// never-fetched local repo index cache (the "no cached repo found" error
+// from helm_release.argocd) doesn't break apply. Best-effort: if helm isn't
+// on PATH, or the update itself fails, just warn and let terragrunt run
+// anyway -- a real chart problem will surface from terraform directly.
+func RefreshHelmRepos() {
+	if _, err := exec.LookPath("helm"); err != nil {
+		return
+	}
+	ui.Cyan.Println("\n  $ helm repo update")
+	out, err := exec.Command("helm", "repo", "update").CombinedOutput()
+	if len(out) > 0 {
+		fmt.Print(string(out))
+	}
+	if err != nil {
+		ui.Warn("helm repo update failed (continuing anyway): %v", err)
+	}
 }
 
 func WorkDir(cfg *config.Config, env Environment) string {
