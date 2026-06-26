@@ -47,7 +47,7 @@ func runImport(cmd *cobra.Command, args []string) error {
 	ui.Info("Scanning Docker for existing prod-docker resources...")
 	fmt.Println()
 
-	candidates, err := deploy.DetectImportCandidates()
+	candidates, err := deploy.DetectImportCandidates(cfg)
 	if err != nil {
 		return fmt.Errorf("detection failed: %w", err)
 	}

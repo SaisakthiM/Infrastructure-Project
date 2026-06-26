@@ -326,7 +326,12 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleImportScan(w http.ResponseWriter, r *http.Request) {
-	candidates, err := deploy.DetectImportCandidates()
+	cfg, err := config.Load()
+	if err != nil || !cfg.InfraExists() {
+		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
+		return
+	}
+	candidates, err := deploy.DetectImportCandidates(cfg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

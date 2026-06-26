@@ -260,7 +260,7 @@ func (m model) runOperation(opIdx int, env string) error {
 		return deploy.Logs(m.cfg, e)
 	case 4: // Import State
 		fmt.Println("  Scanning Docker for importable resources...")
-		candidates, err := deploy.DetectImportCandidates()
+		candidates, err := deploy.DetectImportCandidates(m.cfg)
 		if err != nil {
 			return err
 		}
