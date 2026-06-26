@@ -107,7 +107,7 @@ func (j *Job) finish(err error) {
 // ─── main ────────────────────────────────────────────────────────────────────
 
 func main() {
-	port := flag.String("port", "8080", "Port to listen on")
+	port := flag.String("port", "9000", "Port to listen on")
 	flag.Parse()
 
 	mux := http.NewServeMux()
