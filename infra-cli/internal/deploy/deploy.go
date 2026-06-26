@@ -148,15 +148,13 @@ func runTerragrunt(cfg *config.Config, env Environment, command string, autoAppr
 	var args []string
 
 	if env == EnvAll {
-		// New Terragrunt CLI (run command + --all flag replaces run-all).
-		// --non-interactive suppresses run --all's own "are you sure you
-		// want to run X in each unit" prompt -- the CLI already asked for
-		// confirmation once before getting here, no need for terragrunt to
-		// ask again (and that prompt was the literal cause of the EOF
-		// crash, since it was reading from stdin that was never wired up).
+		// New Terragrunt CLI: `terragrunt run --all <command> --non-interactive`
+		// Terraform flags (--auto-approve etc.) must come after `--`
+		// otherwise Terragrunt rejects them with "not a Terragrunt flag".
 		args = []string{"run", "--all", command, "--non-interactive"}
 		if autoApprove {
-			args = append(args, "--auto-approve")
+			// `--` tells Terragrunt to forward everything after it to terraform.
+			args = append(args, "--", "-auto-approve")
 		}
 	} else {
 		args = []string{command}
