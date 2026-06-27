@@ -70,7 +70,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnp/
 .pnp.js
-# package-lock.json
+package-lock.json
 
 
 # -------------------------------
@@ -131,7 +131,7 @@ General Programming Skills/Git/
 terraform.tfvars
 *.tfvars
 .terraform/
-terraform.tfstate.*'
+terraform.tfstate.*
 terraform.tfstate
 terraform.tfstate.backup
 **/.terragrunt-cache/

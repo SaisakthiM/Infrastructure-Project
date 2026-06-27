@@ -208,7 +208,7 @@ resource "null_resource" "kind_images" {
 resource "null_resource" "kind_load_images" {
   depends_on = [
     null_resource.kind_cluster,
-    null_resource.kind_images,       # FIX: wait for infra images to finish
+    null_resource.kind_images,
     docker_image.social_django,
     docker_image.social_frontend,
     docker_image.social_go,
@@ -227,11 +227,22 @@ resource "null_resource" "kind_load_images" {
   provisioner "local-exec" {
     command = <<-EOT
       set -e
-      kind load docker-image socialmediaapp-django:latest          --name social-media
-      kind load docker-image socialmediaapp-frontend-prod:latest   --name social-media
-      kind load docker-image socialmediaapp-microservice-go:latest --name social-media
+      # Verify all images are actually present before trying to load them.
+      for img in socialmediaapp-django:latest \
+                 socialmediaapp-frontend-prod:latest \
+                 socialmediaapp-microservice-go:latest \
+                 socialmediaapp-microservice-java:latest \
+                 socialmediaapp-minio:latest; do
+        if ! docker image inspect "$img" > /dev/null 2>&1; then
+          echo "ERROR: $img not found in local Docker daemon — rebuild first"
+          exit 1
+        fi
+      done
+      kind load docker-image socialmediaapp-django:latest            --name social-media
+      kind load docker-image socialmediaapp-frontend-prod:latest     --name social-media
+      kind load docker-image socialmediaapp-microservice-go:latest   --name social-media
       kind load docker-image socialmediaapp-microservice-java:latest --name social-media
-      kind load docker-image socialmediaapp-minio:latest           --name social-media
+      kind load docker-image socialmediaapp-minio:latest             --name social-media
     EOT
   }
 }
