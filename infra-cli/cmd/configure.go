@@ -10,7 +10,10 @@ import (
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
 )
 
-var regenOnly bool
+var (
+	regenOnly     bool
+	importantOnly bool
+)
 
 var configureCmd = &cobra.Command{
 	Use:   "configure",
@@ -27,13 +30,21 @@ var configureCmd = &cobra.Command{
     API keys, tokens, and the ArgoCD SSH deploy key. All stored in the
     OS keychain — never written to disk as plaintext.
 
-  Use --regen to skip prompts and just re-write tfvars from saved values.`,
+Flags:
+  --important   Only ask Section 1 (GitHub/URLs) + Section 2 (secrets).
+                Skip all advanced fields — identical to the default wizard
+                but makes the intent explicit. Good for CI/first-run.
+  --regen       Skip all prompts entirely and just re-write tfvars from
+                whatever is already saved. Use after 'clean' or when
+                tfvars files are missing but config is already set.`,
 	RunE: runConfigure,
 }
 
 func init() {
 	configureCmd.Flags().BoolVar(&regenOnly, "regen", false,
 		"Regenerate tfvars from saved values without prompting")
+	configureCmd.Flags().BoolVar(&importantOnly, "important", false,
+		"Only prompt for Section 1 (GitHub/URLs) + Section 2 (secrets), skip advanced fields")
 }
 
 func runConfigure(cmd *cobra.Command, args []string) error {
@@ -49,12 +60,20 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		ui.Info("Run 'social-platform install' first, or set InfraDir in %s", config.Path())
 	}
 
-	if !regenOnly {
+	// --important is the same as the default wizard (Section 1 + 2 only).
+	// We keep it as an explicit flag so scripts/docs can state intent clearly.
+	// --regen skips everything and just regenerates tfvars from saved values.
+	runWizard := !regenOnly
+
+	if runWizard {
 		// ── Section 1: GitHub & URLs ───────────────────────────────────────
 		fmt.Println()
 		ui.Bold.Println("  ┌─────────────────────────────────────────┐")
 		ui.Bold.Println("  │  Section 1 — GitHub & Deployment URLs   │")
 		ui.Bold.Println("  └─────────────────────────────────────────┘")
+		if importantOnly {
+			ui.Dim.Println("  (--important: only essential fields — all others use defaults)")
+		}
 		ui.Dim.Println("  Press Enter to keep the shown default.")
 		fmt.Println()
 
@@ -75,7 +94,6 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 			orDefault(cfg.ProdInfra.GitopsRepoURL,
 				"git@github.com:SaisakthiM/Infrastruture-Project.git"))
 		cfg.ProdInfra.GitopsRepoURL = repoURL
-		// Social env reuses the same repo URL by default.
 		if cfg.ProdSocial.GitopsRepoURL == "" {
 			cfg.ProdSocial.GitopsRepoURL = repoURL
 		} else {
@@ -84,7 +102,7 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 				cfg.ProdSocial.GitopsRepoURL)
 		}
 
-		// ── Auto-fill all remaining non-secret config with defaults ────────
+		// Auto-fill all remaining non-secret config with defaults.
 		applyDefaults(cfg)
 
 		fmt.Println()
@@ -99,8 +117,22 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		ui.Dim.Println("  Press Enter to keep any existing saved value.")
 		fmt.Println()
 
-		if err := secrets.PromptAll(true /* important-only */); err != nil {
+		if err := secrets.PromptAll(importantOnly); err != nil {
 			return fmt.Errorf("collecting secrets: %w", err)
+		}
+
+		if !importantOnly {
+			// ── Advanced section: only shown without --important ───────────
+			fmt.Println()
+			ui.Bold.Println("  ┌─────────────────────────────────────────┐")
+			ui.Bold.Println("  │  Advanced — DB names, ports, paths      │")
+			ui.Bold.Println("  │  (defaults already applied — skip with  │")
+			ui.Bold.Println("  │   Enter on any field you don't need)    │")
+			ui.Bold.Println("  └─────────────────────────────────────────┘")
+			fmt.Println()
+			if err := promptAdvanced(cfg); err != nil {
+				return err
+			}
 		}
 
 		if err := config.Save(cfg); err != nil {
@@ -109,9 +141,13 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		ui.Success("Configuration saved to %s", config.Path())
 	}
 
-	// ── Step 3: Generate tfvars ────────────────────────────────────────────
+	// ── Generate tfvars ───────────────────────────────────────────────────
 	fmt.Println()
-	ui.Step(3, "Generating terraform.tfvars files")
+	stepNum := 3
+	if importantOnly {
+		stepNum = 2
+	}
+	ui.Step(stepNum, "Generating terraform.tfvars files")
 
 	if cfg.InfraDir == "" {
 		cfg.InfraDir = config.DefaultInfraDir()
@@ -178,4 +214,56 @@ func orDefault(val, def string) string {
 		return val
 	}
 	return def
+}
+
+// promptAdvanced asks for all the non-secret fields that applyDefaults() fills
+// in automatically. Shown only when --important is NOT set. Every field has
+// its current/default value pre-filled so the user can just hit Enter through
+// any they don't want to change.
+func promptAdvanced(cfg *config.Config) error {
+	p := func(label string, field *string, def string) {
+		setDef(field, def) // ensure default is applied first
+		*field = ui.Prompt("  "+label, *field)
+	}
+
+	fmt.Println("  — prod-infra —")
+	p("n8n Port",              &cfg.ProdInfra.N8NPort,     "5678")
+	p("n8n Host bind",         &cfg.ProdInfra.N8NHost,     "0.0.0.0")
+	p("n8n Protocol",          &cfg.ProdInfra.N8NProtocol, "https")
+	p("n8n Basic Auth User",   &cfg.ProdInfra.N8NUser,     "admin")
+
+	fmt.Println()
+	fmt.Println("  — prod-social —")
+	p("Social MinIO User",     &cfg.ProdSocial.SocialMinio, "minio")
+	loadImages := ui.Prompt("  Load images into kind? (true/false)", boolStr(cfg.ProdSocial.LoadImages))
+	cfg.ProdSocial.LoadImages = strings.TrimSpace(loadImages) == "true"
+
+	fmt.Println()
+	fmt.Println("  — prod-docker —")
+	p("Blog DB Name",           &cfg.ProdDocker.BlogDBName,       "blog_db")
+	p("Blog MinIO User",        &cfg.ProdDocker.BlogMinioUser,    "admin")
+	p("Blog Allowed Hosts",     &cfg.ProdDocker.BlogAllowedHosts, "['localhost', '127.0.0.1']")
+	p("Notes DB Name",          &cfg.ProdDocker.NotesDBName,      "notes_app")
+	p("Notes DB User",          &cfg.ProdDocker.NotesDBUser,      "saisakthi")
+	p("Bank DB User",           &cfg.ProdDocker.BankDBUser,       "bankmanagement")
+	p("Bank DB Name",           &cfg.ProdDocker.BankDBName,       "bank")
+	p("Document Platform DB",   &cfg.ProdDocker.DocDBName,        "book_db")
+	p("Document Platform MinIO",&cfg.ProdDocker.DocMinioUser,     "admin")
+	p("Whisper DB User",        &cfg.ProdDocker.WhisperDBUser,    "admin")
+	p("Whisper DB Name",        &cfg.ProdDocker.WhisperDBName,    "chat")
+	p("Whisper Test DB",        &cfg.ProdDocker.WhisperDBTestDB,  "chat_test")
+	p("Whisper MinIO User",     &cfg.ProdDocker.WhisperMinioUser, "minioadmin")
+
+	fmt.Println()
+	fmt.Println("  — prod-gateway —")
+	p("Let's Encrypt Path",    &cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/")
+
+	return nil
+}
+
+func boolStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }

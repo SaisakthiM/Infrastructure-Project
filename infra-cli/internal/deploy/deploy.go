@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
@@ -129,16 +130,47 @@ func ensureKindCluster(cfg *config.Config, env Environment, extraOut ...io.Write
 	return nil
 }
 
-// kindClusterReachable returns true when `kubectl cluster-info
-// --context kind-kind` exits 0, meaning the API server is up and
-// the kubeconfig entry exists. Any error (binary not found, context
-// missing, connection refused) is treated as unreachable.
+// kindClusterReachable performs a two-step check:
+//  1. `kind get clusters` — verifies "social-media" appears in kind's registry.
+//     If kind isn't installed or the cluster isn't listed we skip to step 2.
+//     If kind IS installed and the cluster is NOT listed → return false immediately
+//     (no point probing kubectl; the cluster must be recreated from scratch).
+//  2. `kubectl cluster-info --context kind-social-media` — probes the API server.
+//     The cluster can be listed by kind while its Docker containers are stopped,
+//     so we confirm the API server actually responds before treating it as healthy.
 func kindClusterReachable() bool {
+	kindInstalled := false
+	if _, err := exec.LookPath("kind"); err == nil {
+		kindInstalled = true
+	}
+
+	if kindInstalled {
+		out, err := exec.Command("kind", "get", "clusters").Output()
+		if err == nil {
+			// kind ran successfully — check if "social-media" is in the list.
+			clusterFound := false
+			for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+				if strings.TrimSpace(line) == "social-media" {
+					clusterFound = true
+					break
+				}
+			}
+			if !clusterFound {
+				// kind is working but the cluster doesn't exist — must recreate.
+				return false
+			}
+			// Cluster is listed — fall through to API server probe.
+		}
+		// If kind get clusters errored (e.g. Docker not running), fall through
+		// to kubectl check so we don't block on a transient kind error.
+	}
+
+	// Probe the API server regardless (handles case where kind isn't installed
+	// but kubectl context already exists from a previous setup).
 	if _, err := exec.LookPath("kubectl"); err != nil {
 		return false
 	}
-	cmd := exec.Command("kubectl", "cluster-info", "--context", "kind-kind")
-	// Suppress all output -- we only care about the exit code.
+	cmd := exec.Command("kubectl", "cluster-info", "--context", "kind-social-media")
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	return cmd.Run() == nil
