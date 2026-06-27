@@ -50,6 +50,9 @@ func Apply(cfg *config.Config, env Environment, autoApprove bool, target string,
 	if err := ensureKindCluster(cfg, env, extraOut...); err != nil {
 		return err
 	}
+	// Cluster (if relevant to this env) is up by now -- safe to hit the
+	// network for chart repo indexes before the real apply.
+	RefreshHelmRepos(extraOut...)
 	return runTerragrunt(cfg, env, "apply", autoApprove, target, replace, extraOut...)
 }
 
@@ -225,8 +228,6 @@ func runInDir(cfg *config.Config, env Environment, binary string, args []string,
 	if _, err := exec.LookPath(binary); err != nil {
 		return fmt.Errorf("%s not found — run 'social-platform install' to install prerequisites", binary)
 	}
-
-	RefreshHelmRepos(extraOut...)
 
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dir
