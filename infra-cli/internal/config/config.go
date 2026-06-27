@@ -23,6 +23,7 @@ const (
 type Config struct {
 	InfraDir   string `mapstructure:"infra_dir"`
 	ReleaseTag string `mapstructure:"release_tag"`
+	DockerHost string `mapstructure:"docker_host"`
 
 	ProdDocker  DockerEnv  `mapstructure:"prod_docker"`
 	ProdSocial  SocialEnv  `mapstructure:"prod_social"`
@@ -121,6 +122,7 @@ func Save(cfg *Config) error {
 	// Top-level scalars.
 	v.Set("infra_dir", cfg.InfraDir)
 	v.Set("release_tag", cfg.ReleaseTag)
+	v.Set("docker_host", cfg.DockerHost)
 
 	// prod_docker — explicit keys match mapstructure tags exactly.
 	v.Set("prod_docker.blog_db_name", cfg.ProdDocker.BlogDBName)

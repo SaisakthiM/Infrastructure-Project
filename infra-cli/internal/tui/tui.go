@@ -14,6 +14,7 @@ import (
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/checker"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/deploy"
+	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/dockerhost"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
 )
 
@@ -186,6 +187,7 @@ func buildConfigTabs(cfg *config.Config) []configTab {
 		{
 			name: "prod-gateway",
 			fields: []formField{
+				{key: "docker_host", label: "Docker Host (provider host / DOCKER_HOST)", value: orDef(cfg.DockerHost, dockerhost.Default())},
 				{key: "letsencrypt_path", label: "Let's Encrypt Certs Path", value: orDef(cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/")},
 			},
 		},
@@ -811,6 +813,8 @@ func applyField(cfg *config.Config, tab, key, value string) {
 		}
 	case "prod-gateway":
 		switch key {
+		case "docker_host":
+			cfg.DockerHost = value
 		case "letsencrypt_path":
 			cfg.ProdGateway.LetsEncryptPath = value
 		}

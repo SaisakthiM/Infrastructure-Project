@@ -507,6 +507,10 @@ function fitTerm(t) {
 
       <div class="tab-panel" id="ctab-gateway">
         <div class="field">
+          <label>Docker Host (provider host / DOCKER_HOST)</label>
+          <input type="text" id="cfg-docker_host" placeholder="unix:///home/you/.docker/desktop/docker.sock" />
+        </div>
+        <div class="field">
           <label>Let's Encrypt Certs Path on Host</label>
           <input type="text" id="cfg-letsencrypt_path-dup" placeholder="/home/saisakthi/letsencrypt/" style="display:none" />
         </div>
@@ -743,6 +747,7 @@ const CFG_DEFAULTS = {
   whisper_db_test_db:   'chat_test',
   whisper_minio_user:   'minioadmin',
   letsencrypt_path:     '/home/saisakthi/letsencrypt/',
+  docker_host:          'unix:///home/saisakthi/.docker/desktop/docker.sock',
 };
 
 async function loadConfig() {
@@ -759,6 +764,7 @@ async function loadConfig() {
       'doc_db_name','doc_minio_user',
       'whisper_db_user','whisper_db_name','whisper_db_test_db','whisper_minio_user',
       'letsencrypt_path',
+      'docker_host',
     ];
     for (const f of allFields) {
       const el = document.getElementById('cfg-' + f);
@@ -814,6 +820,7 @@ async function saveConfig() {
     whisper_db_test_db:   val('cfg-whisper_db_test_db'),
     whisper_minio_user:   val('cfg-whisper_minio_user'),
     letsencrypt_path:     val('cfg-letsencrypt_path'),
+    docker_host:          val('cfg-docker_host'),
   };
 
   try {

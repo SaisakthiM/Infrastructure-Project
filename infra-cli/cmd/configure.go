@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/dockerhost"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
 )
@@ -84,6 +85,10 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		cfg.ProdInfra.MainServerIP = ui.Prompt(
 			"  Server LAN IP",
 			cfg.ProdInfra.MainServerIP)
+
+		cfg.DockerHost = ui.Prompt(
+			"  Docker host (provider host / DOCKER_HOST)",
+			orDefault(cfg.DockerHost, dockerhost.Default()))
 
 		cfg.ProdInfra.AtlantisGHUser = ui.Prompt(
 			"  GitHub username (Atlantis / ArgoCD)",
@@ -174,6 +179,8 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 // applyDefaults silently sets every non-secret config field that hasn't been
 // set yet, so the user never has to answer the tedious DB-name questions.
 func applyDefaults(cfg *config.Config) {
+	setDef(&cfg.DockerHost, dockerhost.Default())
+
 	// prod-infra
 	setDef(&cfg.ProdInfra.N8NPort,     "5678")
 	setDef(&cfg.ProdInfra.N8NHost,     "0.0.0.0")

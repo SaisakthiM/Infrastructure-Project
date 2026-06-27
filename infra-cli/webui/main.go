@@ -25,6 +25,7 @@ import (
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/checker"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/deploy"
+	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/dockerhost"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/release"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
 )
@@ -523,6 +524,7 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 
 		// prod-gateway
 		LetsEncryptPath string `json:"letsencrypt_path"`
+		DockerHost      string `json:"docker_host"`
 	}
 
 	writeJSON(w, configResponse{
@@ -557,6 +559,7 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 		WhisperMinioUser: orDefault(cfg.ProdDocker.WhisperMinioUser, "minioadmin"),
 
 		LetsEncryptPath: orDefault(cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/"),
+		DockerHost:      orDefault(cfg.DockerHost, dockerhost.Default()),
 	})
 }
 
@@ -597,6 +600,7 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 		WhisperMinioUser string `json:"whisper_minio_user"`
 
 		LetsEncryptPath string `json:"letsencrypt_path"`
+		DockerHost      string `json:"docker_host"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -637,6 +641,7 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 	cfg.ProdDocker.WhisperMinioUser = req.WhisperMinioUser
 
 	cfg.ProdGateway.LetsEncryptPath = req.LetsEncryptPath
+	cfg.DockerHost = req.DockerHost
 
 	if saveErr := config.Save(cfg); saveErr != nil {
 		http.Error(w, "saving config: "+saveErr.Error(), http.StatusInternalServerError)
