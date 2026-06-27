@@ -30,6 +30,7 @@ func init() {
 	rootCmd.AddCommand(
 		installCmd,
 		configureCmd,
+		cleanCmd,
 		deployCmd,
 		destroyCmd,
 		statusCmd,

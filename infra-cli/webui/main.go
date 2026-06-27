@@ -16,6 +16,8 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -132,6 +134,9 @@ func main() {
 	// Configure routes.
 	mux.HandleFunc("/api/configure/load", handleConfigureLoad)
 	mux.HandleFunc("/api/configure/save", handleConfigureSave)
+
+	// Clean route.
+	mux.HandleFunc("/api/clean", handleClean)
 
 	addr := ":" + *port
 	fmt.Printf("\n  social-platform Web UI\n")
@@ -661,4 +666,105 @@ func orDefault(v, def string) string {
 func writeJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+// ── clean handler ─────────────────────────────────────────────────────────────
+
+// POST /api/clean  body: { "env": "all"|"prod-social"|…, "state": false }
+// Removes .terragrunt-cache, .terraform, *.tfvars, and optionally *.tfstate.
+func handleClean(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Env   string `json:"env"`
+		State bool   `json:"state"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	cfg, err := config.Load()
+	if err != nil || !cfg.InfraExists() {
+		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
+		return
+	}
+
+	envsDir := cfg.InfraDir + "/environments"
+
+	var envDirs []string
+	if req.Env != "" && req.Env != "all" {
+		envDirs = []string{envsDir + "/" + req.Env}
+	} else {
+		entries, readErr := os.ReadDir(envsDir)
+		if readErr != nil {
+			http.Error(w, "reading envs: "+readErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				envDirs = append(envDirs, envsDir+"/"+e.Name())
+			}
+		}
+	}
+
+	type result struct {
+		Path string `json:"path"`
+		Size int64  `json:"bytes"`
+	}
+	var removed []result
+	var totalBytes int64
+
+	for _, dir := range envDirs {
+		_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			base := filepath.Base(path)
+			del := false
+			if info.IsDir() && (base == ".terragrunt-cache" || base == ".terraform") {
+				del = true
+			}
+			if !info.IsDir() {
+				switch {
+				case base == "terraform.tfvars",
+					base == ".terraform.lock.hcl",
+					strings.HasSuffix(base, ".tfvars"):
+					del = true
+				case req.State && (base == "terraform.tfstate" ||
+					strings.HasPrefix(base, "terraform.tfstate.") ||
+					strings.HasSuffix(base, ".tfstate") ||
+					strings.HasSuffix(base, ".tfstate.backup")):
+					del = true
+				}
+			}
+			if del {
+				sz := webDirSize(path)
+				if removeErr := os.RemoveAll(path); removeErr == nil {
+					removed = append(removed, result{Path: path, Size: sz})
+					totalBytes += sz
+				}
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+			}
+			return nil
+		})
+	}
+
+	writeJSON(w, map[string]interface{}{
+		"removed":     removed,
+		"total_bytes": totalBytes,
+		"count":       len(removed),
+	})
+}
+
+func webDirSize(path string) int64 {
+	var total int64
+	_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
 }

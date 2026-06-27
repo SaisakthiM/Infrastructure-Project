@@ -199,6 +199,8 @@ function fitTerm(t) {
   <div class="sidebar-item"        id="nav-configure"onclick="showPanel('configure',this)"><span class="sidebar-icon">⚙</span>Configure</div>
   <div class="sidebar-section">Info</div>
   <div class="sidebar-item"        id="nav-jobs"     onclick="showPanel('jobs',this)"><span class="sidebar-icon">◎</span>Job History</div>
+  <div class="sidebar-section">Maintenance</div>
+  <div class="sidebar-item"        id="nav-clean"    onclick="showPanel('clean',this)"><span class="sidebar-icon">🗑</span>Clean Cache</div>
 </nav>
 
 <main class="main">
@@ -380,86 +382,142 @@ function fitTerm(t) {
 <div class="panel" id="panel-configure">
   <div class="page-header">
     <div class="page-title">⚙ Configure</div>
-    <div class="page-desc">Set non-secret config values. Saving regenerates all <code>terraform.tfvars</code> files.</div>
+    <div class="page-desc">Fill in Section 1 &amp; 2 — everything else is auto-filled with defaults. Saving writes all <code>terraform.tfvars</code> files.</div>
   </div>
+
+  <!-- ── Section 1: GitHub & URLs ── -->
   <div class="card">
-    <div class="tab-bar">
-      <div class="tab active" onclick="showConfigTab('infra',this)">prod-infra</div>
-      <div class="tab"        onclick="showConfigTab('social',this)">prod-social</div>
-      <div class="tab"        onclick="showConfigTab('docker',this)">prod-docker</div>
-      <div class="tab"        onclick="showConfigTab('gateway',this)">prod-gateway</div>
+    <div class="card-title" style="color:var(--cyan);font-size:14px">
+      <span>①</span> GitHub &amp; Deployment URLs
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">Required — unique to your setup</span>
     </div>
-
-    <div class="tab-panel active" id="ctab-infra">
-      <div class="form-row">
-        <div class="field"><label>Public Domain</label><input type="text" id="cfg-domain" placeholder="example.qzz.io" /></div>
-        <div class="field"><label>Server LAN IP</label><input type="text" id="cfg-main_server_ip" placeholder="192.168.1.100" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>GitHub User (Atlantis)</label><input type="text" id="cfg-atlantis_gh_user" placeholder="SaisakthiM" /></div>
-        <div class="field"><label>GitOps Repo SSH URL</label><input type="text" id="cfg-gitops_repo_url" placeholder="git@github.com:…" /></div>
-      </div>
-      <div class="form-row-3">
-        <div class="field"><label>n8n Port</label><input type="text" id="cfg-n8n_port" placeholder="5678" /></div>
-        <div class="field"><label>n8n Host</label><input type="text" id="cfg-n8n_host" placeholder="0.0.0.0" /></div>
-        <div class="field"><label>n8n Protocol</label><input type="text" id="cfg-n8n_protocol" placeholder="https" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>n8n Basic Auth User</label><input type="text" id="cfg-n8n_user" placeholder="admin" /></div>
-      </div>
-    </div>
-
-    <div class="tab-panel" id="ctab-social">
-      <div class="form-row">
-        <div class="field"><label>GitOps Repo URL</label><input type="text" id="cfg-social_gitops_repo_url" placeholder="git@github.com:…" /></div>
-        <div class="field"><label>Social MinIO User</label><input type="text" id="cfg-social_minio_user" placeholder="minio" /></div>
-      </div>
-      <div class="form-check">
-        <input type="checkbox" id="cfg-load_images" />
-        <label for="cfg-load_images">Load Docker images into kind cluster on deploy</label>
-      </div>
-    </div>
-
-    <div class="tab-panel" id="ctab-docker">
-      <div class="form-row-3">
-        <div class="field"><label>Blog DB Name</label><input type="text" id="cfg-blog_db_name" placeholder="blog_db" /></div>
-        <div class="field"><label>Blog MinIO User</label><input type="text" id="cfg-blog_minio_user" placeholder="admin" /></div>
-        <div class="field"><label>Blog Allowed Hosts</label><input type="text" id="cfg-blog_allowed_hosts" placeholder="['localhost']" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>Notes DB Name</label><input type="text" id="cfg-notes_db_name" placeholder="notes_app" /></div>
-        <div class="field"><label>Notes DB User</label><input type="text" id="cfg-notes_db_user" placeholder="saisakthi" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>Bank DB User</label><input type="text" id="cfg-bank_db_user" placeholder="bankmanagement" /></div>
-        <div class="field"><label>Bank DB Name</label><input type="text" id="cfg-bank_db_name" placeholder="bank" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>Document Platform DB Name</label><input type="text" id="cfg-doc_db_name" placeholder="book_db" /></div>
-        <div class="field"><label>Document Platform MinIO User</label><input type="text" id="cfg-doc_minio_user" placeholder="admin" /></div>
-      </div>
-      <div class="form-row-3">
-        <div class="field"><label>Whisper DB User</label><input type="text" id="cfg-whisper_db_user" placeholder="admin" /></div>
-        <div class="field"><label>Whisper DB Name</label><input type="text" id="cfg-whisper_db_name" placeholder="chat" /></div>
-        <div class="field"><label>Whisper Test DB</label><input type="text" id="cfg-whisper_db_test_db" placeholder="chat_test" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>Whisper MinIO User</label><input type="text" id="cfg-whisper_minio_user" placeholder="minioadmin" /></div>
-      </div>
-    </div>
-
-    <div class="tab-panel" id="ctab-gateway">
+    <div class="form-row">
       <div class="field">
-        <label>Let's Encrypt Certs Path on Host</label>
-        <input type="text" id="cfg-letsencrypt_path" placeholder="/home/saisakthi/letsencrypt/" />
+        <label>Public Domain</label>
+        <input type="text" id="cfg-domain" placeholder="example.qzz.io" />
+      </div>
+      <div class="field">
+        <label>Server LAN IP</label>
+        <input type="text" id="cfg-main_server_ip" placeholder="192.168.1.100" />
       </div>
     </div>
-
-    <div class="btn-row" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
-      <button class="btn btn-ghost"    onclick="loadConfig()">⟳ Reload from Disk</button>
-      <button class="btn btn-primary"  onclick="saveConfig()">💾 Save &amp; Generate tfvars</button>
-      <span id="cfg-save-status" style="font-size:13px;color:var(--muted);align-self:center"></span>
+    <div class="form-row">
+      <div class="field">
+        <label>GitHub Username <span style="color:var(--muted);text-transform:none;font-weight:400">(Atlantis / ArgoCD)</span></label>
+        <input type="text" id="cfg-atlantis_gh_user" placeholder="SaisakthiM" />
+      </div>
+      <div class="field">
+        <label>GitOps Repo SSH URL</label>
+        <input type="text" id="cfg-gitops_repo_url" placeholder="git@github.com:SaisakthiM/Infrastruture-Project.git" />
+      </div>
     </div>
+    <div class="form-row">
+      <div class="field">
+        <label>prod-social GitOps URL <span style="color:var(--muted);text-transform:none;font-weight:400">(leave blank = same as above)</span></label>
+        <input type="text" id="cfg-social_gitops_repo_url" placeholder="same as GitOps Repo above" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Secrets ── -->
+  <div class="card">
+    <div class="card-title" style="color:var(--yellow);font-size:14px">
+      <span>②</span> Secrets &amp; API Keys
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">Stored in OS keychain — never in files</span>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:14px;padding:10px 12px;
+                background:rgba(210,153,34,.06);border:1px solid rgba(210,153,34,.2);border-radius:6px">
+      ⚠ Secrets (SSH deploy keys, API tokens) are managed by the CLI keychain and cannot be entered
+      here. Run <code>social-platform configure</code> in your terminal to set or update them.
+      The fields below show <em>non-secret</em> references only.
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>n8n Basic Auth User</label>
+        <input type="text" id="cfg-n8n_user" placeholder="admin" />
+      </div>
+      <div class="field">
+        <label>n8n Protocol</label>
+        <input type="text" id="cfg-n8n_protocol" placeholder="https" />
+      </div>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" id="cfg-load_images" />
+      <label for="cfg-load_images">Load Docker images into kind cluster on deploy (prod-social)</label>
+    </div>
+  </div>
+
+  <!-- ── Advanced (collapsed) ── -->
+  <div class="card">
+    <div class="card-title" style="cursor:pointer;user-select:none" onclick="toggleAdvanced()">
+      <span id="adv-arrow">▶</span>&nbsp; Advanced — DB names, MinIO users, ports
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">
+        Auto-filled with defaults — only change if you customised these
+      </span>
+    </div>
+    <div id="advanced-body" style="display:none">
+      <div class="tab-bar" style="margin-top:8px">
+        <div class="tab active" onclick="showConfigTab('infra',this)">prod-infra</div>
+        <div class="tab"        onclick="showConfigTab('social',this)">prod-social</div>
+        <div class="tab"        onclick="showConfigTab('docker',this)">prod-docker</div>
+        <div class="tab"        onclick="showConfigTab('gateway',this)">prod-gateway</div>
+      </div>
+
+      <div class="tab-panel active" id="ctab-infra">
+        <div class="form-row-3">
+          <div class="field"><label>n8n Port</label><input type="text" id="cfg-n8n_port" placeholder="5678" /></div>
+          <div class="field"><label>n8n Host</label><input type="text" id="cfg-n8n_host" placeholder="0.0.0.0" /></div>
+          <div class="field"><label>Let's Encrypt Path</label><input type="text" id="cfg-letsencrypt_path" placeholder="/home/saisakthi/letsencrypt/" /></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="ctab-social">
+        <div class="form-row">
+          <div class="field"><label>Social MinIO User</label><input type="text" id="cfg-social_minio_user" placeholder="minio" /></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="ctab-docker">
+        <div class="form-row-3">
+          <div class="field"><label>Blog DB Name</label><input type="text" id="cfg-blog_db_name" placeholder="blog_db" /></div>
+          <div class="field"><label>Blog MinIO User</label><input type="text" id="cfg-blog_minio_user" placeholder="admin" /></div>
+          <div class="field"><label>Blog Allowed Hosts</label><input type="text" id="cfg-blog_allowed_hosts" placeholder="['localhost']" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Notes DB Name</label><input type="text" id="cfg-notes_db_name" placeholder="notes_app" /></div>
+          <div class="field"><label>Notes DB User</label><input type="text" id="cfg-notes_db_user" placeholder="saisakthi" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Bank DB User</label><input type="text" id="cfg-bank_db_user" placeholder="bankmanagement" /></div>
+          <div class="field"><label>Bank DB Name</label><input type="text" id="cfg-bank_db_name" placeholder="bank" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Document Platform DB Name</label><input type="text" id="cfg-doc_db_name" placeholder="book_db" /></div>
+          <div class="field"><label>Document Platform MinIO User</label><input type="text" id="cfg-doc_minio_user" placeholder="admin" /></div>
+        </div>
+        <div class="form-row-3">
+          <div class="field"><label>Whisper DB User</label><input type="text" id="cfg-whisper_db_user" placeholder="admin" /></div>
+          <div class="field"><label>Whisper DB Name</label><input type="text" id="cfg-whisper_db_name" placeholder="chat" /></div>
+          <div class="field"><label>Whisper Test DB</label><input type="text" id="cfg-whisper_db_test_db" placeholder="chat_test" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Whisper MinIO User</label><input type="text" id="cfg-whisper_minio_user" placeholder="minioadmin" /></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="ctab-gateway">
+        <div class="field">
+          <label>Let's Encrypt Certs Path on Host</label>
+          <input type="text" id="cfg-letsencrypt_path-dup" placeholder="/home/saisakthi/letsencrypt/" style="display:none" />
+        </div>
+      </div>
+    </div><!-- /advanced-body -->
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost"   onclick="loadConfig()">⟳ Reload from Disk</button>
+    <button class="btn btn-primary" onclick="saveConfig()">💾 Save &amp; Generate tfvars</button>
+    <span id="cfg-save-status" style="font-size:13px;color:var(--muted);align-self:center"></span>
   </div>
 </div>
 
@@ -471,6 +529,56 @@ function fitTerm(t) {
   </div>
   <div class="card">
     <div id="job-list"><div style="color:var(--muted);font-size:13px">No jobs yet.</div></div>
+  </div>
+</div>
+
+<!-- ── CLEAN ── -->
+<div class="panel" id="panel-clean">
+  <div class="page-header">
+    <div class="page-title">🗑 Clean Cache &amp; State</div>
+    <div class="page-desc">Remove <code>.terragrunt-cache</code>, <code>.terraform</code>, and generated <code>*.tfvars</code> files that can cause state conflicts.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Options</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Environment</label>
+        <select id="clean-env">
+          <option value="all">all environments</option>
+          <option value="prod-gateway">prod-gateway</option>
+          <option value="prod-docker">prod-docker</option>
+          <option value="prod-social">prod-social</option>
+          <option value="prod-infra">prod-infra</option>
+          <option value="prod-manage">prod-manage</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-check" style="margin-bottom:8px">
+      <input type="checkbox" id="clean-state" />
+      <label for="clean-state" style="color:var(--red)">
+        ⚠ Also remove <code>terraform.tfstate</code> files
+        <span style="color:var(--muted);font-weight:400"> — only safe with a remote backend</span>
+      </label>
+    </div>
+
+    <div style="padding:10px 12px;background:rgba(0,207,207,.05);border:1px solid rgba(0,207,207,.15);
+                border-radius:6px;font-size:12px;color:var(--muted);margin-bottom:16px">
+      <strong style="color:var(--text)">What gets removed:</strong><br/>
+      <code>.terragrunt-cache/</code> — Terragrunt module cache (safe to delete, re-downloaded on next deploy)<br/>
+      <code>.terraform/</code> — Terraform provider plugins (safe to delete, re-downloaded on init)<br/>
+      <code>terraform.tfvars</code> / <code>*.tfvars</code> — Re-generated by <code>social-platform configure --regen</code>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="runClean()">🗑 Clean Selected</button>
+      <button class="btn btn-ghost"  onclick="runClean(true)">👁 Dry Run (preview only)</button>
+    </div>
+  </div>
+
+  <div class="card" id="clean-results" style="display:none">
+    <div class="card-title" id="clean-results-title">Results</div>
+    <div id="clean-results-body" style="font-family:var(--mono);font-size:12px;color:var(--muted)"></div>
   </div>
 </div>
 
@@ -598,6 +706,15 @@ function showPanel(name, el) {
 }
 
 // ── configure tabs ────────────────────────────────────────────────────────
+// Toggle advanced section
+function toggleAdvanced() {
+  const body  = document.getElementById('advanced-body');
+  const arrow = document.getElementById('adv-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  arrow.textContent   = open ? '▼' : '▶';
+}
+
 function showConfigTab(name, el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
@@ -605,10 +722,35 @@ function showConfigTab(name, el) {
   el.classList.add('active');
 }
 
+// Defaults mirror applyDefaults() in cmd/configure.go
+const CFG_DEFAULTS = {
+  n8n_port:             '5678',
+  n8n_host:             '0.0.0.0',
+  n8n_protocol:         'https',
+  n8n_user:             'admin',
+  social_minio_user:    'minio',
+  blog_db_name:         'blog_db',
+  blog_minio_user:      'admin',
+  blog_allowed_hosts:   "[\'localhost\', \'127.0.0.1\']",
+  notes_db_name:        'notes_app',
+  notes_db_user:        'saisakthi',
+  bank_db_user:         'bankmanagement',
+  bank_db_name:         'bank',
+  doc_db_name:          'book_db',
+  doc_minio_user:       'admin',
+  whisper_db_user:      'admin',
+  whisper_db_name:      'chat',
+  whisper_db_test_db:   'chat_test',
+  whisper_minio_user:   'minioadmin',
+  letsencrypt_path:     '/home/saisakthi/letsencrypt/',
+};
+
 async function loadConfig() {
   try {
     const d = await getJSON('/api/configure/load');
-    const fields = [
+
+    // All fields — apply saved value OR default (never leave blank).
+    const allFields = [
       'domain','main_server_ip','atlantis_gh_user','gitops_repo_url',
       'n8n_port','n8n_host','n8n_protocol','n8n_user',
       'social_gitops_repo_url','social_minio_user',
@@ -618,12 +760,22 @@ async function loadConfig() {
       'whisper_db_user','whisper_db_name','whisper_db_test_db','whisper_minio_user',
       'letsencrypt_path',
     ];
-    for (const f of fields) {
+    for (const f of allFields) {
       const el = document.getElementById('cfg-' + f);
-      if (el) el.value = d[f] || '';
+      if (!el) continue;
+      // Use saved value if non-empty, otherwise fall back to our default.
+      el.value = (d[f] && d[f].trim()) ? d[f] : (CFG_DEFAULTS[f] || '');
     }
+
+    // social_gitops_repo_url: default to the main gitops URL if blank.
+    const sgu = document.getElementById('cfg-social_gitops_repo_url');
+    if (sgu && !sgu.value) {
+      sgu.value = document.getElementById('cfg-gitops_repo_url').value;
+    }
+
     const cb = document.getElementById('cfg-load_images');
     if (cb) cb.checked = !!d.load_images;
+
     document.getElementById('cfg-save-status').textContent = '';
   } catch(e) {
     document.getElementById('cfg-save-status').textContent = 'Failed to load: ' + e.message;
@@ -922,6 +1074,71 @@ function setBadge(el, state) {
   el.className = 'badge ' + m[state][0];
   el.textContent = m[state][1];
   el.classList.remove('hidden');
+}
+
+// ── clean ────────────────────────────────────────────────────────────────
+async function runClean(dryRun = false) {
+  const env      = document.getElementById('clean-env').value;
+  const inclState= document.getElementById('clean-state').checked;
+  const card     = document.getElementById('clean-results');
+  const title    = document.getElementById('clean-results-title');
+  const body     = document.getElementById('clean-results-body');
+
+  card.style.display = 'none';
+  body.innerHTML = '<span class="spinner">⟳</span> Working…';
+  card.style.display = 'block';
+
+  if (dryRun) {
+    // Dry-run: just show what the API would delete via a scan-only call
+    // (server doesn't have a dry-run endpoint, so we describe locally).
+    title.textContent = '👁 Dry Run — would remove:';
+    body.innerHTML =
+      `<span style="color:var(--muted)">• <code>**/.terragrunt-cache/</code> dirs<br/>` +
+      `• <code>**/.terraform/</code> dirs<br/>` +
+      `• <code>terraform.tfvars</code> / <code>*.tfvars</code> files<br/>` +
+      (inclState ? `• <code>terraform.tfstate*</code> files<br/>` : '') +
+      `<br/>Environment: <strong style="color:var(--cyan)">${env}</strong><br/>` +
+      `Run without Dry Run to actually delete.</span>`;
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/clean', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({env, state: inclState}),
+    });
+    if (!r.ok) { throw new Error(await r.text()); }
+    const d = await r.json();
+
+    title.innerHTML = d.count === 0
+      ? '✓ Nothing to clean'
+      : `✓ Removed ${d.count} path(s) — freed ${humanBytes(d.total_bytes)}`;
+    title.style.color = d.count === 0 ? 'var(--muted)' : 'var(--green)';
+
+    if (d.removed && d.removed.length) {
+      body.innerHTML = d.removed.map(r =>
+        `<span style="color:var(--green)">✓</span> ${r.path} <span style="color:var(--muted)">(${humanBytes(r.bytes)})</span>`
+      ).join('<br/>');
+    } else {
+      body.innerHTML = '<span style="color:var(--muted)">All environments already clean.</span>';
+    }
+
+    if (d.count > 0) {
+      body.innerHTML += `<br/><br/><span style="color:var(--yellow)">⚠ Run <code>social-platform configure --regen</code> or use Configure → Save to regenerate tfvars before next deploy.</span>`;
+    }
+  } catch(e) {
+    title.textContent = '✗ Error';
+    title.style.color = 'var(--red)';
+    body.innerHTML = `<span style="color:var(--red)">${e.message}</span>`;
+  }
+}
+
+function humanBytes(b) {
+  if (b >= 1<<30) return (b/(1<<30)).toFixed(1)+' GB';
+  if (b >= 1<<20) return (b/(1<<20)).toFixed(1)+' MB';
+  if (b >= 1<<10) return (b/(1<<10)).toFixed(1)+' KB';
+  return b+' B';
 }
 
 function val(id) { return (document.getElementById(id)?.value||'').trim(); }

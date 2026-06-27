@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
@@ -9,30 +10,30 @@ import (
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
 )
 
-var (
-	regenOnly     bool
-	importantOnly bool
-)
+var regenOnly bool
 
 var configureCmd = &cobra.Command{
 	Use:   "configure",
-	Short: "Set secrets and configuration, then regenerate terraform.tfvars",
-	Long: `Prompts for all required secrets (stored in OS keychain) and non-secret
-configuration values (stored in ~/.social-platform/config.yaml), then
-writes terraform.tfvars files into each environment directory.
+	Short: "Set GitHub links + secrets, auto-fill everything else, write terraform.tfvars",
+	Long: `Two-section wizard:
 
-Use --regen to skip prompts and just re-write tfvars from saved values.
-Use --important to skip the internal DB/MinIO passwords and signing keys
-(they're filled in with your usual defaults / auto-generated) and only be
-asked for the real secrets: API keys, tokens, and the SSH deploy key.`,
+  Section 1 — GitHub & URLs
+    Only the values that are unique to your setup: your public domain,
+    server IP, GitHub username, and repo SSH URL. Everything else
+    (DB names, MinIO users, ports, paths) is filled in with sensible
+    defaults automatically.
+
+  Section 2 — Secrets & Keys
+    API keys, tokens, and the ArgoCD SSH deploy key. All stored in the
+    OS keychain — never written to disk as plaintext.
+
+  Use --regen to skip prompts and just re-write tfvars from saved values.`,
 	RunE: runConfigure,
 }
 
 func init() {
 	configureCmd.Flags().BoolVar(&regenOnly, "regen", false,
 		"Regenerate tfvars from saved values without prompting")
-	configureCmd.Flags().BoolVar(&importantOnly, "important", false,
-		"Only prompt for important secrets (API keys, tokens, SSH key); fill internal DB/MinIO passwords with defaults")
 }
 
 func runConfigure(cmd *cobra.Command, args []string) error {
@@ -49,24 +50,59 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	}
 
 	if !regenOnly {
-		// ── Step 1: Non-secret configuration ──────────────────────────────────
-		ui.Step(1, "General configuration")
-		cfg = promptGeneralConfig(cfg)
-
-		// ── Step 2: Secrets (keychain) ─────────────────────────────────────────
-		ui.Step(2, "Secrets (stored in OS keychain — never written to disk as plaintext)")
-		if importantOnly {
-			ui.Dim.Println("  --important: internal DB/MinIO passwords + signing keys will use defaults.")
-			ui.Dim.Println("  Press Enter to keep any existing value for the rest.")
-		} else {
-			ui.Dim.Println("  Press Enter to keep any existing value.")
-		}
+		// ── Section 1: GitHub & URLs ───────────────────────────────────────
 		fmt.Println()
-		if err := secrets.PromptAll(importantOnly); err != nil {
+		ui.Bold.Println("  ┌─────────────────────────────────────────┐")
+		ui.Bold.Println("  │  Section 1 — GitHub & Deployment URLs   │")
+		ui.Bold.Println("  └─────────────────────────────────────────┘")
+		ui.Dim.Println("  Press Enter to keep the shown default.")
+		fmt.Println()
+
+		cfg.ProdInfra.Domain = ui.Prompt(
+			"  Public domain (e.g. example.qzz.io)",
+			cfg.ProdInfra.Domain)
+
+		cfg.ProdInfra.MainServerIP = ui.Prompt(
+			"  Server LAN IP",
+			cfg.ProdInfra.MainServerIP)
+
+		cfg.ProdInfra.AtlantisGHUser = ui.Prompt(
+			"  GitHub username (Atlantis / ArgoCD)",
+			orDefault(cfg.ProdInfra.AtlantisGHUser, "SaisakthiM"))
+
+		repoURL := ui.Prompt(
+			"  GitOps repo SSH URL",
+			orDefault(cfg.ProdInfra.GitopsRepoURL,
+				"git@github.com:SaisakthiM/Infrastruture-Project.git"))
+		cfg.ProdInfra.GitopsRepoURL = repoURL
+		// Social env reuses the same repo URL by default.
+		if cfg.ProdSocial.GitopsRepoURL == "" {
+			cfg.ProdSocial.GitopsRepoURL = repoURL
+		} else {
+			cfg.ProdSocial.GitopsRepoURL = ui.Prompt(
+				"  GitOps repo URL for prod-social (Enter = same as above)",
+				cfg.ProdSocial.GitopsRepoURL)
+		}
+
+		// ── Auto-fill all remaining non-secret config with defaults ────────
+		applyDefaults(cfg)
+
+		fmt.Println()
+		ui.Success("Section 1 complete — all other config values set to defaults.")
+
+		// ── Section 2: Secrets & Keys ──────────────────────────────────────
+		fmt.Println()
+		ui.Bold.Println("  ┌─────────────────────────────────────────┐")
+		ui.Bold.Println("  │  Section 2 — Secrets & API Keys         │")
+		ui.Bold.Println("  └─────────────────────────────────────────┘")
+		ui.Dim.Println("  These are stored in the OS keychain — never written to disk.")
+		ui.Dim.Println("  Press Enter to keep any existing saved value.")
+		fmt.Println()
+
+		if err := secrets.PromptAll(true /* important-only */); err != nil {
 			return fmt.Errorf("collecting secrets: %w", err)
 		}
 
-		// Persist non-secret config.
 		if err := config.Save(cfg); err != nil {
 			return fmt.Errorf("saving config: %w", err)
 		}
@@ -74,6 +110,7 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── Step 3: Generate tfvars ────────────────────────────────────────────
+	fmt.Println()
 	ui.Step(3, "Generating terraform.tfvars files")
 
 	if cfg.InfraDir == "" {
@@ -98,67 +135,46 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// promptGeneralConfig walks the user through all non-secret config fields.
-func promptGeneralConfig(cfg *config.Config) *config.Config {
-	ui.Info("Enter values for non-secret settings (press Enter to keep existing).")
-	fmt.Println()
+// applyDefaults silently sets every non-secret config field that hasn't been
+// set yet, so the user never has to answer the tedious DB-name questions.
+func applyDefaults(cfg *config.Config) {
+	// prod-infra
+	setDef(&cfg.ProdInfra.N8NPort,     "5678")
+	setDef(&cfg.ProdInfra.N8NHost,     "0.0.0.0")
+	setDef(&cfg.ProdInfra.N8NProtocol, "https")
+	setDef(&cfg.ProdInfra.N8NUser,     "admin")
 
-	// ── prod-infra ─────────────────────────────────────────────────────────
-	ui.Bold.Println("  prod-infra")
-	cfg.ProdInfra.Domain = ui.Prompt("    Public domain (e.g. example.qzz.io)", cfg.ProdInfra.Domain)
-	cfg.ProdInfra.MainServerIP = ui.Prompt("    Server LAN IP", cfg.ProdInfra.MainServerIP)
-	cfg.ProdInfra.AtlantisGHUser = ui.Prompt("    GitHub username (for Atlantis)", cfg.ProdInfra.AtlantisGHUser)
-	cfg.ProdInfra.GitopsRepoURL = ui.Prompt("    GitOps repo SSH URL (ArgoCD / Atlantis)",
-		orDefault(cfg.ProdInfra.GitopsRepoURL, "git@github.com:SaisakthiM/Infrastruture-Project.git"))
-	cfg.ProdInfra.N8NPort = ui.Prompt("    n8n port", orDefault(cfg.ProdInfra.N8NPort, "5678"))
-	cfg.ProdInfra.N8NHost = ui.Prompt("    n8n host bind", orDefault(cfg.ProdInfra.N8NHost, "0.0.0.0"))
-	cfg.ProdInfra.N8NProtocol = ui.Prompt("    n8n protocol (http/https)", orDefault(cfg.ProdInfra.N8NProtocol, "https"))
-	cfg.ProdInfra.N8NUser = ui.Prompt("    n8n basic auth user", orDefault(cfg.ProdInfra.N8NUser, "admin"))
-	fmt.Println()
+	// prod-social
+	setDef(&cfg.ProdSocial.SocialMinio, "minio")
+	// LoadImages stays false unless user previously set it — that's fine.
 
-	// ── prod-social ────────────────────────────────────────────────────────
-	ui.Bold.Println("  prod-social")
-	cfg.ProdSocial.GitopsRepoURL = ui.Prompt("    GitOps repo URL",
-		orDefault(cfg.ProdSocial.GitopsRepoURL, cfg.ProdInfra.GitopsRepoURL))
-	cfg.ProdSocial.SocialMinio = ui.Prompt("    Social MinIO user",
-		orDefault(cfg.ProdSocial.SocialMinio, "minio"))
-	loadImagesStr := "false"
-	if cfg.ProdSocial.LoadImages {
-		loadImagesStr = "true"
+	// prod-docker
+	setDef(&cfg.ProdDocker.BlogDBName,       "blog_db")
+	setDef(&cfg.ProdDocker.BlogMinioUser,    "admin")
+	setDef(&cfg.ProdDocker.BlogAllowedHosts, "['localhost', '127.0.0.1']")
+	setDef(&cfg.ProdDocker.NotesDBName,      "notes_app")
+	setDef(&cfg.ProdDocker.NotesDBUser,      "saisakthi")
+	setDef(&cfg.ProdDocker.BankDBUser,       "bankmanagement")
+	setDef(&cfg.ProdDocker.BankDBName,       "bank")
+	setDef(&cfg.ProdDocker.DocDBName,        "book_db")
+	setDef(&cfg.ProdDocker.DocMinioUser,     "admin")
+	setDef(&cfg.ProdDocker.WhisperDBUser,    "admin")
+	setDef(&cfg.ProdDocker.WhisperDBName,    "chat")
+	setDef(&cfg.ProdDocker.WhisperDBTestDB,  "chat_test")
+	setDef(&cfg.ProdDocker.WhisperMinioUser, "minioadmin")
+
+	// prod-gateway
+	setDef(&cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/")
+}
+
+func setDef(field *string, def string) {
+	if strings.TrimSpace(*field) == "" {
+		*field = def
 	}
-	li := ui.Prompt("    Load Docker images into kind cluster? (true/false)", loadImagesStr)
-	cfg.ProdSocial.LoadImages = li == "true"
-	fmt.Println()
-
-	// ── prod-docker ────────────────────────────────────────────────────────
-	ui.Bold.Println("  prod-docker")
-	cfg.ProdDocker.BlogDBName = ui.Prompt("    Blog DB name", orDefault(cfg.ProdDocker.BlogDBName, "blog_db"))
-	cfg.ProdDocker.BlogMinioUser = ui.Prompt("    Blog MinIO user", orDefault(cfg.ProdDocker.BlogMinioUser, "admin"))
-	cfg.ProdDocker.BlogAllowedHosts = ui.Prompt("    Blog allowed hosts",
-		orDefault(cfg.ProdDocker.BlogAllowedHosts, "['localhost', '127.0.0.1']"))
-	cfg.ProdDocker.NotesDBName = ui.Prompt("    Notes DB name", orDefault(cfg.ProdDocker.NotesDBName, "notes_app"))
-	cfg.ProdDocker.NotesDBUser = ui.Prompt("    Notes DB user", orDefault(cfg.ProdDocker.NotesDBUser, "saisakthi"))
-	cfg.ProdDocker.BankDBUser = ui.Prompt("    Bank DB user", orDefault(cfg.ProdDocker.BankDBUser, "bankmanagement"))
-	cfg.ProdDocker.BankDBName = ui.Prompt("    Bank DB name", orDefault(cfg.ProdDocker.BankDBName, "bank"))
-	cfg.ProdDocker.DocDBName = ui.Prompt("    Document Platform DB name", orDefault(cfg.ProdDocker.DocDBName, "book_db"))
-	cfg.ProdDocker.DocMinioUser = ui.Prompt("    Document Platform MinIO user", orDefault(cfg.ProdDocker.DocMinioUser, "admin"))
-	cfg.ProdDocker.WhisperDBUser = ui.Prompt("    Whisper DB user", orDefault(cfg.ProdDocker.WhisperDBUser, "admin"))
-	cfg.ProdDocker.WhisperDBName = ui.Prompt("    Whisper DB name", orDefault(cfg.ProdDocker.WhisperDBName, "chat"))
-	cfg.ProdDocker.WhisperDBTestDB = ui.Prompt("    Whisper test DB name", orDefault(cfg.ProdDocker.WhisperDBTestDB, "chat_test"))
-	cfg.ProdDocker.WhisperMinioUser = ui.Prompt("    Whisper MinIO user", orDefault(cfg.ProdDocker.WhisperMinioUser, "minioadmin"))
-	fmt.Println()
-
-	// ── prod-gateway ───────────────────────────────────────────────────────
-	ui.Bold.Println("  prod-gateway")
-	cfg.ProdGateway.LetsEncryptPath = ui.Prompt("    Let's Encrypt certs path on host",
-		orDefault(cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/"))
-	fmt.Println()
-
-	return cfg
 }
 
 func orDefault(val, def string) string {
-	if val != "" {
+	if strings.TrimSpace(val) != "" {
 		return val
 	}
 	return def

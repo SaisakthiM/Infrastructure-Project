@@ -137,7 +137,7 @@ func kindClusterReachable() bool {
 	if _, err := exec.LookPath("kubectl"); err != nil {
 		return false
 	}
-	cmd := exec.Command("kind", "get", "clusters")
+	cmd := exec.Command("kubectl", "cluster-info", "--context", "kind-kind")
 	// Suppress all output -- we only care about the exit code.
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
@@ -159,7 +159,7 @@ func runTerragrunt(cfg *config.Config, env Environment, command string, autoAppr
 	} else {
 		args = []string{command}
 		if autoApprove {
-			args = append(args, "--" ,"-auto-approve")
+			args = append(args, "-auto-approve")
 		}
 		if target != "" {
 			args = append(args, "--target="+target)

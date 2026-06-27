@@ -1,11 +1,49 @@
-# Build outputs
+# ── Build outputs ──────────────────────────────────────────────────────────────
 social-platform
 social-platform.exe
+social-platform-webui
 dist/
 
-# Go toolchain
+# ── Go toolchain ───────────────────────────────────────────────────────────────
 vendor/
 
-# Config (never commit)
-~/.social-platform/
-social-platform-webui
+# ── Terraform / Terragrunt ─────────────────────────────────────────────────────
+# Cache dirs (can grow to several GB — never commit)
+**/.terragrunt-cache/
+**/.terraform/
+
+# Generated secrets/values — re-created by `social-platform configure`
+terraform.tfvars
+*.tfvars
+
+# Local state — only relevant if you're NOT using a remote backend
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate
+*.tfstate.backup
+
+# Lock file (commit this if you want reproducible provider versions, otherwise ignore)
+# .terraform.lock.hcl
+
+# ── Config / secrets ───────────────────────────────────────────────────────────
+# The CLI stores its config under ~/.social-platform/ — never in the repo
+# (gitignore can't expand ~ so we match the relative path if someone clones there)
+.social-platform/
+
+# ── OS / Editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+Thumbs.db
+Desktop.ini
+*~
+.nfs*
+*.swp
+*.tmp
+*.bak
+*.old
+.idea/
+*.iml
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+*.cache
