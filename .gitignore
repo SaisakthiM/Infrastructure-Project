@@ -1,149 +1,57 @@
-# -------------------------------
-# Operating System files
-# -------------------------------
-
-# Windows
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Linux
-*~
-.nfs*
-*.tar
-
-# -------------------------------
-# IDE / Editor files
-# -------------------------------
-
-.idea/
-.PyCharm/
-.Web\ Storm/
-*.suo
-*.user
-*.userosscache
-*.sln
-*.sln.docstates
-*.slnx
-
-*.swp
-*.tmp
-
-# -------------------------------
-# Logs and temporary files
-# -------------------------------
-
-*.log
-*.bak
-*.old
-*.cache
+# ==============================================================================
+# infra-cli/.gitignore
+# ==============================================================================
 
 
-# -------------------------------
-# Python specific
-# -------------------------------
-
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.egg
-*.egg-info/
+# ── Build outputs ─────────────────────────────────────────────────────────────
+social-platform
+social-platform.exe
+social-platform-webui
 dist/
-build/
-*.manifest
-*.spec
-.venv-12/
-
-# -------------------------------
-# Node / JavaScript
-# -------------------------------
-
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnp/
-.pnp.js
-package-lock.json
 
 
-# -------------------------------
-# Java / JVM
-# -------------------------------
-
-*.class
-*.jar
-*.war
-*.ear
-*.iml
-target/
-
-# -------------------------------
-# Large binary files
-# -------------------------------
-
-*.zip
-*.tar.gz
-*.rar
-*.7z
-*.exe
-*.dll
-*.mp4
-*.mp3
-*.mov
-*.avi
-*.pdf
-*.out
-*.o
-*.obj
-*.so
-*.dylib
-
-# -------------------------------
-# Environment / Config files
-# -------------------------------
-
-.env
-*.env
-
-docker-compose.override.yml
-
-# -------------------------------
-# Project-specific folders
-# -------------------------------
-
-# Android asset folders
-Configurations and Scripts/Android CMD Tools/platforms/android-34/data/res/
-
-# Django static/vendor JS files
-Pycharm/Python Framework/Django/Main/main_static/admin/js/vendor/
-
-# Script files
-General Programming Skills/Git/
+# ── Go toolchain ──────────────────────────────────────────────────────────────
+# Go module vendor directory — ignored globally too, belt-and-suspenders
+vendor/
+# BUT the xterm.js files bundled for the web UI live at webui/static/vendor/
+# and are NOT a Go vendor dir — they must be committed so the embed.FS can
+# serve them. Negation un-ignores that specific subtree.
+!webui/static/vendor/
 
 
-terraform.tfvars
-*.tfvars
-.terraform/
-terraform.tfstate.*
-terraform.tfstate
-terraform.tfstate.backup
+# ── Terraform / Terragrunt ────────────────────────────────────────────────────
 **/.terragrunt-cache/
 **/.terraform/
+**/.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+terraform.tfstate
+terraform.tfstate.*
 *.tfstate
 *.tfstate.backup
 terraform.locl.hcl
 
-# Build outputs
-social-platform
-social-platform.exe
-dist/
 
-# Config (never commit)
-~/.social-platform/
+# ── Config / secrets ──────────────────────────────────────────────────────────
+.social-platform/
+
+
+# ── OS / Editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+Thumbs.db
+Desktop.ini
+*~
+.nfs*
+*.swp
+*.tmp
+*.bak
+*.old
+.idea/
+*.iml
+.vscode/
+
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+*.cache
