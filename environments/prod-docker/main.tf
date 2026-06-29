@@ -388,8 +388,8 @@ module "whisper_backend" {
   network       = "gateway-net"
 
   env = [
-    "DATABASE_URL=postgresql://admin:saisakthi@gateway_whisper-pgdata:5432/${var.whisper_db_database}",
-    "DATABASE_TEST_URL=postgresql://whisper-postgres:5432/${var.whisper_db_test_db}",
+    "DATABASE_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@gateway_whisper-pgdata:5432/${var.whisper_db_database}",
+    "DATABASE_TEST_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@gateway_whisper-pgdata:5432/${var.whisper_db_test_db}",
     "MINIO_USER=${var.whisper_minio_user}",
     "MINIO_PASSWORD=${var.whisper_minio_password}",
     "JWT_SECRET=${var.whisper_jwt_secret}",
