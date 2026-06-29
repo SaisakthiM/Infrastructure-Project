@@ -12,11 +12,10 @@ dist/
 
 # ── Go toolchain ──────────────────────────────────────────────────────────────
 # Go module vendor directory — ignored globally too, belt-and-suspenders
-vendor/
+
 # BUT the xterm.js files bundled for the web UI live at webui/static/vendor/
 # and are NOT a Go vendor dir — they must be committed so the embed.FS can
 # serve them. Negation un-ignores that specific subtree.
-!webui/static/vendor/
 
 
 # ── Terraform / Terragrunt ────────────────────────────────────────────────────
