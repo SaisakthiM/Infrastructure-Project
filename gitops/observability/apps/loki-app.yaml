@@ -13,8 +13,8 @@ spec:
       targetRevision: 6.24.0 # TODO: confirm against `helm search repo loki --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/loki-config.yml
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git
+          - $values/gitops/platform/observability/loki-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
       targetRevision: HEAD
       ref: values
   destination:

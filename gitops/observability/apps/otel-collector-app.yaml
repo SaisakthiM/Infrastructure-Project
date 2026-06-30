@@ -13,8 +13,8 @@ spec:
       targetRevision: 0.111.4 # TODO: confirm against `helm search repo opentelemetry-collector --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/otel-collector-config.yml
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git
+          - $values/gitops/platform/observability/otel-collector-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
       targetRevision: HEAD
       ref: values
   destination:

@@ -13,8 +13,8 @@ spec:
       targetRevision: 3.4.1 # TODO: confirm against `helm search repo jaeger --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/jaeger-config.yml
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git
+          - $values/gitops/platform/observability/jaeger-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
       targetRevision: HEAD
       ref: values
   destination:

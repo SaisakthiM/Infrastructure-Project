@@ -13,8 +13,8 @@ spec:
       targetRevision: 1.24.4 # TODO: confirm against `helm search repo tempo --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/tempo-config.yml
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git
+          - $values/gitops/platform/observability/tempo-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
       targetRevision: HEAD
       ref: values
   destination:

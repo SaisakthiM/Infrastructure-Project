@@ -13,8 +13,8 @@ spec:
       targetRevision: 65.5.1 # TODO: confirm against `helm search repo kube-prometheus-stack --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/prometheus.yml
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/grafana-values.yml
+          - $values/gitops/platform/observability/prometheus.yml
+          - $values/gitops/platform/observability/grafana-values.yml
         values: |
           prometheus:
             prometheusSpec:
@@ -22,7 +22,7 @@ spec:
               resources:
                 requests: { cpu: 200m, memory: 512Mi }
                 limits: { cpu: "1000m", memory: 2Gi }
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git # same monorepo as the other sources below
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project # same monorepo as the other sources below
       targetRevision: HEAD
       ref: values
   destination:

@@ -13,8 +13,8 @@ spec:
       targetRevision: 6.16.6 # TODO: confirm against `helm search repo promtail --versions` and pin deliberately
       helm:
         valueFiles:
-          - $values/Projects/Finished Projects/Docker/Terraform/infra/projects/platform/observability/promtail-config.yml
-    - repoURL: git@github.com:SaisakthiM/Coding-Project.git
+          - $values/gitops/platform/observability/promtail-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
       targetRevision: HEAD
       ref: values
   destination:

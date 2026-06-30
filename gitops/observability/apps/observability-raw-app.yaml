@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:SaisakthiM/Coding-Project.git
+    repoURL: https://github.com/SaisakthiM/Infrastruture-Project
     targetRevision: HEAD
-    path: "Projects/Finished Projects/Docker/Terraform/infra/gitops/observability/raw"
+    path: "gitops/observability/raw"
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
