@@ -860,38 +860,37 @@ func handleUpdateRun(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(jw, "Extracted to %s\n\n", infraDir)
 
-		// Wipe caches.
-		if !req.SkipClean {
-			fmt.Fprintf(jw, "Wiping stale .terragrunt-cache/ and .terraform/ dirs…\n")
-			envsDir := infraDir + "/environments"
-			count := 0
-			var freed int64
-			_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, walkErr error) error {
-				if walkErr != nil || !info.IsDir() {
-					return nil
-				}
-				base := filepath.Base(path)
-				if base != ".terragrunt-cache" && base != ".terraform" {
-					return nil
-				}
-				sz := webDirSize(path)
-				if rmErr := os.RemoveAll(path); rmErr == nil {
-					rel, _ := filepath.Rel(envsDir, path)
-					fmt.Fprintf(jw, "  removed %s\n", rel)
-					count++
-					freed += sz
-				}
-				return filepath.SkipDir
-			})
-			if count == 0 {
-				fmt.Fprintf(jw, "  No caches found — already clean.\n")
-			} else {
-				fmt.Fprintf(jw, "  Removed %d cache dir(s)\n\n", count)
-				_ = freed // logged per-entry above
+		// Remove stale local state files — keep caches and tfvars.
+		fmt.Fprintf(jw, "Removing stale terraform.tfstate* files (keeping caches + tfvars)…\n")
+		envsDir := infraDir + "/environments"
+		count := 0
+		_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil || info.IsDir() {
+				return nil
 			}
-			fmt.Fprintf(jw, "terraform.tfvars files preserved.\n\n")
+			base := filepath.Base(path)
+			isState := base == "terraform.tfstate" ||
+				strings.HasPrefix(base, "terraform.tfstate.") ||
+				strings.HasSuffix(base, ".tfstate") ||
+				strings.HasSuffix(base, ".tfstate.backup")
+			if !isState {
+				return nil
+			}
+			rel, _ := filepath.Rel(envsDir, path)
+			if rmErr := os.Remove(path); rmErr == nil {
+				fmt.Fprintf(jw, "  removed %s\n", rel)
+				count++
+			}
+			return nil
+		})
+		if count == 0 {
+			fmt.Fprintf(jw, "  No local state files found — nothing to remove.\n")
 		} else {
-			fmt.Fprintf(jw, "Skipping cache wipe (skip_clean=true)\n\n")
+			fmt.Fprintf(jw, "  Removed %d state file(s)\n", count)
+		}
+		fmt.Fprintf(jw, "Caches preserved. terraform.tfvars preserved.\n\n")
+		if req.SkipClean {
+			fmt.Fprintf(jw, "(skip_clean has no effect on update — caches are always kept)\n")
 		}
 
 		// Save config.

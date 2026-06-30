@@ -24,16 +24,17 @@ var updateCmd = &cobra.Command{
 GitHub release. If a newer version is available it:
 
   1. Downloads and extracts the new release to ~/.social-platform/infra/
-  2. Wipes all .terragrunt-cache/ and .terraform/ directories so the new
-     module versions are picked up cleanly on the next deploy (stale caches
-     from the old release cause provider version mismatches and ghost diffs).
-  3. Preserves all terraform.tfvars files — your secrets stay intact.
-  4. Updates the saved release tag in config.
+  2. Removes local terraform.tfstate* files so the next deploy doesn't see
+     stale state from the old release (avoids "state changed" errors).
+  3. Keeps .terragrunt-cache/ and .terraform/ as-is — providers don't
+     re-download, deploys stay fast.
+  4. Preserves all terraform.tfvars files — your secrets stay intact.
+  5. Updates the saved release tag in config.
 
 Flags:
   --force       Update even if the installed version is already the latest.
-  --skip-clean  Skip cache wipe after update (useful if you know caches are
-                still valid, e.g. only non-Terraform files changed).`,
+  --skip-clean  No-op on update (caches are always kept). Accepted for
+                script compatibility with the clean command.`,
 	RunE: runUpdate,
 }
 
@@ -109,25 +110,24 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	ui.Success("Extracted to %s", infraDir)
 
 	// ── Step 4: Wipe Terragrunt/Terraform caches ───────────────────────────
-	if !updateSkipClean {
-		ui.Step(4, "Wiping stale caches (preserving tfvars)")
-		ui.Dim.Println("  Stale .terragrunt-cache/ dirs from the old release cause provider")
-		ui.Dim.Println("  version mismatches — removing them so the next deploy starts clean.")
-		fmt.Println()
+	ui.Step(4, "Removing stale state files (keeping caches + tfvars)")
+	ui.Dim.Println("  Local tfstate files from the old release cause 'state changed' errors")
+	ui.Dim.Println("  on re-deploy. Caches and tfvars are kept as-is.")
+	fmt.Println()
 
-		envsDir := filepath.Join(infraDir, "environments")
-		count, freed := wipeCaches(envsDir)
+	envsDir := filepath.Join(infraDir, "environments")
+	count, freed := wipeStateFiles(envsDir)
 
-		if count == 0 {
-			ui.Info("No caches found — already clean.")
-		} else {
-			ui.Success("Removed %d cache director%s, freed ~%s",
-				count, pluralY(count), humanSize(freed))
-		}
-		ui.Info("terraform.tfvars files preserved — run 'social-platform configure --regen'")
-		ui.Info("if you need to regenerate them after a config schema change.")
+	if count == 0 {
+		ui.Info("No local state files found — nothing to remove.")
 	} else {
-		ui.Warn("Skipping cache wipe (--skip-clean). Run 'social-platform clean' manually if needed.")
+		ui.Success("Removed %d state file%s, freed ~%s",
+			count, pluralS(count), humanSize(freed))
+	}
+	ui.Info("terraform.tfvars files preserved.")
+
+	if updateSkipClean {
+		ui.Info("(--skip-clean has no effect: caches are always kept on update)")
 	}
 
 	// ── Step 5: Save updated config ────────────────────────────────────────
@@ -149,47 +149,53 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// wipeCaches removes every .terragrunt-cache/ and .terraform/ directory
-// under envsDir. It intentionally leaves terraform.tfvars files alone.
-// Returns (count of dirs removed, total bytes freed).
-func wipeCaches(envsDir string) (count int, freed int64) {
+// wipeStateFiles removes terraform.tfstate* files under envsDir so a fresh
+// deploy doesn't see stale state from the old release.
+// Intentionally keeps:
+//   .terragrunt-cache/  — provider+module cache (safe to reuse, avoids re-download)
+//   .terraform/         — provider plugins      (safe to reuse)
+//   terraform.tfvars    — generated secrets      (must survive update)
+// Returns (count of files removed, total bytes freed).
+func wipeStateFiles(envsDir string) (count int, freed int64) {
 	if _, err := os.Stat(envsDir); err != nil {
 		return 0, 0
 	}
 
 	_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if !info.IsDir() {
+		if err != nil || info.IsDir() {
 			return nil
 		}
 		base := filepath.Base(path)
-		if base != ".terragrunt-cache" && base != ".terraform" {
+		// Only remove local state files — not caches, not tfvars.
+		isState := base == "terraform.tfstate" ||
+			strings.HasPrefix(base, "terraform.tfstate.") ||
+			strings.HasSuffix(base, ".tfstate") ||
+			strings.HasSuffix(base, ".tfstate.backup")
+		if !isState {
 			return nil
 		}
 
-		sz := dirSize(path)
+		sz := info.Size()
 		rel, _ := filepath.Rel(envsDir, path)
 
-		if removeErr := os.RemoveAll(path); removeErr != nil {
+		if removeErr := os.Remove(path); removeErr != nil {
 			ui.Warn("  Could not remove %s: %v", rel, removeErr)
-			return filepath.SkipDir
+			return nil
 		}
 
 		ui.Green.Printf("  ✓ removed %s (%s)\n", rel, humanSize(sz))
 		count++
 		freed += sz
-		return filepath.SkipDir
+		return nil
 	})
 	return
 }
 
-func pluralY(n int) string {
+func pluralS(n int) string {
 	if n == 1 {
-		return "y"
+		return ""
 	}
-	return "ies"
+	return "s"
 }
 
 // versionNewer returns true if next is strictly newer than current using

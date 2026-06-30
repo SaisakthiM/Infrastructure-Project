@@ -537,7 +537,7 @@ function fitTerm(t) {
 <div class="panel" id="panel-update">
   <div class="page-header">
     <div class="page-title">⬆ Update Infrastructure</div>
-    <div class="page-desc">Fetches the latest GitHub release, compares it with the installed version, and updates if newer. Stale <code>.terragrunt-cache/</code> and <code>.terraform/</code> dirs are wiped automatically. Your <code>terraform.tfvars</code> files are preserved.</div>
+    <div class="page-desc">Fetches the latest GitHub release, compares it with the installed version, and updates if newer. Only <code>terraform.tfstate*</code> files are removed — caches are kept so providers don't re-download. Your <code>terraform.tfvars</code> files are preserved.</div>
   </div>
 
   <div class="card" id="update-version-card">
@@ -561,7 +561,7 @@ function fitTerm(t) {
     <div style="margin-top:12px">
       <div class="form-check">
         <input type="checkbox" id="upd-skip-clean" />
-        <label for="upd-skip-clean">Skip cache wipe after update <span style="color:var(--muted)">(--skip-clean)</span></label>
+        <label for="upd-skip-clean">Also wipe <code>.terragrunt-cache/</code> and <code>.terraform/</code> dirs <span style="color:var(--muted)">(re-downloads providers)</span></label>
       </div>
     </div>
   </div>
