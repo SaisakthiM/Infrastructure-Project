@@ -434,9 +434,15 @@ function fitTerm(t) {
     </div>
     <div class="form-row">
       <div class="field">
+        <label>Docker Socket Path <span style="color:var(--muted);text-transform:none;font-weight:400">(var.docker_host)</span></label>
+        <input type="text" id="cfg-docker_host" placeholder="unix:///var/run/docker.sock" />
+      </div>
+      <div class="field">
         <label>n8n Basic Auth User</label>
         <input type="text" id="cfg-n8n_user" placeholder="admin" />
       </div>
+    </div>
+    <div class="form-row">
       <div class="field">
         <label>n8n Protocol</label>
         <input type="text" id="cfg-n8n_protocol" placeholder="https" />
@@ -785,6 +791,7 @@ const CFG_DEFAULTS = {
   whisper_db_test_db:   'chat_test',
   whisper_minio_user:   'minioadmin',
   letsencrypt_path:     '/home/saisakthi/letsencrypt/',
+  docker_host:          'unix:///var/run/docker.sock',
 };
 
 async function loadConfig() {
@@ -801,6 +808,7 @@ async function loadConfig() {
       'doc_db_name','doc_minio_user',
       'whisper_db_user','whisper_db_name','whisper_db_test_db','whisper_minio_user',
       'letsencrypt_path',
+      'docker_host',
     ];
     for (const f of allFields) {
       const el = document.getElementById('cfg-' + f);
@@ -856,6 +864,7 @@ async function saveConfig() {
     whisper_db_test_db:   val('cfg-whisper_db_test_db'),
     whisper_minio_user:   val('cfg-whisper_minio_user'),
     letsencrypt_path:     val('cfg-letsencrypt_path'),
+    docker_host:          val('cfg-docker_host'),
   };
 
   try {

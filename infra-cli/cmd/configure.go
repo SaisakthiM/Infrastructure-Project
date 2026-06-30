@@ -102,6 +102,13 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 				cfg.ProdSocial.GitopsRepoURL)
 		}
 
+		// docker_host — stored in keychain so it lands in tfvars.
+		// Pre-fill with the default; user can change via configure --advanced.
+		if secrets.Get("prod-docker", "docker_host") == "" {
+			_ = secrets.Set("prod-docker", "docker_host", "unix:///var/run/docker.sock")
+			_ = secrets.Set("prod-social", "docker_host", "unix:///var/run/docker.sock")
+		}
+
 		// Auto-fill all remaining non-secret config with defaults.
 		applyDefaults(cfg)
 
@@ -225,6 +232,11 @@ func promptAdvanced(cfg *config.Config) error {
 		setDef(field, def) // ensure default is applied first
 		*field = ui.Prompt("  "+label, *field)
 	}
+
+	fmt.Println("  — docker provider (all envs) —")
+	dockerHost := ui.Prompt("  Docker socket path", orDefault(secrets.Get("prod-docker", "docker_host"), "unix:///var/run/docker.sock"))
+	_ = secrets.Set("prod-docker", "docker_host", dockerHost)
+	_ = secrets.Set("prod-social", "docker_host", dockerHost)
 
 	fmt.Println("  — prod-infra —")
 	p("n8n Port",              &cfg.ProdInfra.N8NPort,     "5678")

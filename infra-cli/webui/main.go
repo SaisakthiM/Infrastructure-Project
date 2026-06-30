@@ -527,6 +527,9 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 
 		// prod-gateway
 		LetsEncryptPath string `json:"letsencrypt_path"`
+
+		// docker provider (used by prod-docker + prod-social)
+		DockerHost string `json:"docker_host"`
 	}
 
 	writeJSON(w, configResponse{
@@ -561,6 +564,7 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 		WhisperMinioUser: orDefault(cfg.ProdDocker.WhisperMinioUser, "minioadmin"),
 
 		LetsEncryptPath: orDefault(cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/"),
+		DockerHost:      orDefault(secrets.Get("prod-docker", "docker_host"), "unix:///var/run/docker.sock"),
 	})
 }
 
@@ -601,6 +605,7 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 		WhisperMinioUser string `json:"whisper_minio_user"`
 
 		LetsEncryptPath string `json:"letsencrypt_path"`
+		DockerHost      string `json:"docker_host"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -641,6 +646,12 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 	cfg.ProdDocker.WhisperMinioUser = req.WhisperMinioUser
 
 	cfg.ProdGateway.LetsEncryptPath = req.LetsEncryptPath
+
+	// docker_host is stored in keychain (same as CLI configure)
+	if req.DockerHost != "" {
+		_ = secrets.Set("prod-docker", "docker_host", req.DockerHost)
+		_ = secrets.Set("prod-social", "docker_host", req.DockerHost)
+	}
 
 	if saveErr := config.Save(cfg); saveErr != nil {
 		http.Error(w, "saving config: "+saveErr.Error(), http.StatusInternalServerError)
