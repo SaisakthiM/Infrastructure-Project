@@ -107,10 +107,20 @@ type ImportCandidate struct {
 }
 
 // DetectImportCandidates queries Docker for all known prod-docker resources and
-// returns those that exist locally but may be missing from Terraform state.
-func DetectImportCandidates() ([]ImportCandidate, error) {
+// returns those that exist locally AND are not yet in Terraform state.
+func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		return nil, fmt.Errorf("docker not found in PATH — is Docker installed?")
+	}
+
+	// Resources already tracked in state must never be offered again --
+	// terraform import refuses (and errors) on an address it already
+	// manages. An empty/missing state (never applied yet) just means
+	// everything found in Docker is a valid candidate.
+	inState, err := existingStateAddresses(cfg)
+	if err != nil {
+		ui.Warn("Could not read terraform state, assuming it's empty: %v", err)
+		inState = map[string]bool{}
 	}
 
 	var candidates []ImportCandidate
@@ -121,6 +131,9 @@ func DetectImportCandidates() ([]ImportCandidate, error) {
 		ui.Warn("Could not list docker volumes: %v", err)
 	} else {
 		for _, entry := range dockerVolumeCatalog {
+			if inState[entry.TFAddress] {
+				continue
+			}
 			if id, ok := existingVolumes[entry.DockerName]; ok {
 				candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
 			}
@@ -133,6 +146,9 @@ func DetectImportCandidates() ([]ImportCandidate, error) {
 		ui.Warn("Could not list docker containers: %v", err)
 	} else {
 		for _, entry := range dockerContainerCatalog {
+			if inState[entry.TFAddress] {
+				continue
+			}
 			if id, ok := existingContainers[entry.DockerName]; ok {
 				candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
 			}
@@ -145,6 +161,9 @@ func DetectImportCandidates() ([]ImportCandidate, error) {
 		ui.Warn("Could not list docker images: %v", err)
 	} else {
 		for _, entry := range dockerImageCatalog {
+			if inState[entry.TFAddress] {
+				continue
+			}
 			if id, ok := existingImages[entry.DockerName]; ok {
 				candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
 			}
@@ -152,6 +171,37 @@ func DetectImportCandidates() ([]ImportCandidate, error) {
 	}
 
 	return candidates, nil
+}
+
+// existingStateAddresses returns the set of resource addresses Terraform
+// already manages in prod-docker, via `terragrunt state list`.
+func existingStateAddresses(cfg *config.Config) (map[string]bool, error) {
+	dir := WorkDir(cfg, EnvDocker)
+	if _, err := os.Stat(dir); err != nil {
+		return nil, fmt.Errorf("prod-docker directory not found: %s", dir)
+	}
+
+	cmd := exec.Command("terragrunt", "state", "list")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		// A never-applied environment has no state file yet -- terragrunt
+		// exits non-zero with no output in that case, which just means
+		// "nothing is tracked", not a real failure.
+		if len(strings.TrimSpace(string(out))) == 0 {
+			return map[string]bool{}, nil
+		}
+		return nil, err
+	}
+
+	addrs := make(map[string]bool)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			addrs[line] = true
+		}
+	}
+	return addrs, nil
 }
 
 // RunImport runs terragrunt import for a single candidate in the prod-docker env.

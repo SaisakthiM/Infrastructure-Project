@@ -31,6 +31,7 @@ func init() {
 		installCmd,
 		configureCmd,
 		updateCmd,
+		cleanCmd,
 		deployCmd,
 		destroyCmd,
 		statusCmd,

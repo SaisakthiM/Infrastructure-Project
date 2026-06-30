@@ -24,8 +24,7 @@ jobs:
               --exclude='*/terraform.tfvars' \
               --exclude='*/.terraform.lock.hcl' \
               -czf infra.tar.gz \
-              -C Projects/Terraform \
-              infra/
+              environments modules gitops projects atlantis.yaml
 
       - name: Upload infra artifact
         uses: actions/upload-artifact@v4
@@ -64,15 +63,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache-dependency-path: cli/go.sum
+          cache-dependency-path: infra-cli/go.sum
 
       - name: Download modules
-        working-directory: cli
+        working-directory: infra-cli
         run: go mod download
 
       # ── Main CLI binary ──
       - name: Build CLI
-        working-directory: cli
+        working-directory: infra-cli
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -85,7 +84,7 @@ jobs:
 
       # ── Web UI binary ──
       - name: Build Web UI
-        working-directory: cli
+        working-directory: infra-cli
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -100,13 +99,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: cli/social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+          path: infra-cli/social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
 
       - name: Upload Web UI artifact
         uses: actions/upload-artifact@v4
         with:
           name: webui-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: cli/social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+          path: infra-cli/social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
 
   # ── Job 3: Create GitHub Release ───────────────────────────────────────────
   release:

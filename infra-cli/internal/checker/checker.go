@@ -41,7 +41,11 @@ func All() []Tool {
 		{
 			Name:        "kubectl",
 			Binary:      "kubectl",
-			VersionFlag: "version --client --short",
+			// kubectl >=1.28 dropped --short, so this used to fail with
+			// "unknown flag: --short" and that error text got printed as
+			// the version. --client alone still prints just the client
+			// version without an apiserver round-trip.
+			VersionFlag: "version --client",
 			InstallFn:   installKubectl,
 			ManualURL:   "https://kubernetes.io/docs/tasks/tools/",
 		},
@@ -97,9 +101,11 @@ func check(t Tool) (bool, string) {
 	args := strings.Fields(t.VersionFlag)
 	out, err := exec.Command(t.Binary, args...).CombinedOutput()
 	if err != nil {
-		// Check if the binary exists but returned a non-zero exit (still "installed").
+		// The version-check command itself failed (e.g. a removed flag),
+		// but the binary is genuinely on PATH -- don't print its stderr as
+		// if it were a version string, just say it's there.
 		if _, e2 := exec.LookPath(t.Binary); e2 == nil {
-			return true, strings.TrimSpace(strings.Split(string(out), "\n")[0])
+			return true, "installed (version check failed)"
 		}
 		return false, ""
 	}

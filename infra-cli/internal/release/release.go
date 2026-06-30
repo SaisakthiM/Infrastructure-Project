@@ -6,8 +6,6 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -74,10 +72,12 @@ func ListReleases() ([]GHRelease, error) {
 }
 
 // DownloadAndExtract downloads the infra asset for a release and extracts it
-// to destDir. Returns the path to the extracted infra/ directory.
+// to destDir. destDir itself becomes the infra root (environments/, modules/,
+// gitops/, projects/, atlantis.yaml as direct children) -- there is no
+// separate nested "infra/" folder anywhere in this layout.
 func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
-	// Find the infra asset in this release.
 	var downloadURL string
+	usingSourceFallback := false
 	for _, a := range rel.Assets {
 		if a.Name == assetName {
 			downloadURL = a.BrowserDownloadURL
@@ -85,10 +85,11 @@ func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
 		}
 	}
 	if downloadURL == "" {
-		// Fallback: try the source tarball for the tag.
+		// Fallback: GitHub's auto-generated source tarball for the tag.
 		downloadURL = fmt.Sprintf("https://github.com/%s/%s/archive/refs/tags/%s.tar.gz",
 			repoOwner, repoName, rel.TagName)
 		ui.Warn("No '%s' asset found in release %s, falling back to source tarball", assetName, rel.TagName)
+		usingSourceFallback = true
 	}
 
 	ui.Info("Downloading %s (%s)...", assetName, rel.TagName)
@@ -103,9 +104,9 @@ func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
 	}
 	tmpFile.Close()
 
-	// Remove old infra dir.
-	infraDest := filepath.Join(destDir, "infra")
-	_ = os.RemoveAll(infraDest)
+	// Wipe and recreate destDir -- it IS the infra root now, no nested
+	// "infra" subpath to selectively clear.
+	_ = os.RemoveAll(destDir)
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return "", err
 	}
@@ -121,22 +122,99 @@ func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
 		}
 	}
 
-	// The source tarball extracts to "Infrastruture-Project-<tag>/", remap.
-	entries, _ := os.ReadDir(destDir)
-	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), "Infrastruture-Project-") {
-			oldPath := filepath.Join(destDir, e.Name())
-			// Move Projects/Terraform/infra → infra
-			src := filepath.Join(oldPath, "Projects", "Terraform", "infra")
-			if _, err := os.Stat(src); err == nil {
-				_ = os.Rename(src, infraDest)
-			}
-			_ = os.RemoveAll(oldPath)
-			break
+	if usingSourceFallback {
+		// GitHub wraps the source tarball in a single "<repo>-<tag>/"
+		// folder. environments/, modules/, gitops/, projects/, and
+		// atlantis.yaml live directly at the repo root inside that
+		// wrapper (sibling to infra-cli/) -- there's no "infra/" subfolder
+		// to dig out, so hoist the wrapper's contents up into destDir and
+		// drop the CLI's own source (we don't need it here).
+		entries, err := os.ReadDir(destDir)
+		if err != nil {
+			return "", fmt.Errorf("reading extracted contents: %w", err)
 		}
+		var wrapper string
+		for _, e := range entries {
+			if e.IsDir() && strings.HasPrefix(e.Name(), repoName+"-") {
+				wrapper = filepath.Join(destDir, e.Name())
+				break
+			}
+		}
+		if wrapper == "" {
+			return "", fmt.Errorf("expected a '%s-<tag>' folder inside the source tarball, didn't find one", repoName)
+		}
+		if err := hoistContents(wrapper, destDir, []string{"infra-cli", "cli", ".git", ".github"}); err != nil {
+			return "", fmt.Errorf("rearranging extracted source tree: %w", err)
+		}
+		_ = os.RemoveAll(wrapper)
 	}
 
-	return infraDest, nil
+	// Verify we actually ended up with something usable instead of reporting
+	// success unconditionally.
+	if _, err := os.Stat(filepath.Join(destDir, "environments")); err != nil {
+		return "", fmt.Errorf("extraction finished but %s/environments was not found -- repo layout may have changed", destDir)
+	}
+
+	return destDir, nil
+}
+
+// hoistContents moves every entry of src (except names in skip) directly
+// into dst. Falls back to a recursive copy if os.Rename fails because src
+// and dst are on different filesystems (e.g. src under /tmp on a tmpfs).
+func hoistContents(src, dst string, skip []string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	skipSet := make(map[string]bool, len(skip))
+	for _, s := range skip {
+		skipSet[s] = true
+	}
+	for _, e := range entries {
+		if skipSet[e.Name()] {
+			continue
+		}
+		from := filepath.Join(src, e.Name())
+		to := filepath.Join(dst, e.Name())
+		_ = os.RemoveAll(to)
+		if err := os.Rename(from, to); err != nil {
+			if cerr := copyTree(from, to); cerr != nil {
+				return fmt.Errorf("moving %s: %w", e.Name(), cerr)
+			}
+			_ = os.RemoveAll(from)
+		}
+	}
+	return nil
+}
+
+// copyTree recursively copies a file or directory tree, used as a fallback
+// when os.Rename can't move across filesystem boundaries.
+func copyTree(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		out, err := os.Create(target)
+		if err != nil {
+			return err
+		}
+		defer out.Close()
+		_, err = io.Copy(out, in)
+		return err
+	})
 }
 
 func download(url string, dst *os.File) error {
@@ -233,213 +311,4 @@ func extractZip(src, dest string) error {
 		rc.Close()
 	}
 	return nil
-}
-
-// ─── diff-based update ───────────────────────────────────────────────────────
-
-// FileChange describes one file that differs between the installed infra
-// directory and the newly downloaded release.
-type FileChange struct {
-	// RelPath is the path relative to the infra/ root, e.g. "environments/prod-docker/main.tf".
-	RelPath string
-	// Kind is "added", "modified", or "removed".
-	Kind string
-}
-
-// preservedPaths are files/dirs that must never be touched by update, even if
-// they exist in the freshly downloaded release (they shouldn't, since the
-// release workflow excludes them, but this is a defense-in-depth check).
-var preservedSuffixes = []string{
-	"terraform.tfvars",
-	"terraform.tfstate",
-	"terraform.tfstate.backup",
-	".terraform.lock.hcl",
-}
-
-func isPreserved(relPath string) bool {
-	for _, suf := range preservedSuffixes {
-		if strings.HasSuffix(relPath, suf) {
-			return true
-		}
-	}
-	if strings.Contains(relPath, string(os.PathSeparator)+".terraform"+string(os.PathSeparator)) {
-		return true
-	}
-	if strings.HasSuffix(relPath, string(os.PathSeparator)+".terraform") {
-		return true
-	}
-	return false
-}
-
-// DownloadToTemp downloads the infra asset for a release into a fresh
-// temporary directory and returns the path to its extracted infra/ root,
-// without touching destDir. Caller is responsible for cleanup.
-func DownloadToTemp(rel *GHRelease) (tmpRoot string, infraRoot string, err error) {
-	tmpRoot, err = os.MkdirTemp("", "social-platform-update-*")
-	if err != nil {
-		return "", "", err
-	}
-
-	var downloadURL string
-	for _, a := range rel.Assets {
-		if a.Name == assetName {
-			downloadURL = a.BrowserDownloadURL
-			break
-		}
-	}
-	if downloadURL == "" {
-		downloadURL = fmt.Sprintf("https://github.com/%s/%s/archive/refs/tags/%s.tar.gz",
-			repoOwner, repoName, rel.TagName)
-		ui.Warn("No '%s' asset found in release %s, falling back to source tarball", assetName, rel.TagName)
-	}
-
-	ui.Info("Downloading %s (%s)...", assetName, rel.TagName)
-	tmpFile, err := os.CreateTemp("", "infra-update-*.tar.gz")
-	if err != nil {
-		os.RemoveAll(tmpRoot)
-		return "", "", err
-	}
-	defer os.Remove(tmpFile.Name())
-
-	if err := download(downloadURL, tmpFile); err != nil {
-		os.RemoveAll(tmpRoot)
-		return "", "", err
-	}
-	tmpFile.Close()
-
-	if strings.HasSuffix(downloadURL, ".zip") {
-		if err := extractZip(tmpFile.Name(), tmpRoot); err != nil {
-			os.RemoveAll(tmpRoot)
-			return "", "", fmt.Errorf("extracting zip: %w", err)
-		}
-	} else {
-		if err := extractTarGz(tmpFile.Name(), tmpRoot); err != nil {
-			os.RemoveAll(tmpRoot)
-			return "", "", fmt.Errorf("extracting tar.gz: %w", err)
-		}
-	}
-
-	infraRoot = filepath.Join(tmpRoot, "infra")
-	// Handle source-tarball fallback layout: <repo>-<tag>/Projects/Terraform/infra
-	if _, statErr := os.Stat(infraRoot); statErr != nil {
-		entries, _ := os.ReadDir(tmpRoot)
-		for _, e := range entries {
-			if e.IsDir() && strings.HasPrefix(e.Name(), "Infrastruture-Project-") {
-				src := filepath.Join(tmpRoot, e.Name(), "Projects", "Terraform", "infra")
-				if _, err := os.Stat(src); err == nil {
-					infraRoot = src
-				}
-				break
-			}
-		}
-	}
-	// Some releases tar directly from environments/ etc. without an infra/ wrapper —
-	// detect by checking for an "environments" subdirectory.
-	if _, statErr := os.Stat(filepath.Join(infraRoot, "environments")); statErr != nil {
-		if _, altErr := os.Stat(filepath.Join(tmpRoot, "environments")); altErr == nil {
-			infraRoot = tmpRoot
-		}
-	}
-
-	return tmpRoot, infraRoot, nil
-}
-
-// DiffInfra compares the freshly downloaded infraRoot against the currently
-// installed infraDir and returns the list of files that differ. Preserved
-// files (tfvars, tfstate, .terraform/) are always excluded from the diff.
-func DiffInfra(newInfraRoot, installedInfraDir string) ([]FileChange, error) {
-	var changes []FileChange
-	seen := map[string]bool{}
-
-	// Walk the new release tree — catches "added" and "modified".
-	err := filepath.Walk(newInfraRoot, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel(newInfraRoot, path)
-		if err != nil {
-			return nil
-		}
-		if isPreserved(rel) {
-			return nil
-		}
-		seen[rel] = true
-
-		oldPath := filepath.Join(installedInfraDir, rel)
-		oldHash, oldErr := fileSHA256(oldPath)
-		newHash, newErr := fileSHA256(path)
-		if newErr != nil {
-			return nil // unreadable new file, skip
-		}
-		if oldErr != nil {
-			changes = append(changes, FileChange{RelPath: rel, Kind: "added"})
-		} else if oldHash != newHash {
-			changes = append(changes, FileChange{RelPath: rel, Kind: "modified"})
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Walk the installed tree — catches "removed" (existed before, gone now).
-	if _, statErr := os.Stat(installedInfraDir); statErr == nil {
-		_ = filepath.Walk(installedInfraDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-			rel, err := filepath.Rel(installedInfraDir, path)
-			if err != nil {
-				return nil
-			}
-			if isPreserved(rel) || seen[rel] {
-				return nil
-			}
-			if _, newErr := os.Stat(filepath.Join(newInfraRoot, rel)); os.IsNotExist(newErr) {
-				changes = append(changes, FileChange{RelPath: rel, Kind: "removed"})
-			}
-			return nil
-		})
-	}
-
-	return changes, nil
-}
-
-// ApplyUpdate copies only the changed files from newInfraRoot into
-// installedInfraDir, and deletes files marked "removed". Preserved files are
-// never touched.
-func ApplyUpdate(changes []FileChange, newInfraRoot, installedInfraDir string) error {
-	for _, c := range changes {
-		dst := filepath.Join(installedInfraDir, c.RelPath)
-		switch c.Kind {
-		case "added", "modified":
-			src := filepath.Join(newInfraRoot, c.RelPath)
-			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-				return fmt.Errorf("creating dir for %s: %w", c.RelPath, err)
-			}
-			data, err := os.ReadFile(src)
-			if err != nil {
-				return fmt.Errorf("reading %s: %w", c.RelPath, err)
-			}
-			if err := os.WriteFile(dst, data, 0644); err != nil {
-				return fmt.Errorf("writing %s: %w", c.RelPath, err)
-			}
-		case "removed":
-			_ = os.Remove(dst)
-		}
-	}
-	return nil
-}
-
-func fileSHA256(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
 }

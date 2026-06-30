@@ -4,624 +4,1341 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>social-platform — Infra Dashboard</title>
+<link rel="stylesheet" href="/vendor/xterm.css" />
+<script src="/vendor/xterm.js"></script>
+<script>
+// Minimal fit helper — resizes the terminal to fill its container.
+function fitTerm(t) {
+  try {
+    const el = t.element && t.element.parentElement;
+    if (!el) return;
+    const core = t._core;
+    const dim  = core._renderService && core._renderService.dimensions;
+    if (!dim || !dim.css || !dim.css.cell || !dim.css.cell.width) return;
+    const cols = Math.max(2,  Math.floor(el.clientWidth  / dim.css.cell.width));
+    const rows = Math.max(1,  Math.floor(el.clientHeight / dim.css.cell.height));
+    if (t.cols !== cols || t.rows !== rows) t.resize(cols, rows);
+  } catch(e) { /* ignore if internals differ */ }
+}
+</script>
 <style>
   :root {
-    --bg:        #0d1117;
-    --surface:   #161b22;
-    --border:    #30363d;
-    --text:      #e6edf3;
-    --muted:     #8b949e;
-    --cyan:      #00cfcf;
-    --green:     #3fb950;
-    --yellow:    #d29922;
-    --red:       #f85149;
-    --blue:      #1f6feb;
-    --purple:    #a371f7;
-    --radius:    8px;
-    --mono:      "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    --bg:      #0d1117;
+    --surf:    #161b22;
+    --surf2:   #1c2128;
+    --border:  #30363d;
+    --text:    #e6edf3;
+    --muted:   #8b949e;
+    --cyan:    #00cfcf;
+    --green:   #3fb950;
+    --yellow:  #d29922;
+    --red:     #f85149;
+    --radius:  8px;
+    --mono:    "JetBrains Mono","Fira Code","Cascadia Code",monospace;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:14px}
 
-  /* ── layout ── */
-  .layout { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 56px 1fr; height: 100vh; }
-  .topbar { grid-column: 1/-1; background: var(--surface); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px; padding: 0 20px; }
-  .topbar-logo { font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--cyan); }
-  .topbar-tag  { background: var(--border); border-radius: 4px; padding: 2px 8px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
-  .topbar-status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .layout{display:grid;grid-template-columns:230px 1fr;grid-template-rows:56px 1fr;height:100vh}
+  .topbar{grid-column:1/-1;background:var(--surf);border-bottom:1px solid var(--border);
+          display:flex;align-items:center;gap:10px;padding:0 20px}
+  .topbar-logo{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--cyan);letter-spacing:-.5px}
+  .topbar-tag{background:var(--border);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+  .dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .dot.red{background:var(--red);box-shadow:0 0 6px var(--red)}
 
-  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 12px 0; overflow-y: auto; }
-  .sidebar-section { padding: 6px 16px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 8px; }
-  .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer;
-                  border-left: 2px solid transparent; transition: all .15s; color: var(--muted); font-size: 13px; }
-  .sidebar-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
-  .sidebar-item.active { background: rgba(0,207,207,.08); border-left-color: var(--cyan); color: var(--cyan); }
-  .sidebar-icon { width: 16px; text-align: center; }
+  .sidebar{background:var(--surf);border-right:1px solid var(--border);padding:8px 0;overflow-y:auto}
+  .sidebar-section{padding:8px 16px 4px;font-size:10px;font-weight:700;color:var(--muted);
+                   text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
+  .sidebar-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;
+                border-left:2px solid transparent;transition:all .12s;color:var(--muted);
+                font-size:13px;user-select:none}
+  .sidebar-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
+  .sidebar-item.active{background:rgba(0,207,207,.08);border-left-color:var(--cyan);
+                       color:var(--cyan);font-weight:600}
+  .sidebar-icon{width:18px;text-align:center;font-size:13px;flex-shrink:0}
 
-  .main { overflow-y: auto; padding: 24px; }
+  .main{overflow-y:auto;padding:28px 32px}
+  .panel{display:none}
+  .panel.active{display:block}
 
-  /* ── panels ── */
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .panel-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-  .panel-desc  { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .page-header{margin-bottom:20px}
+  .page-title{font-size:20px;font-weight:700;color:var(--text);display:flex;align-items:center;
+              gap:8px;margin-bottom:4px}
+  .page-desc{color:var(--muted);font-size:13px}
 
-  /* ── cards ── */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
-  .card-title { font-weight: 600; font-size: 14px; margin-bottom: 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);
+        padding:20px;margin-bottom:16px}
+  .card-title{font-weight:600;font-size:13px;margin-bottom:14px;color:var(--text);
+              display:flex;align-items:center;gap:8px}
 
-  /* ── form elements ── */
-  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
-  select, input[type=text] {
-    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); padding: 8px 12px; font-size: 13px; outline: none; font-family: var(--mono);
-    transition: border-color .15s;
-  }
-  select:focus, input[type=text]:focus { border-color: var(--cyan); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field{margin-bottom:12px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;
+        text-transform:uppercase;letter-spacing:.06em}
+  select,input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);
+    border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;
+    font-family:var(--mono);transition:border-color .15s}
+  select:focus,input:focus{border-color:var(--cyan)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+  .form-check{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .form-check input[type=checkbox]{accent-color:var(--cyan);width:15px;height:15px}
+  .form-check label{margin:0;text-transform:none;font-size:13px;color:var(--text);
+                    font-weight:400;letter-spacing:0}
 
-  /* ── buttons ── */
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px;
-         font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-primary  { background: var(--cyan);  color: #000; }
-  .btn-primary:hover:not(:disabled)  { background: #00aaaa; }
-  .btn-danger   { background: var(--red);   color: #fff; }
-  .btn-danger:hover:not(:disabled)   { background: #c43b35; }
-  .btn-ghost    { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .btn-ghost:hover:not(:disabled)    { background: var(--border); color: var(--text); }
-  .btn-success  { background: var(--green); color: #000; }
-  .btn-actions  { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .tab{padding:9px 18px;cursor:pointer;font-size:13px;color:var(--muted);
+       border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;user-select:none}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--cyan);border-bottom-color:var(--cyan);font-weight:600}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
 
-  /* ── terminal output ── */
-  .terminal { background: #010409; border: 1px solid var(--border); border-radius: var(--radius);
-              padding: 14px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.7;
-              color: #c9d1d9; overflow-y: auto; height: 380px; white-space: pre-wrap; word-break: break-all; }
-  .terminal:empty::before { content: "Output will appear here…"; color: var(--muted); }
-  .terminal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .terminal-title  { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:6px;
+       font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{background:var(--cyan);color:#000}
+  .btn-primary:hover:not(:disabled){background:#00b5b5}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-danger:hover:not(:disabled){background:#c43b35}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-ghost:hover:not(:disabled){background:var(--border);color:var(--text)}
+  .btn-success{background:var(--green);color:#000}
+  .btn-warning{background:var(--yellow);color:#000}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .btn-xs{padding:3px 10px;font-size:11px;border-radius:4px}
 
-  /* ── badges ── */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-running { background: rgba(210,153,34,.15); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
-  .badge-done    { background: rgba(63,185,80,.15);  color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
-  .badge-failed  { background: rgba(248,81,73,.15);  color: var(--red);    border: 1px solid rgba(248,81,73,.3); }
+  /* xterm host */
+  .xterm-wrap{background:#0d1117;border:1px solid var(--border);border-radius:var(--radius);
+              padding:10px 12px;height:380px;overflow:hidden}
+  .xterm-wrap .xterm{height:100%}
+  .terminal-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .terminal-label{font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:600;
+                  letter-spacing:.05em;text-transform:uppercase}
 
-  /* ── import table ── */
-  .import-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
-  .import-table th { text-align: left; padding: 6px 10px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-  .import-table td { padding: 7px 10px; border-bottom: 1px solid rgba(48,54,61,.5); color: var(--text); vertical-align: middle; }
-  .import-table tr:hover td { background: rgba(255,255,255,.02); }
-  .import-table .kind-volume    { color: var(--purple); }
-  .import-table .kind-container { color: var(--cyan); }
-  .import-table .kind-image     { color: var(--yellow); }
-  .import-id { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-  .btn-xs { padding: 3px 10px; font-size: 11px; border-radius: 4px; }
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;
+         font-size:11px;font-weight:600}
+  .badge-running{background:rgba(210,153,34,.12);color:var(--yellow);border:1px solid rgba(210,153,34,.25)}
+  .badge-done{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25)}
+  .badge-failed{background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.25)}
+  .hidden{display:none!important}
 
-  /* ── status grid ── */
-  .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .stat-card   { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-  .stat-label  { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-  .stat-value  { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--text); }
-  .stat-value.green  { color: var(--green); }
-  .stat-value.cyan   { color: var(--cyan); }
-  .stat-value.yellow { color: var(--yellow); }
+  /* stepper */
+  .stepper{display:flex;flex-direction:column}
+  .step{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+  .step:last-child{border-bottom:none}
+  .step-num{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);
+            display:flex;align-items:center;justify-content:center;font-weight:700;
+            font-size:13px;color:var(--muted);flex-shrink:0;font-family:var(--mono);transition:all .2s}
+  .step-num.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,207,207,.1)}
+  .step-num.done{border-color:var(--green);color:var(--green);background:rgba(63,185,80,.1)}
+  .step-num.error{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.1)}
+  .step-body{flex:1}
+  .step-title{font-weight:600;font-size:14px;margin-bottom:4px;color:var(--text)}
+  .step-desc{color:var(--muted);font-size:13px;margin-bottom:8px}
 
-  /* ── job history ── */
-  .job-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-  .job-cmd  { font-family: var(--mono); color: var(--cyan); min-width: 70px; }
-  .job-env  { color: var(--muted); min-width: 110px; }
-  .job-time { color: var(--muted); margin-left: auto; }
+  .prereq-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+               gap:8px;margin-top:10px}
+  .prereq-item{background:var(--surf2);border:1px solid var(--border);border-radius:6px;
+               padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12px}
+  .prereq-item .name{font-weight:600}
+  .prereq-item .ver{color:var(--muted);font-size:11px;font-family:var(--mono);margin-left:auto}
 
-  /* ── scrollbar ── */
-  ::-webkit-scrollbar       { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  .release-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .release-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);cursor:pointer;
+                font-size:12px;font-family:var(--mono);color:var(--muted);background:var(--surf2);
+                transition:all .12s}
+  .release-chip:hover,.release-chip.selected{border-color:var(--cyan);color:var(--cyan);
+                                             background:rgba(0,207,207,.08)}
 
-  .mt8 { margin-top: 8px; }
-  .hidden { display: none; }
-  .spinner { display: inline-block; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .import-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+  .import-table th{text-align:left;padding:6px 10px;color:var(--muted);font-weight:600;
+                   border-bottom:1px solid var(--border)}
+  .import-table td{padding:7px 10px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle}
+  .import-table tr:hover td{background:rgba(255,255,255,.02)}
+
+  .job-row{display:flex;align-items:center;gap:10px;padding:9px 0;
+           border-bottom:1px solid var(--border);font-size:12px}
+  .job-cmd{font-family:var(--mono);color:var(--cyan);min-width:80px}
+  .job-env{color:var(--muted);min-width:110px}
+  .job-time{color:var(--muted);margin-left:auto;font-family:var(--mono)}
+
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .spinner{display:inline-block;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  code{font-family:var(--mono);color:var(--cyan);font-size:.95em}
+  .mt8{margin-top:8px}.mt16{margin-top:16px}
 </style>
 </head>
 <body>
 <div class="layout">
 
-  <!-- topbar -->
-  <header class="topbar">
-    <span class="topbar-logo">⬡ social-platform</span>
-    <span class="topbar-tag" id="releaseTag">loading…</span>
-    <div class="topbar-status">
-      <div class="dot" id="infraDot"></div>
-      <span id="infraStatus">checking…</span>
-    </div>
-  </header>
+<header class="topbar">
+  <span class="topbar-logo">⬡ social-platform</span>
+  <span class="topbar-tag" id="releaseTag">loading…</span>
+  <div class="topbar-right">
+    <div class="dot" id="infraDot"></div>
+    <span id="infraStatus">checking…</span>
+  </div>
+</header>
 
-  <!-- sidebar -->
-  <nav class="sidebar">
-    <div class="sidebar-section">Operations</div>
-    <div class="sidebar-item active" onclick="showPanel('deploy')">
-      <span class="sidebar-icon">▶</span> Deploy
-    </div>
-    <div class="sidebar-item" onclick="showPanel('destroy')">
-      <span class="sidebar-icon">✕</span> Destroy
-    </div>
-    <div class="sidebar-item" onclick="showPanel('status')">
-      <span class="sidebar-icon">≋</span> Status
-    </div>
-    <div class="sidebar-item" onclick="showPanel('logs')">
-      <span class="sidebar-icon">≡</span> Logs
-    </div>
-    <div class="sidebar-section">State</div>
-    <div class="sidebar-item" onclick="showPanel('import')">
-      <span class="sidebar-icon">⇣</span> Import State
-    </div>
-    <div class="sidebar-item" onclick="showPanel('update')">
-      <span class="sidebar-icon">⟳</span> Update
-    </div>
-    <div class="sidebar-section">Info</div>
-    <div class="sidebar-item" onclick="showPanel('jobs')">
-      <span class="sidebar-icon">◎</span> Job History
-    </div>
-  </nav>
+<nav class="sidebar">
+  <div class="sidebar-section">Operations</div>
+  <div class="sidebar-item active" id="nav-deploy"   onclick="showPanel('deploy',this)"><span class="sidebar-icon">▶</span>Deploy</div>
+  <div class="sidebar-item"        id="nav-destroy"  onclick="showPanel('destroy',this)"><span class="sidebar-icon">✕</span>Destroy</div>
+  <div class="sidebar-item"        id="nav-status"   onclick="showPanel('status',this)"><span class="sidebar-icon">≋</span>Status</div>
+  <div class="sidebar-item"        id="nav-logs"     onclick="showPanel('logs',this)"><span class="sidebar-icon">≡</span>Logs</div>
+  <div class="sidebar-section">State</div>
+  <div class="sidebar-item"        id="nav-import"   onclick="showPanel('import',this)"><span class="sidebar-icon">⇣</span>Import State</div>
+  <div class="sidebar-section">Setup</div>
+  <div class="sidebar-item"        id="nav-install"  onclick="showPanel('install',this)"><span class="sidebar-icon">⬇</span>Install</div>
+  <div class="sidebar-item"        id="nav-configure"onclick="showPanel('configure',this)"><span class="sidebar-icon">⚙</span>Configure</div>
+  <div class="sidebar-section">Info</div>
+  <div class="sidebar-item"        id="nav-jobs"     onclick="showPanel('jobs',this)"><span class="sidebar-icon">◎</span>Job History</div>
+  <div class="sidebar-section">Maintenance</div>
+  <div class="sidebar-item"        id="nav-update"   onclick="showPanel('update',this)"><span class="sidebar-icon">⬆</span>Update</div>
+  <div class="sidebar-item"        id="nav-clean"    onclick="showPanel('clean',this)"><span class="sidebar-icon">🗑</span>Clean Cache</div>
+</nav>
 
-  <!-- main -->
-  <main class="main">
+<main class="main">
 
-    <!-- ── Deploy ── -->
-    <div class="panel active" id="panel-deploy">
-      <div class="panel-title">Deploy Infrastructure</div>
-      <div class="panel-desc">Runs <code style="color:var(--cyan)">terragrunt run --all apply</code> or targets a specific environment.</div>
-      <div class="card">
+<!-- ── DEPLOY ── -->
+<div class="panel active" id="panel-deploy">
+  <div class="page-header">
+    <div class="page-title">▶ Deploy Infrastructure</div>
+    <div class="page-desc">Runs <code>terragrunt run --all apply</code> or targets a single environment.</div>
+  </div>
+  <div class="card">
+    <div class="form-row-3">
+      <div class="field"><label>Environment</label><select id="deploy-env"></select></div>
+      <div class="field"><label>Target Resource <span style="color:var(--muted);text-transform:none;font-weight:400">(optional)</span></label>
+        <input type="text" id="deploy-target" placeholder="docker_container.blog_db" /></div>
+      <div class="field"><label>Replace Resource <span style="color:var(--muted);text-transform:none;font-weight:400">(force recreate)</span></label>
+        <input type="text" id="deploy-replace" placeholder="null_resource.kind_cluster" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="runCommand('deploy')">▶ Deploy</button>
+    </div>
+  </div>
+  <div class="terminal-bar">
+    <span class="terminal-label">Output</span>
+    <span id="deploy-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="deploy-output"></div>
+</div>
+
+<!-- ── DESTROY ── -->
+<div class="panel" id="panel-destroy">
+  <div class="page-header">
+    <div class="page-title">✕ Destroy Infrastructure</div>
+    <div class="page-desc" style="color:var(--red)">⚠ This will permanently destroy resources.</div>
+  </div>
+  <div class="card">
+    <div class="form-row">
+      <div class="field"><label>Environment</label><select id="destroy-env"></select></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="runCommand('destroy')">✕ Destroy</button>
+    </div>
+  </div>
+  <div class="terminal-bar">
+    <span class="terminal-label">Output</span>
+    <span id="destroy-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="destroy-output"></div>
+</div>
+
+<!-- ── STATUS ── -->
+<div class="panel" id="panel-status">
+  <div class="page-header">
+    <div class="page-title">≋ Infrastructure Status</div>
+    <div class="page-desc">Runs <code>terragrunt plan</code> to show pending changes.</div>
+  </div>
+  <div class="card">
+    <div class="form-row">
+      <div class="field"><label>Environment</label><select id="status-env"></select></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="runCommand('plan')">≋ Run Plan</button>
+    </div>
+  </div>
+  <div class="terminal-bar">
+    <span class="terminal-label">Output</span>
+    <span id="plan-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="plan-output"></div>
+</div>
+
+<!-- ── LOGS ── -->
+<div class="panel" id="panel-logs">
+  <div class="page-header">
+    <div class="page-title">≡ Debug Logs</div>
+    <div class="page-desc">Runs <code>terragrunt plan --log-level debug</code>.</div>
+  </div>
+  <div class="card">
+    <div class="form-row">
+      <div class="field"><label>Environment</label><select id="logs-env"></select></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="runCommand('logs')">≡ Stream Logs</button>
+    </div>
+  </div>
+  <div class="terminal-bar">
+    <span class="terminal-label">Output</span>
+    <span id="logs-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="logs-output"></div>
+</div>
+
+<!-- ── IMPORT ── -->
+<div class="panel" id="panel-import">
+  <div class="page-header">
+    <div class="page-title">⇣ Import Docker State</div>
+    <div class="page-desc">Auto-detects running Docker containers, volumes, and images and imports them into Terraform state.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      Detected Resources
+      <button class="btn btn-ghost btn-xs" onclick="scanImport()" style="margin-left:auto">⟳ Scan Docker</button>
+    </div>
+    <div id="import-loading" class="hidden" style="color:var(--muted);padding:8px 0"><span class="spinner">⟳</span> Scanning…</div>
+    <div id="import-empty"   class="hidden" style="color:var(--muted);padding:8px 0">No matching Docker resources found.</div>
+    <div id="import-table-wrap" class="hidden">
+      <table class="import-table">
+        <thead><tr><th>Kind</th><th>TF Address</th><th>Docker Name</th><th>Import ID</th><th></th></tr></thead>
+        <tbody id="import-tbody"></tbody>
+      </table>
+      <div class="btn-row mt8">
+        <button class="btn btn-primary" onclick="importAll()">⇣ Import All</button>
+      </div>
+    </div>
+  </div>
+  <div class="terminal-bar"><span class="terminal-label">Import Output</span></div>
+  <div class="xterm-wrap" id="import-output"></div>
+</div>
+
+<!-- ── INSTALL ── -->
+<div class="panel" id="panel-install">
+  <div class="page-header">
+    <div class="page-title">⬇ Install</div>
+    <div class="page-desc">Check prerequisites, pick a release, download infra files to <code>~/.social-platform/infra/</code>.</div>
+  </div>
+  <div class="card">
+    <div class="stepper">
+      <div class="step">
+        <div class="step-num active" id="step1-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Check Prerequisites</div>
+          <div class="step-desc">Verify docker, kind, kubectl, helm, terraform, terragrunt, argocd.</div>
+          <div id="prereq-placeholder" style="color:var(--muted);font-size:13px">Click "Check" to scan your system.</div>
+          <div id="prereq-list" class="prereq-list hidden"></div>
+          <div class="btn-row mt8">
+            <button class="btn btn-ghost" onclick="runPrereqCheck()">🔍 Check Prerequisites</button>
+            <button class="btn btn-warning hidden" id="btn-install-tools" onclick="installToolsHint()">⬇ Install Missing Tools</button>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" id="step2-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Select Release</div>
+          <div class="step-desc">Choose which version of the infrastructure files to install.</div>
+          <div id="release-placeholder" style="color:var(--muted);font-size:13px">Complete Step 1 first.</div>
+          <div id="release-list" class="release-list hidden"></div>
+          <input type="hidden" id="selected-release" value="" />
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" id="step3-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Download &amp; Extract</div>
+          <div class="step-desc">Fetch the release asset and extract to <code>~/.social-platform/infra/</code>.</div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btn-download" onclick="runInstall()" disabled>⬇ Install Selected Release</button>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" id="step4-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Save &amp; Configure</div>
+          <div class="step-desc">Config saved automatically — head to Configure to set secrets and generate <code>terraform.tfvars</code>.</div>
+          <div id="install-done-msg" class="hidden" style="color:var(--green);font-weight:600;margin-top:8px">✓ Install complete — go to Configure →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="terminal-bar">
+    <span class="terminal-label">Install Output</span>
+    <span id="install-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="install-output"></div>
+</div>
+
+<!-- ── CONFIGURE ── -->
+<div class="panel" id="panel-configure">
+  <div class="page-header">
+    <div class="page-title">⚙ Configure</div>
+    <div class="page-desc">Fill in Section 1 &amp; 2 — everything else is auto-filled with defaults. Saving writes all <code>terraform.tfvars</code> files.</div>
+  </div>
+
+  <!-- ── Section 1: GitHub & URLs ── -->
+  <div class="card">
+    <div class="card-title" style="color:var(--cyan);font-size:14px">
+      <span>①</span> GitHub &amp; Deployment URLs
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">Required — unique to your setup</span>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Public Domain</label>
+        <input type="text" id="cfg-domain" placeholder="example.qzz.io" />
+      </div>
+      <div class="field">
+        <label>Server LAN IP</label>
+        <input type="text" id="cfg-main_server_ip" placeholder="192.168.1.100" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>GitHub Username <span style="color:var(--muted);text-transform:none;font-weight:400">(Atlantis / ArgoCD)</span></label>
+        <input type="text" id="cfg-atlantis_gh_user" placeholder="SaisakthiM" />
+      </div>
+      <div class="field">
+        <label>GitOps Repo SSH URL</label>
+        <input type="text" id="cfg-gitops_repo_url" placeholder="git@github.com:SaisakthiM/Infrastruture-Project.git" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>prod-social GitOps URL <span style="color:var(--muted);text-transform:none;font-weight:400">(leave blank = same as above)</span></label>
+        <input type="text" id="cfg-social_gitops_repo_url" placeholder="same as GitOps Repo above" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Secrets ── -->
+  <div class="card">
+    <div class="card-title" style="color:var(--yellow);font-size:14px">
+      <span>②</span> Secrets &amp; API Keys
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">Stored in OS keychain — never in files</span>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:14px;padding:10px 12px;
+                background:rgba(210,153,34,.06);border:1px solid rgba(210,153,34,.2);border-radius:6px">
+      ⚠ Secrets (SSH deploy keys, API tokens) are managed by the CLI keychain and cannot be entered
+      here. Run <code>social-platform configure</code> in your terminal to set or update them.
+      The fields below show <em>non-secret</em> references only.
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>n8n Basic Auth User</label>
+        <input type="text" id="cfg-n8n_user" placeholder="admin" />
+      </div>
+      <div class="field">
+        <label>n8n Protocol</label>
+        <input type="text" id="cfg-n8n_protocol" placeholder="https" />
+      </div>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" id="cfg-load_images" />
+      <label for="cfg-load_images">Load Docker images into kind cluster on deploy (prod-social)</label>
+    </div>
+  </div>
+
+  <!-- ── Advanced (collapsed) ── -->
+  <div class="card">
+    <div class="card-title" style="cursor:pointer;user-select:none" onclick="toggleAdvanced()">
+      <span id="adv-arrow">▶</span>&nbsp; Advanced — DB names, MinIO users, ports
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">
+        Auto-filled with defaults — only change if you customised these
+      </span>
+    </div>
+    <div id="advanced-body" style="display:none">
+      <div class="tab-bar" style="margin-top:8px">
+        <div class="tab active" onclick="showConfigTab('infra',this)">prod-infra</div>
+        <div class="tab"        onclick="showConfigTab('social',this)">prod-social</div>
+        <div class="tab"        onclick="showConfigTab('docker',this)">prod-docker</div>
+        <div class="tab"        onclick="showConfigTab('gateway',this)">prod-gateway</div>
+      </div>
+
+      <div class="tab-panel active" id="ctab-infra">
+        <div class="form-row-3">
+          <div class="field"><label>n8n Port</label><input type="text" id="cfg-n8n_port" placeholder="5678" /></div>
+          <div class="field"><label>n8n Host</label><input type="text" id="cfg-n8n_host" placeholder="0.0.0.0" /></div>
+          <div class="field"><label>Let's Encrypt Path</label><input type="text" id="cfg-letsencrypt_path" placeholder="/home/saisakthi/letsencrypt/" /></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="ctab-social">
         <div class="form-row">
-          <div>
-            <label>Environment</label>
-            <select id="deploy-env"></select>
-          </div>
-          <div>
-            <label>Target Resource <span style="color:var(--muted)">(single env only)</span></label>
-            <input type="text" id="deploy-target" placeholder="docker_container.blog_db" />
-          </div>
-        </div>
-        <div class="btn-actions">
-          <button class="btn btn-primary" onclick="runCommand('deploy')">▶  Deploy</button>
+          <div class="field"><label>Social MinIO User</label><input type="text" id="cfg-social_minio_user" placeholder="minio" /></div>
         </div>
       </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Output</span>
-        <span id="deploy-badge" class="badge hidden"></span>
-      </div>
-      <div class="terminal" id="deploy-output"></div>
-    </div>
 
-    <!-- ── Destroy ── -->
-    <div class="panel" id="panel-destroy">
-      <div class="panel-title">Destroy Infrastructure</div>
-      <div class="panel-desc" style="color:var(--red)">⚠  This will permanently destroy resources. Use with caution.</div>
-      <div class="card">
+      <div class="tab-panel" id="ctab-docker">
+        <div class="form-row-3">
+          <div class="field"><label>Blog DB Name</label><input type="text" id="cfg-blog_db_name" placeholder="blog_db" /></div>
+          <div class="field"><label>Blog MinIO User</label><input type="text" id="cfg-blog_minio_user" placeholder="admin" /></div>
+          <div class="field"><label>Blog Allowed Hosts</label><input type="text" id="cfg-blog_allowed_hosts" placeholder="['localhost']" /></div>
+        </div>
         <div class="form-row">
-          <div>
-            <label>Environment</label>
-            <select id="destroy-env"></select>
-          </div>
+          <div class="field"><label>Notes DB Name</label><input type="text" id="cfg-notes_db_name" placeholder="notes_app" /></div>
+          <div class="field"><label>Notes DB User</label><input type="text" id="cfg-notes_db_user" placeholder="saisakthi" /></div>
         </div>
-        <div class="btn-actions">
-          <button class="btn btn-danger" onclick="runCommand('destroy')">✕  Destroy</button>
-        </div>
-      </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Output</span>
-        <span id="destroy-badge" class="badge hidden"></span>
-      </div>
-      <div class="terminal" id="destroy-output"></div>
-    </div>
-
-    <!-- ── Status ── -->
-    <div class="panel" id="panel-status">
-      <div class="panel-title">Infrastructure Status</div>
-      <div class="panel-desc">Runs <code style="color:var(--cyan)">terragrunt plan</code> to show pending changes.</div>
-      <div class="card">
         <div class="form-row">
-          <div>
-            <label>Environment</label>
-            <select id="status-env"></select>
-          </div>
+          <div class="field"><label>Bank DB User</label><input type="text" id="cfg-bank_db_user" placeholder="bankmanagement" /></div>
+          <div class="field"><label>Bank DB Name</label><input type="text" id="cfg-bank_db_name" placeholder="bank" /></div>
         </div>
-        <div class="btn-actions">
-          <button class="btn btn-ghost" onclick="runCommand('plan')">≋  Run Plan</button>
-        </div>
-      </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Output</span>
-        <span id="plan-badge" class="badge hidden"></span>
-      </div>
-      <div class="terminal" id="plan-output"></div>
-    </div>
-
-    <!-- ── Logs ── -->
-    <div class="panel" id="panel-logs">
-      <div class="panel-title">Debug Logs</div>
-      <div class="panel-desc">Runs <code style="color:var(--cyan)">terragrunt plan --terragrunt-log-level debug</code>.</div>
-      <div class="card">
         <div class="form-row">
-          <div>
-            <label>Environment</label>
-            <select id="logs-env"></select>
-          </div>
+          <div class="field"><label>Document Platform DB Name</label><input type="text" id="cfg-doc_db_name" placeholder="book_db" /></div>
+          <div class="field"><label>Document Platform MinIO User</label><input type="text" id="cfg-doc_minio_user" placeholder="admin" /></div>
         </div>
-        <div class="btn-actions">
-          <button class="btn btn-ghost" onclick="runCommand('logs')">≡  Stream Logs</button>
+        <div class="form-row-3">
+          <div class="field"><label>Whisper DB User</label><input type="text" id="cfg-whisper_db_user" placeholder="admin" /></div>
+          <div class="field"><label>Whisper DB Name</label><input type="text" id="cfg-whisper_db_name" placeholder="chat" /></div>
+          <div class="field"><label>Whisper Test DB</label><input type="text" id="cfg-whisper_db_test_db" placeholder="chat_test" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Whisper MinIO User</label><input type="text" id="cfg-whisper_minio_user" placeholder="minioadmin" /></div>
         </div>
       </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Output</span>
-        <span id="logs-badge" class="badge hidden"></span>
-      </div>
-      <div class="terminal" id="logs-output"></div>
-    </div>
 
-    <!-- ── Import State ── -->
-    <div class="panel" id="panel-import">
-      <div class="panel-title">Import Docker State</div>
-      <div class="panel-desc">Auto-detects running Docker containers, volumes, and images, then imports them into Terraform state to prevent unnecessary recreation.</div>
-      <div class="card">
-        <div class="card-title">
-          <span>Detected Resources</span>
-          <button class="btn btn-ghost btn-xs" onclick="scanImport()" style="margin-left:auto">⟳  Scan Docker</button>
-        </div>
-        <div id="import-loading" class="hidden" style="color:var(--muted);font-size:13px;padding:8px 0">
-          <span class="spinner">⟳</span> Scanning…
-        </div>
-        <div id="import-empty" class="hidden" style="color:var(--muted);font-size:13px;padding:8px 0">
-          No matching Docker resources found. Make sure containers/volumes are running.
-        </div>
-        <div id="import-table-wrap" class="hidden">
-          <table class="import-table">
-            <thead><tr>
-              <th>Kind</th><th>TF Address</th><th>Docker Name</th><th>Import ID</th><th></th>
-            </tr></thead>
-            <tbody id="import-tbody"></tbody>
-          </table>
-          <div class="btn-actions mt8">
-            <button class="btn btn-primary" onclick="importAll()">⇣  Import All</button>
-          </div>
+      <div class="tab-panel" id="ctab-gateway">
+        <div class="field">
+          <label>Let's Encrypt Certs Path on Host</label>
+          <input type="text" id="cfg-letsencrypt_path-dup" placeholder="/home/saisakthi/letsencrypt/" style="display:none" />
         </div>
       </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Import Output</span>
-      </div>
-      <div class="terminal" id="import-output"></div>
-    </div>
+    </div><!-- /advanced-body -->
+  </div>
 
-    <!-- ── Update ── -->
-    <div class="panel" id="panel-update">
-      <div class="panel-title">Update Infrastructure Files</div>
-      <div class="panel-desc">Checks the latest GitHub release, diffs it against your installed infra files, and lets you apply only what changed. Your <code style="color:var(--cyan)">terraform.tfvars</code>, state, and <code style="color:var(--cyan)">.terraform/</code> are never touched.</div>
-      <div class="card">
-        <div class="card-title">
-          <span id="update-version-label">Current: — &nbsp;→&nbsp; Latest: —</span>
-          <button class="btn btn-ghost btn-xs" onclick="checkUpdate()" style="margin-left:auto">⟳  Check for Updates</button>
-        </div>
-        <div id="update-loading" class="hidden" style="color:var(--muted);font-size:13px;padding:8px 0">
-          <span class="spinner">⟳</span> Downloading and diffing…
-        </div>
-        <div id="update-uptodate" class="hidden" style="color:var(--green);font-size:13px;padding:8px 0">
-          ✓ Already up to date.
-        </div>
-        <div id="update-table-wrap" class="hidden">
-          <table class="import-table">
-            <thead><tr><th>Change</th><th>File</th></tr></thead>
-            <tbody id="update-tbody"></tbody>
-          </table>
-          <div class="btn-actions mt8">
-            <button class="btn btn-primary" id="update-apply-btn" onclick="applyUpdate()">⟳  Apply Update</button>
-          </div>
-        </div>
-      </div>
-      <div class="terminal-header">
-        <span class="terminal-title">Update Log</span>
-      </div>
-      <div class="terminal" id="update-output"></div>
-    </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost"   onclick="loadConfig()">⟳ Reload from Disk</button>
+    <button class="btn btn-primary" onclick="saveConfig()">💾 Save &amp; Generate tfvars</button>
+    <span id="cfg-save-status" style="font-size:13px;color:var(--muted);align-self:center"></span>
+  </div>
+</div>
 
-    <!-- ── Job History ── -->
-    <div class="panel" id="panel-jobs">
-      <div class="panel-title">Job History</div>
-      <div class="panel-desc">Commands executed this session.</div>
-      <div class="card">
-        <div id="job-list"></div>
+<!-- ── JOBS ── -->
+<div class="panel" id="panel-jobs">
+  <div class="page-header">
+    <div class="page-title">◎ Job History</div>
+    <div class="page-desc">Commands executed this session.</div>
+  </div>
+  <div class="card">
+    <div id="job-list"><div style="color:var(--muted);font-size:13px">No jobs yet.</div></div>
+  </div>
+</div>
+
+<!-- ── UPDATE ── -->
+<div class="panel" id="panel-update">
+  <div class="page-header">
+    <div class="page-title">⬆ Update Infrastructure</div>
+    <div class="page-desc">Fetches the latest GitHub release, compares it with the installed version, and updates if newer. Stale <code>.terragrunt-cache/</code> and <code>.terraform/</code> dirs are wiped automatically. Your <code>terraform.tfvars</code> files are preserved.</div>
+  </div>
+
+  <div class="card" id="update-version-card">
+    <div class="card-title">Version Check</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Installed</div>
+        <div id="upd-installed" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)">—</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Latest on GitHub</div>
+        <div id="upd-latest" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)">—</div>
       </div>
     </div>
+    <div id="upd-status" style="padding:10px 14px;border-radius:6px;font-size:13px;display:none;margin-bottom:16px"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost"    onclick="checkUpdate()">🔍 Check</button>
+      <button class="btn btn-primary"  id="btn-do-update" onclick="doUpdate(false)" disabled>⬆ Update</button>
+      <button class="btn btn-ghost"    id="btn-force-update" onclick="doUpdate(true)" disabled>⬆ Force Re-download</button>
+    </div>
+    <div style="margin-top:12px">
+      <div class="form-check">
+        <input type="checkbox" id="upd-skip-clean" />
+        <label for="upd-skip-clean">Skip cache wipe after update <span style="color:var(--muted)">(--skip-clean)</span></label>
+      </div>
+    </div>
+  </div>
 
-  </main>
+  <div class="terminal-bar">
+    <span class="terminal-label">Update Output</span>
+    <span id="update-badge" class="badge hidden"></span>
+  </div>
+  <div class="xterm-wrap" id="update-output"></div>
+</div>
+
+<!-- ── CLEAN ── -->
+<div class="panel" id="panel-clean">
+  <div class="page-header">
+    <div class="page-title">🗑 Clean Cache &amp; State</div>
+    <div class="page-desc">Remove <code>.terragrunt-cache</code>, <code>.terraform</code>, and generated <code>*.tfvars</code> files that can cause state conflicts.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Options</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Environment</label>
+        <select id="clean-env">
+          <option value="all">all environments</option>
+          <option value="prod-gateway">prod-gateway</option>
+          <option value="prod-docker">prod-docker</option>
+          <option value="prod-social">prod-social</option>
+          <option value="prod-infra">prod-infra</option>
+          <option value="prod-manage">prod-manage</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-check" style="margin-bottom:8px">
+      <input type="checkbox" id="clean-state" />
+      <label for="clean-state" style="color:var(--red)">
+        ⚠ Also remove <code>terraform.tfstate</code> files
+        <span style="color:var(--muted);font-weight:400"> — only safe with a remote backend</span>
+      </label>
+    </div>
+
+    <div style="padding:10px 12px;background:rgba(0,207,207,.05);border:1px solid rgba(0,207,207,.15);
+                border-radius:6px;font-size:12px;color:var(--muted);margin-bottom:16px">
+      <strong style="color:var(--text)">What gets removed:</strong><br/>
+      <code>.terragrunt-cache/</code> — Terragrunt module cache (safe to delete, re-downloaded on next deploy)<br/>
+      <code>.terraform/</code> — Terraform provider plugins (safe to delete, re-downloaded on init)<br/>
+      <code>terraform.tfvars</code> / <code>*.tfvars</code> — Re-generated by <code>social-platform configure --regen</code>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="runClean()">🗑 Clean Selected</button>
+      <button class="btn btn-ghost"  onclick="runClean(true)">👁 Dry Run (preview only)</button>
+    </div>
+  </div>
+
+  <div class="card" id="clean-results" style="display:none">
+    <div class="card-title" id="clean-results-title">Results</div>
+    <div id="clean-results-body" style="font-family:var(--mono);font-size:12px;color:var(--muted)"></div>
+  </div>
+</div>
+
+</main>
 </div>
 
 <script>
-// ── state ──────────────────────────────────────────────────────────────────
-const jobRegistry = {};       // jobID → { cmd, env, abort }
-let importCandidates = [];
+'use strict';
 
-// ── init ───────────────────────────────────────────────────────────────────
-async function init() {
-  await loadEnvs();
-  await loadStatus();
+// ── xterm terminal registry ───────────────────────────────────────────────
+// Each panel has one Terminal instance. Created lazily on first use.
+const terms = {};
+
+function getTerm(id) {
+  if (terms[id]) return terms[id];
+
+  const container = document.getElementById(id);
+  if (!container) return null;
+
+  const t = new Terminal({
+    theme: {
+      background:   '#0d1117',
+      foreground:   '#c9d1d9',
+      black:        '#0d1117',
+      brightBlack:  '#6e7781',
+      red:          '#f85149',
+      brightRed:    '#f85149',
+      green:        '#3fb950',
+      brightGreen:  '#3fb950',
+      yellow:       '#d29922',
+      brightYellow: '#e3b341',
+      blue:         '#1f6feb',
+      brightBlue:   '#388bfd',
+      magenta:      '#a371f7',
+      brightMagenta:'#a371f7',
+      cyan:         '#00cfcf',
+      brightCyan:   '#39c5cf',
+      white:        '#b1bac4',
+      brightWhite:  '#e6edf3',
+      cursor:       '#00cfcf',
+    },
+    fontFamily: '"JetBrains Mono","Fira Code","Cascadia Code",monospace',
+    fontSize: 12,
+    lineHeight: 1.6,
+    cursorBlink: false,
+    disableStdin: true,
+    scrollback: 5000,
+    convertEol: true,
+  });
+
+  t.open(container);
+  fitTerm(t);
+
+  window.addEventListener('resize', () => fitTerm(t));
+
+  terms[id] = t;
+  return t;
 }
+
+function writeTerm(id, text) {
+  const t = getTerm(id);
+  if (!t) return;
+  t.write(text);
+  // Scroll to bottom.
+  t.scrollToBottom();
+}
+
+function clearTerm(id) {
+  const t = getTerm(id);
+  if (t) t.clear();
+}
+
+// ── init ─────────────────────────────────────────────────────────────────
+(async function init() {
+  await Promise.all([loadStatus(), loadEnvs()]);
+  // Pre-init the visible terminal.
+  getTerm('deploy-output');
+})();
 
 async function loadStatus() {
   try {
-    const r = await fetch('/api/status');
-    const d = await r.json();
-    document.getElementById('releaseTag').textContent = d.release_tag || 'unknown';
+    const d = await getJSON('/api/status');
+    document.getElementById('releaseTag').textContent = d.release_tag || 'not installed';
     const dot = document.getElementById('infraDot');
     const lbl = document.getElementById('infraStatus');
     if (d.ready) {
-      dot.className = 'dot green';
-      lbl.textContent = 'infra ready';
+      dot.className = 'dot green'; lbl.textContent = 'infra ready';
     } else {
-      dot.className = 'dot red';
-      lbl.textContent = d.error || 'infra not found';
+      dot.className = 'dot red'; lbl.textContent = d.error || 'infra not found';
     }
-  } catch(e) {
+  } catch {
     document.getElementById('infraStatus').textContent = 'server unreachable';
+    document.getElementById('infraDot').className = 'dot red';
   }
 }
 
 async function loadEnvs() {
-  const r = await fetch('/api/envs');
-  const envs = await r.json();
-  for (const id of ['deploy-env','destroy-env','status-env','logs-env']) {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '';
-    for (const e of envs) {
-      const opt = document.createElement('option');
-      opt.value = e; opt.textContent = e;
-      sel.appendChild(opt);
+  try {
+    const envs = await getJSON('/api/envs');
+    for (const id of ['deploy-env','destroy-env','status-env','logs-env']) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = envs.map(e => `<option value="${e}">${e}</option>`).join('');
     }
-  }
+  } catch {}
 }
 
-// ── panel navigation ────────────────────────────────────────────────────────
-function showPanel(name) {
+// ── navigation ────────────────────────────────────────────────────────────
+function showPanel(name, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  el.classList.add('active');
+  // Init xterm for this panel if needed, then fit.
+  const termIds = {
+    deploy: 'deploy-output', destroy: 'destroy-output', status: 'plan-output',
+    logs: 'logs-output', import: 'import-output', install: 'install-output',
+    update: 'update-output',
+  };
+  if (termIds[name]) {
+    requestAnimationFrame(() => {
+      const t = getTerm(termIds[name]);
+      if (t) fitTerm(t);
+    });
+  }
+  if (name === 'configure') loadConfig();
 }
 
-// ── command runner ───────────────────────────────────────────────────────────
-async function runCommand(cmd) {
-  const envMap = {
-    deploy: 'deploy-env', destroy: 'destroy-env',
-    plan: 'status-env', logs: 'logs-env'
-  };
-  const outMap = {
-    deploy: 'deploy-output', destroy: 'destroy-output',
-    plan: 'plan-output', logs: 'logs-output'
-  };
-  const badgeMap = {
-    deploy: 'deploy-badge', destroy: 'destroy-badge',
-    plan: 'plan-badge', logs: 'logs-badge'
-  };
+// ── configure tabs ────────────────────────────────────────────────────────
+// Toggle advanced section
+function toggleAdvanced() {
+  const body  = document.getElementById('advanced-body');
+  const arrow = document.getElementById('adv-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  arrow.textContent   = open ? '▼' : '▶';
+}
 
-  const env    = document.getElementById(envMap[cmd]).value;
-  const outEl  = document.getElementById(outMap[cmd]);
-  const badge  = document.getElementById(badgeMap[cmd]);
-  const target = cmd === 'deploy' ? document.getElementById('deploy-target').value.trim() : '';
+function showConfigTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('ctab-' + name).classList.add('active');
+  el.classList.add('active');
+}
 
-  outEl.textContent = '';
-  badge.className = 'badge badge-running';
-  badge.textContent = '⟳ running';
-  badge.classList.remove('hidden');
+// Defaults mirror applyDefaults() in cmd/configure.go
+const CFG_DEFAULTS = {
+  n8n_port:             '5678',
+  n8n_host:             '0.0.0.0',
+  n8n_protocol:         'https',
+  n8n_user:             'admin',
+  social_minio_user:    'minio',
+  blog_db_name:         'blog_db',
+  blog_minio_user:      'admin',
+  blog_allowed_hosts:   "[\'localhost\', \'127.0.0.1\']",
+  notes_db_name:        'notes_app',
+  notes_db_user:        'saisakthi',
+  bank_db_user:         'bankmanagement',
+  bank_db_name:         'bank',
+  doc_db_name:          'book_db',
+  doc_minio_user:       'admin',
+  whisper_db_user:      'admin',
+  whisper_db_name:      'chat',
+  whisper_db_test_db:   'chat_test',
+  whisper_minio_user:   'minioadmin',
+  letsencrypt_path:     '/home/saisakthi/letsencrypt/',
+};
 
-  // Warn on destroy
-  if (cmd === 'destroy') {
-    if (!confirm(`Destroy ${env}? This is IRREVERSIBLE.`)) {
-      badge.classList.add('hidden');
-      return;
+async function loadConfig() {
+  try {
+    const d = await getJSON('/api/configure/load');
+
+    // All fields — apply saved value OR default (never leave blank).
+    const allFields = [
+      'domain','main_server_ip','atlantis_gh_user','gitops_repo_url',
+      'n8n_port','n8n_host','n8n_protocol','n8n_user',
+      'social_gitops_repo_url','social_minio_user',
+      'blog_db_name','blog_minio_user','blog_allowed_hosts',
+      'notes_db_name','notes_db_user','bank_db_user','bank_db_name',
+      'doc_db_name','doc_minio_user',
+      'whisper_db_user','whisper_db_name','whisper_db_test_db','whisper_minio_user',
+      'letsencrypt_path',
+    ];
+    for (const f of allFields) {
+      const el = document.getElementById('cfg-' + f);
+      if (!el) continue;
+      // Use saved value if non-empty, otherwise fall back to our default.
+      el.value = (d[f] && d[f].trim()) ? d[f] : (CFG_DEFAULTS[f] || '');
     }
+
+    // social_gitops_repo_url: default to the main gitops URL if blank.
+    const sgu = document.getElementById('cfg-social_gitops_repo_url');
+    if (sgu && !sgu.value) {
+      sgu.value = document.getElementById('cfg-gitops_repo_url').value;
+    }
+
+    const cb = document.getElementById('cfg-load_images');
+    if (cb) cb.checked = !!d.load_images;
+
+    document.getElementById('cfg-save-status').textContent = '';
+  } catch(e) {
+    document.getElementById('cfg-save-status').textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+async function saveConfig() {
+  const statusEl = document.getElementById('cfg-save-status');
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  statusEl.textContent = '⟳ Saving…'; statusEl.style.color = 'var(--muted)';
+
+  const body = {
+    domain:               val('cfg-domain'),
+    main_server_ip:       val('cfg-main_server_ip'),
+    atlantis_gh_user:     val('cfg-atlantis_gh_user'),
+    gitops_repo_url:      val('cfg-gitops_repo_url'),
+    n8n_port:             val('cfg-n8n_port'),
+    n8n_host:             val('cfg-n8n_host'),
+    n8n_protocol:         val('cfg-n8n_protocol'),
+    n8n_user:             val('cfg-n8n_user'),
+    social_gitops_repo_url: val('cfg-social_gitops_repo_url'),
+    social_minio_user:    val('cfg-social_minio_user'),
+    load_images:          document.getElementById('cfg-load_images').checked,
+    blog_db_name:         val('cfg-blog_db_name'),
+    blog_minio_user:      val('cfg-blog_minio_user'),
+    blog_allowed_hosts:   val('cfg-blog_allowed_hosts'),
+    notes_db_name:        val('cfg-notes_db_name'),
+    notes_db_user:        val('cfg-notes_db_user'),
+    bank_db_user:         val('cfg-bank_db_user'),
+    bank_db_name:         val('cfg-bank_db_name'),
+    doc_db_name:          val('cfg-doc_db_name'),
+    doc_minio_user:       val('cfg-doc_minio_user'),
+    whisper_db_user:      val('cfg-whisper_db_user'),
+    whisper_db_name:      val('cfg-whisper_db_name'),
+    whisper_db_test_db:   val('cfg-whisper_db_test_db'),
+    whisper_minio_user:   val('cfg-whisper_minio_user'),
+    letsencrypt_path:     val('cfg-letsencrypt_path'),
+  };
+
+  try {
+    const r = await fetch('/api/configure/save', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (d.status === 'ok') {
+      statusEl.textContent = '✓ Saved — tfvars written'; statusEl.style.color = 'var(--green)';
+      await loadStatus();
+    } else {
+      statusEl.textContent = '⚠ ' + (d.warning || 'Unknown error'); statusEl.style.color = 'var(--yellow)';
+    }
+  } catch(e) {
+    statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--red)';
+  } finally { btn.disabled = false; }
+}
+
+// ── install wizard ────────────────────────────────────────────────────────
+async function runPrereqCheck() {
+  setStep(1,'active');
+  const listEl = document.getElementById('prereq-list');
+  const phEl   = document.getElementById('prereq-placeholder');
+  document.getElementById('btn-install-tools').classList.add('hidden');
+  phEl.textContent = '⟳ Checking…'; phEl.classList.remove('hidden');
+  listEl.classList.add('hidden');
+  try {
+    const results = await getJSON('/api/install/check');
+    phEl.classList.add('hidden');
+    listEl.innerHTML = results.map(r => `
+      <div class="prereq-item">
+        <span style="color:${r.installed?'var(--green)':'var(--red)'}">${r.installed?'✓':'✗'}</span>
+        <span class="name" style="color:${r.installed?'var(--green)':'var(--red)'}">${r.name}</span>
+        <span class="ver">${r.version || (r.installed?'':
+          `<a href="${r.manual_url}" target="_blank" style="color:var(--cyan)">install</a>`)}</span>
+      </div>`).join('');
+    listEl.classList.remove('hidden');
+    const missing = results.filter(r => !r.installed);
+    if (missing.length) {
+      document.getElementById('btn-install-tools').classList.remove('hidden');
+      setStep(1,'error');
+    } else {
+      setStep(1,'done');
+    }
+    await loadReleases();
+  } catch(e) {
+    phEl.textContent = '✗ Error: ' + e.message;
+    setStep(1,'error');
+  }
+}
+
+function installToolsHint() {
+  const t = getTerm('install-output');
+  t.writeln('\x1b[33m⚠ Auto-install requires CLI access.\x1b[0m');
+  t.writeln('  Run:  \x1b[36msocial-platform install\x1b[0m');
+  t.writeln('  Then return here and click "Check Prerequisites" again.');
+}
+
+async function loadReleases() {
+  setStep(2,'active');
+  const listEl = document.getElementById('release-list');
+  const phEl   = document.getElementById('release-placeholder');
+  listEl.classList.add('hidden');
+  phEl.textContent = '⟳ Fetching releases…'; phEl.classList.remove('hidden');
+  try {
+    const releases = await getJSON('/api/install/releases');
+    phEl.classList.add('hidden');
+    if (!releases.length) {
+      phEl.textContent = 'No releases found — will use latest.';
+      phEl.classList.remove('hidden');
+      document.getElementById('selected-release').value = 'latest';
+    } else {
+      listEl.innerHTML = releases.map((r,i) =>
+        `<div class="release-chip ${i===0?'selected':''}" onclick="selectRelease('${r.tag}',this)">${r.tag}${i===0?' (latest)':''}</div>`
+      ).join('');
+      document.getElementById('selected-release').value = releases[0].tag;
+      listEl.classList.remove('hidden');
+    }
+    document.getElementById('btn-download').disabled = false;
+    setStep(2,'done'); setStep(3,'active');
+  } catch(e) {
+    phEl.textContent = '✗ ' + e.message; phEl.classList.remove('hidden');
+    setStep(2,'error');
+  }
+}
+
+function selectRelease(tag, el) {
+  document.querySelectorAll('.release-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selected-release').value = tag;
+}
+
+async function runInstall() {
+  const tag   = document.getElementById('selected-release').value;
+  const badge = document.getElementById('install-badge');
+  setBadge(badge,'running');
+  document.getElementById('btn-download').disabled = true;
+  setStep(3,'active');
+  clearTerm('install-output');
+  try {
+    const r = await fetch('/api/install/run', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({tag}),
+    });
+    const {job_id} = await r.json();
+    streamToTerm(job_id, 'install-output', badge, () => {
+      setStep(3,'done'); setStep(4,'done');
+      document.getElementById('install-done-msg').classList.remove('hidden');
+      loadStatus();
+    }, () => {
+      setStep(3,'error');
+      document.getElementById('btn-download').disabled = false;
+    });
+  } catch(e) {
+    getTerm('install-output').writeln('\x1b[31m✗ ' + e.message + '\x1b[0m');
+    setBadge(badge,'failed'); setStep(3,'error');
+    document.getElementById('btn-download').disabled = false;
+  }
+}
+
+function setStep(n, state) {
+  const el = document.getElementById('step'+n+'-num');
+  el.className = 'step-num ' + state;
+  el.textContent = state==='done' ? '✓' : state==='error' ? '✗' : String(n);
+}
+
+// ── operations ────────────────────────────────────────────────────────────
+async function runCommand(cmd) {
+  const envMap   = {deploy:'deploy-env',destroy:'destroy-env',plan:'status-env',logs:'logs-env'};
+  const termMap  = {deploy:'deploy-output',destroy:'destroy-output',plan:'plan-output',logs:'logs-output'};
+  const badgeMap = {deploy:'deploy-badge',destroy:'destroy-badge',plan:'plan-badge',logs:'logs-badge'};
+
+  const env   = document.getElementById(envMap[cmd]).value;
+  const termId= termMap[cmd];
+  const badge = document.getElementById(badgeMap[cmd]);
+  const target  = cmd==='deploy' ? val('deploy-target')  : '';
+  const replace = cmd==='deploy' ? val('deploy-replace') : '';
+
+  clearTerm(termId);
+  setBadge(badge,'running');
+
+  if (cmd==='destroy' && !confirm(`Destroy ${env}?\n\nThis is IRREVERSIBLE.`)) {
+    badge.classList.add('hidden'); return;
   }
 
-  let body = { command: cmd, env, auto_approve: true };
-  if (target) body.target = target;
+  const body = {command:cmd, env, auto_approve:true};
+  if (target)  body.target  = target;
+  if (replace) body.replace = replace;
 
-  const res = await fetch('/api/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const { job_id } = await res.json();
-  if (!job_id) { badge.className = 'badge badge-failed'; badge.textContent = '✗ error'; return; }
-
-  registerJob(job_id, cmd, env);
-  streamJobOutput(job_id, outEl, badge);
+  try {
+    const res = await fetch('/api/run', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+    });
+    const {job_id} = await res.json();
+    registerJob(job_id, cmd, env);
+    streamToTerm(job_id, termId, badge, null, null);
+  } catch(e) {
+    setBadge(badge,'failed');
+    getTerm(termId).writeln('\x1b[31m✗ ' + e.message + '\x1b[0m');
+  }
 }
 
-function registerJob(id, cmd, env) {
-  const row = document.createElement('div');
-  row.className = 'job-row';
-  row.id = 'job-' + id;
-  row.innerHTML = `<span class="job-cmd">${cmd}</span>
-    <span class="job-env">${env}</span>
-    <span class="badge badge-running" id="jbadge-${id}">⟳ running</span>
-    <span class="job-time">${new Date().toLocaleTimeString()}</span>`;
-  const list = document.getElementById('job-list');
-  list.prepend(row);
-}
-
-function streamJobOutput(jobID, outEl, badge) {
+// Core SSE → xterm streamer.
+// onDone / onError are optional callbacks.
+function streamToTerm(jobID, termId, badge, onDone, onError) {
+  const t  = getTerm(termId);
   const es = new EventSource(`/api/job/${jobID}/stream`);
-  es.onmessage = (e) => {
-    outEl.textContent += e.data + '\n';
-    outEl.scrollTop = outEl.scrollHeight;
+
+  es.onmessage = e => {
+    // The server sends one line per SSE data field.
+    // xterm handles ANSI natively — just write it.
+    t.write(e.data + '\r\n');
   };
-  es.addEventListener('done', (e) => {
+
+  es.addEventListener('done', e => {
     es.close();
-    const status = e.data;
-    const jbadge = document.getElementById('jbadge-' + jobID);
-    if (status === 'done') {
-      badge.className = 'badge badge-done'; badge.textContent = '✓ done';
-      if (jbadge) { jbadge.className = 'badge badge-done'; jbadge.textContent = '✓ done'; }
-    } else {
-      badge.className = 'badge badge-failed'; badge.textContent = '✗ failed';
-      if (jbadge) { jbadge.className = 'badge badge-failed'; jbadge.textContent = '✗ failed'; }
-    }
+    const ok = e.data === 'done';
+    setBadge(badge, ok ? 'done' : 'failed');
+    updateJobBadge(jobID, ok ? 'done' : 'failed');
+    if (ok  && onDone)  onDone();
+    if (!ok && onError) onError();
   });
+
   es.onerror = () => {
     es.close();
-    badge.className = 'badge badge-failed'; badge.textContent = '✗ connection error';
+    setBadge(badge,'failed');
+    if (onError) onError();
   };
 }
 
-// ── import ───────────────────────────────────────────────────────────────────
+// ── import ────────────────────────────────────────────────────────────────
+let importCandidates = [];
+
 async function scanImport() {
+  ['import-loading','import-empty','import-table-wrap'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
   document.getElementById('import-loading').classList.remove('hidden');
-  document.getElementById('import-empty').classList.add('hidden');
-  document.getElementById('import-table-wrap').classList.add('hidden');
-
-  const res = await fetch('/api/import/scan');
-  importCandidates = await res.json();
-
-  document.getElementById('import-loading').classList.add('hidden');
-
-  if (!importCandidates || importCandidates.length === 0) {
-    document.getElementById('import-empty').classList.remove('hidden');
-    return;
+  try {
+    importCandidates = await getJSON('/api/import/scan');
+    document.getElementById('import-loading').classList.add('hidden');
+    if (!importCandidates?.length) {
+      document.getElementById('import-empty').classList.remove('hidden'); return;
+    }
+    document.getElementById('import-tbody').innerHTML = importCandidates.map(c => `
+      <tr>
+        <td style="color:${c.kind==='container'?'var(--cyan)':c.kind==='volume'?'var(--purple)':'var(--yellow)'}">${c.kind}</td>
+        <td>${c.tf_address}</td>
+        <td>${c.docker_name}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)"
+            title="${c.import_id}">${c.import_id}</td>
+        <td><button class="btn btn-ghost btn-xs" onclick="importOne('${c.tf_address}')">Import</button></td>
+      </tr>`).join('');
+    document.getElementById('import-table-wrap').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('import-loading').classList.add('hidden');
+    getTerm('import-output').writeln('\x1b[31m✗ ' + e.message + '\x1b[0m');
   }
-
-  const tbody = document.getElementById('import-tbody');
-  tbody.innerHTML = '';
-  for (const c of importCandidates) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="kind-${c.kind}">${c.kind}</td>
-      <td>${c.tf_address}</td>
-      <td>${c.docker_name}</td>
-      <td class="import-id" title="${c.import_id}">${c.import_id}</td>
-      <td><button class="btn btn-ghost btn-xs" onclick="importOne('${c.tf_address}')">Import</button></td>
-    `;
-    tbody.appendChild(tr);
-  }
-  document.getElementById('import-table-wrap').classList.remove('hidden');
 }
 
-async function importOne(tfAddress) {
-  const c = importCandidates.find(x => x.tf_address === tfAddress);
+async function importOne(addr) {
+  const c = importCandidates.find(x => x.tf_address === addr);
   if (!c) return;
-  appendImportOutput(`> Importing ${c.tf_address}…\n`);
-  const res = await fetch('/api/import/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(c)
-  });
-  const d = await res.json();
-  if (d.error) {
-    appendImportOutput(`✗ Error: ${d.error}\n`);
-  } else {
-    appendImportOutput(`✓ Imported ${c.tf_address}\n`);
-  }
+  const t = getTerm('import-output');
+  t.writeln('\x1b[36m> Importing ' + c.tf_address + '…\x1b[0m');
+  try {
+    const d = await postJSON('/api/import/run', c);
+    if (d.error) t.writeln('\x1b[31m✗ ' + d.error + '\x1b[0m');
+    else         t.writeln('\x1b[32m✓ Imported ' + c.tf_address + '\x1b[0m');
+  } catch(e) { t.writeln('\x1b[31m✗ ' + e.message + '\x1b[0m'); }
 }
 
 async function importAll() {
-  for (const c of importCandidates) {
-    await importOne(c.tf_address);
-  }
-  appendImportOutput('\nAll imports complete.\n');
+  for (const c of importCandidates) await importOne(c.tf_address);
+  getTerm('import-output').writeln('\n\x1b[32mAll imports complete.\x1b[0m');
 }
 
-function appendImportOutput(text) {
-  const el = document.getElementById('import-output');
-  el.textContent += text;
-  el.scrollTop = el.scrollHeight;
+// ── job history ───────────────────────────────────────────────────────────
+function registerJob(id, cmd, env) {
+  const list = document.getElementById('job-list');
+  if (list.querySelector('div[style]')) list.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'job-row'; row.id = 'job-' + id;
+  row.innerHTML = `
+    <span class="job-cmd">${cmd}</span>
+    <span class="job-env">${env}</span>
+    <span class="badge badge-running" id="jbadge-${id}">⟳ running</span>
+    <span class="job-time">${new Date().toLocaleTimeString()}</span>`;
+  list.prepend(row);
 }
 
-// ── update ───────────────────────────────────────────────────────────────────
-let updateHasPending = false;
+function updateJobBadge(id, state) {
+  const el = document.getElementById('jbadge-' + id);
+  if (el) setBadge(el, state);
+}
 
+// ── helpers ───────────────────────────────────────────────────────────────
+function setBadge(el, state) {
+  const m = {running:['badge-running','⟳ running'],done:['badge-done','✓ done'],failed:['badge-failed','✗ failed']};
+  el.className = 'badge ' + m[state][0];
+  el.textContent = m[state][1];
+  el.classList.remove('hidden');
+}
+
+// ── update ───────────────────────────────────────────────────────────────
 async function checkUpdate() {
-  document.getElementById('update-loading').classList.remove('hidden');
-  document.getElementById('update-uptodate').classList.add('hidden');
-  document.getElementById('update-table-wrap').classList.add('hidden');
-  appendUpdateOutput('> Checking latest release…\n');
+  const instEl   = document.getElementById('upd-installed');
+  const latestEl = document.getElementById('upd-latest');
+  const statusEl = document.getElementById('upd-status');
+  const btnUpd   = document.getElementById('btn-do-update');
+  const btnForce = document.getElementById('btn-force-update');
+
+  instEl.textContent   = '…';
+  latestEl.textContent = '…';
+  statusEl.style.display = 'none';
 
   try {
-    const res = await fetch('/api/update/check');
-    if (!res.ok) {
-      const text = await res.text();
-      appendUpdateOutput(`✗ ${text}\n`);
-      document.getElementById('update-loading').classList.add('hidden');
-      return;
-    }
-    const d = await res.json();
-    document.getElementById('update-version-label').textContent =
-      `Current: ${d.current_tag || '—'}  →  Latest: ${d.latest_tag || '—'}`;
-    document.getElementById('update-loading').classList.add('hidden');
+    const [statusD, latestD] = await Promise.all([
+      getJSON('/api/status'),
+      getJSON('/api/update/check'),
+    ]);
 
-    if (d.up_to_date) {
-      document.getElementById('update-uptodate').classList.remove('hidden');
-      appendUpdateOutput(`✓ Already up to date (${d.current_tag})\n`);
-      updateHasPending = false;
-      return;
-    }
+    const installed = statusD.release_tag || '(none)';
+    const latest    = latestD.tag;
 
-    appendUpdateOutput(`Found ${d.changes.length} change(s) → ${d.latest_tag}\n`);
-    const tbody = document.getElementById('update-tbody');
-    tbody.innerHTML = '';
-    for (const c of d.changes) {
-      const tr = document.createElement('tr');
-      const kindColor = c.kind === 'added' ? 'var(--green)' : c.kind === 'removed' ? 'var(--red)' : 'var(--yellow)';
-      const kindSymbol = c.kind === 'added' ? '+ added' : c.kind === 'removed' ? '- removed' : '~ modified';
-      tr.innerHTML = `<td style="color:${kindColor}">${kindSymbol}</td><td>${c.path}</td>`;
-      tbody.appendChild(tr);
-    }
-    document.getElementById('update-table-wrap').classList.remove('hidden');
-    updateHasPending = true;
-  } catch (e) {
-    document.getElementById('update-loading').classList.add('hidden');
-    appendUpdateOutput(`✗ ${e}\n`);
-  }
-}
+    instEl.textContent   = installed;
+    latestEl.textContent = latest;
+    instEl.style.color   = 'var(--text)';
+    latestEl.style.color = 'var(--text)';
 
-async function applyUpdate() {
-  if (!updateHasPending) return;
-  if (!confirm('Apply this update? Only changed files will be replaced — tfvars/state are untouched.')) return;
+    statusEl.style.display = 'block';
 
-  appendUpdateOutput('> Applying update…\n');
-  const btn = document.getElementById('update-apply-btn');
-  btn.disabled = true;
-
-  try {
-    const res = await fetch('/api/update/apply', { method: 'POST' });
-    const d = await res.json();
-    if (!res.ok) {
-      appendUpdateOutput(`✗ ${d.error || 'update failed'}\n`);
+    if (installed === latest) {
+      statusEl.style.background = 'rgba(63,185,80,.08)';
+      statusEl.style.border     = '1px solid rgba(63,185,80,.25)';
+      statusEl.style.color      = 'var(--green)';
+      statusEl.textContent      = '✓ Already up to date — ' + latest + ' is the latest release.';
+      btnUpd.disabled   = true;
+      btnForce.disabled = false;
+      instEl.style.color   = 'var(--green)';
+      latestEl.style.color = 'var(--green)';
     } else {
-      appendUpdateOutput(`✓ Updated to ${d.tag} (${d.changed} file(s) changed)\n`);
-      document.getElementById('update-table-wrap').classList.add('hidden');
-      document.getElementById('update-uptodate').classList.remove('hidden');
-      updateHasPending = false;
-      loadStatus();
+      statusEl.style.background = 'rgba(210,153,34,.08)';
+      statusEl.style.border     = '1px solid rgba(210,153,34,.25)';
+      statusEl.style.color      = 'var(--yellow)';
+      statusEl.textContent      = '⬆ Update available: ' + installed + ' → ' + latest;
+      btnUpd.disabled   = false;
+      btnForce.disabled = false;
+      latestEl.style.color = 'var(--cyan)';
     }
-  } catch (e) {
-    appendUpdateOutput(`✗ ${e}\n`);
-  } finally {
-    btn.disabled = false;
+  } catch(e) {
+    statusEl.style.display    = 'block';
+    statusEl.style.background = 'rgba(248,81,73,.08)';
+    statusEl.style.border     = '1px solid rgba(248,81,73,.25)';
+    statusEl.style.color      = 'var(--red)';
+    statusEl.textContent      = '✗ ' + e.message;
   }
 }
 
-function appendUpdateOutput(text) {
-  const el = document.getElementById('update-output');
-  el.textContent += text;
-  el.scrollTop = el.scrollHeight;
+async function doUpdate(force = false) {
+  const badge     = document.getElementById('update-badge');
+  const skipClean = document.getElementById('upd-skip-clean').checked;
+  document.getElementById('btn-do-update').disabled   = true;
+  document.getElementById('btn-force-update').disabled = true;
+  clearTerm('update-output');
+  setBadge(badge, 'running');
+
+  try {
+    const r = await fetch('/api/update/run', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({force, skip_clean: skipClean}),
+    });
+    if (!r.ok) { throw new Error(await r.text()); }
+    const {job_id} = await r.json();
+    registerJob(job_id, 'update', 'infra');
+    streamToTerm(job_id, 'update-output', badge,
+      () => { loadStatus(); checkUpdate(); },
+      () => {
+        document.getElementById('btn-do-update').disabled   = false;
+        document.getElementById('btn-force-update').disabled = false;
+      }
+    );
+  } catch(e) {
+    getTerm('update-output').writeln('\x1b[31m✗ ' + e.message + '\x1b[0m');
+    setBadge(badge, 'failed');
+    document.getElementById('btn-do-update').disabled   = false;
+    document.getElementById('btn-force-update').disabled = false;
+  }
 }
 
-// ── boot ───────────────────────────────────────────────────────────────────
-init();
+// ── update ───────────────────────────────────────────────────────────────
+async function checkUpdate() {
+  const instEl   = document.getElementById('upd-installed');
+  const latestEl = document.getElementById('upd-latest');
+  const statusEl = document.getElementById('upd-status');
+  const btnUpd   = document.getElementById('btn-do-update');
+  const btnForce = document.getElementById('btn-force-update');
+  instEl.textContent = '…'; latestEl.textContent = '…';
+  statusEl.style.display = 'none';
+  try {
+    const [statusD, latestD] = await Promise.all([
+      getJSON('/api/status'),
+      getJSON('/api/update/check'),
+    ]);
+    const installed = statusD.release_tag || '(none)';
+    const latest    = latestD.tag;
+    instEl.textContent = installed; latestEl.textContent = latest;
+    instEl.style.color = 'var(--text)'; latestEl.style.color = 'var(--text)';
+    statusEl.style.display = 'block';
+    if (installed === latest) {
+      statusEl.style.cssText = 'display:block;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);color:var(--green)';
+      statusEl.textContent = '\u2713 Already up to date — ' + latest + ' is the latest release.';
+      btnUpd.disabled = true; btnForce.disabled = false;
+      instEl.style.color = 'var(--green)'; latestEl.style.color = 'var(--green)';
+    } else {
+      statusEl.style.cssText = 'display:block;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.25);color:var(--yellow)';
+      statusEl.textContent = '\u2b06 Update available: ' + installed + ' \u2192 ' + latest;
+      btnUpd.disabled = false; btnForce.disabled = false;
+      latestEl.style.color = 'var(--cyan)';
+    }
+  } catch(e) {
+    statusEl.style.cssText = 'display:block;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);color:var(--red)';
+    statusEl.textContent = '\u2717 ' + e.message;
+  }
+}
+
+async function doUpdate(force = false) {
+  const badge     = document.getElementById('update-badge');
+  const skipClean = document.getElementById('upd-skip-clean').checked;
+  document.getElementById('btn-do-update').disabled    = true;
+  document.getElementById('btn-force-update').disabled = true;
+  clearTerm('update-output');
+  setBadge(badge, 'running');
+  try {
+    const r = await fetch('/api/update/run', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({force, skip_clean: skipClean}),
+    });
+    if (!r.ok) { throw new Error(await r.text()); }
+    const {job_id} = await r.json();
+    registerJob(job_id, 'update', 'infra');
+    streamToTerm(job_id, 'update-output', badge,
+      () => { loadStatus(); checkUpdate(); },
+      () => { document.getElementById('btn-do-update').disabled = false; document.getElementById('btn-force-update').disabled = false; }
+    );
+  } catch(e) {
+    getTerm('update-output').writeln('\x1b[31m\u2717 ' + e.message + '\x1b[0m');
+    setBadge(badge, 'failed');
+    document.getElementById('btn-do-update').disabled = false;
+    document.getElementById('btn-force-update').disabled = false;
+  }
+}
+
+// ── clean ────────────────────────────────────────────────────────────────
+async function runClean(dryRun = false) {
+  const env      = document.getElementById('clean-env').value;
+  const inclState= document.getElementById('clean-state').checked;
+  const card     = document.getElementById('clean-results');
+  const title    = document.getElementById('clean-results-title');
+  const body     = document.getElementById('clean-results-body');
+
+  card.style.display = 'none';
+  body.innerHTML = '<span class="spinner">⟳</span> Working…';
+  card.style.display = 'block';
+
+  if (dryRun) {
+    // Dry-run: just show what the API would delete via a scan-only call
+    // (server doesn't have a dry-run endpoint, so we describe locally).
+    title.textContent = '👁 Dry Run — would remove:';
+    body.innerHTML =
+      `<span style="color:var(--muted)">• <code>**/.terragrunt-cache/</code> dirs<br/>` +
+      `• <code>**/.terraform/</code> dirs<br/>` +
+      `• <code>terraform.tfvars</code> / <code>*.tfvars</code> files<br/>` +
+      (inclState ? `• <code>terraform.tfstate*</code> files<br/>` : '') +
+      `<br/>Environment: <strong style="color:var(--cyan)">${env}</strong><br/>` +
+      `Run without Dry Run to actually delete.</span>`;
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/clean', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({env, state: inclState}),
+    });
+    if (!r.ok) { throw new Error(await r.text()); }
+    const d = await r.json();
+
+    title.innerHTML = d.count === 0
+      ? '✓ Nothing to clean'
+      : `✓ Removed ${d.count} path(s) — freed ${humanBytes(d.total_bytes)}`;
+    title.style.color = d.count === 0 ? 'var(--muted)' : 'var(--green)';
+
+    if (d.removed && d.removed.length) {
+      body.innerHTML = d.removed.map(r =>
+        `<span style="color:var(--green)">✓</span> ${r.path} <span style="color:var(--muted)">(${humanBytes(r.bytes)})</span>`
+      ).join('<br/>');
+    } else {
+      body.innerHTML = '<span style="color:var(--muted)">All environments already clean.</span>';
+    }
+
+    if (d.count > 0) {
+      body.innerHTML += `<br/><br/><span style="color:var(--yellow)">⚠ Run <code>social-platform configure --regen</code> or use Configure → Save to regenerate tfvars before next deploy.</span>`;
+    }
+  } catch(e) {
+    title.textContent = '✗ Error';
+    title.style.color = 'var(--red)';
+    body.innerHTML = `<span style="color:var(--red)">${e.message}</span>`;
+  }
+}
+
+function humanBytes(b) {
+  if (b >= 1<<30) return (b/(1<<30)).toFixed(1)+' GB';
+  if (b >= 1<<20) return (b/(1<<20)).toFixed(1)+' MB';
+  if (b >= 1<<10) return (b/(1<<10)).toFixed(1)+' KB';
+  return b+' B';
+}
+
+function val(id) { return (document.getElementById(id)?.value||'').trim(); }
+async function getJSON(url) { const r=await fetch(url); if(!r.ok) throw new Error(r.statusText); return r.json(); }
+async function postJSON(url,body) {
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
 </script>
 </body>
 </html>

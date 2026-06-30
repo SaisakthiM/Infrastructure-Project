@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
@@ -11,117 +13,188 @@ import (
 )
 
 var (
-	updateYes     bool
-	updateDryRun  bool
+	updateForce   bool
+	updateSkipClean bool
 )
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update infra files from the latest GitHub release without a full reinstall",
-	Long: `Downloads the latest (or a chosen) release, diffs it file-by-file against
-your currently installed infra directory, and replaces only the files that
-actually changed.
+	Short: "Fetch the latest release and update infrastructure files",
+	Long: `Compares the currently installed release tag against the latest
+GitHub release. If a newer version is available it:
 
-Your terraform.tfvars, terraform.tfstate, terraform.tfstate.backup,
-.terraform.lock.hcl, and .terraform/ directories are NEVER touched —
-they are excluded from the diff entirely, so your secrets and state stay intact.
+  1. Downloads and extracts the new release to ~/.social-platform/infra/
+  2. Wipes all .terragrunt-cache/ and .terraform/ directories so the new
+     module versions are picked up cleanly on the next deploy (stale caches
+     from the old release cause provider version mismatches and ghost diffs).
+  3. Preserves all terraform.tfvars files — your secrets stay intact.
+  4. Updates the saved release tag in config.
 
-Use --dry-run to preview the changes without applying them.`,
-	Example: `  social-platform update              # update to latest release
-  social-platform update --dry-run    # preview changes only
-  social-platform update --yes        # skip confirmation prompt`,
+Flags:
+  --force       Update even if the installed version is already the latest.
+  --skip-clean  Skip cache wipe after update (useful if you know caches are
+                still valid, e.g. only non-Terraform files changed).`,
 	RunE: runUpdate,
 }
 
 func init() {
-	updateCmd.Flags().BoolVar(&updateYes, "yes", false, "Skip confirmation prompt")
-	updateCmd.Flags().BoolVar(&updateDryRun, "dry-run", false, "Show what would change without applying it")
+	updateCmd.Flags().BoolVar(&updateForce, "force", false,
+		"Download and apply the latest release even if already up to date")
+	updateCmd.Flags().BoolVar(&updateSkipClean, "skip-clean", false,
+		"Skip .terragrunt-cache/.terraform wipe after updating")
 }
 
 func runUpdate(cmd *cobra.Command, args []string) error {
 	ui.Banner()
 
 	cfg, err := config.Load()
-	if err != nil || !cfg.InfraExists() {
-		return fmt.Errorf("infrastructure not found — run 'social-platform install' first")
+	if err != nil || cfg == nil {
+		cfg = &config.Config{}
 	}
 
-	ui.Step(1, "Checking for the latest release")
-	rel, err := release.LatestRelease()
+	// ── Step 1: Fetch latest release from GitHub ───────────────────────────
+	ui.Step(1, "Checking latest release on GitHub")
+
+	spin := ui.NewSpinner("Contacting GitHub API…")
+	latest, err := release.LatestRelease()
+	spin.Stop(err == nil)
 	if err != nil {
-		return fmt.Errorf("fetching latest release: %w", err)
-	}
-	ui.Info("Latest release: %s (currently installed: %s)", rel.TagName, cfg.ReleaseTag)
-
-	if rel.TagName == cfg.ReleaseTag {
-		ui.Success("Already up to date (%s)", cfg.ReleaseTag)
-		return nil
+		return fmt.Errorf("could not reach GitHub: %w\n  Check your internet connection or visit https://github.com/SaisakthiM/Infrastruture-Project/releases", err)
 	}
 
-	ui.Step(2, "Downloading new release for comparison")
-	tmpRoot, newInfraRoot, err := release.DownloadToTemp(rel)
-	if err != nil {
-		return fmt.Errorf("downloading release: %w", err)
-	}
-	defer os.RemoveAll(tmpRoot)
+	ui.Info("Latest release : %s", latest.TagName)
 
-	ui.Step(3, "Diffing against installed infra")
-	changes, err := release.DiffInfra(newInfraRoot, cfg.InfraDir)
-	if err != nil {
-		return fmt.Errorf("diffing: %w", err)
-	}
+	// ── Step 2: Compare with installed version ─────────────────────────────
+	ui.Step(2, "Comparing with installed version")
 
-	if len(changes) == 0 {
-		ui.Success("No file changes between %s and %s — already in sync", cfg.ReleaseTag, rel.TagName)
-		// Still bump the recorded tag since content matches.
-		cfg.ReleaseTag = rel.TagName
-		return config.Save(cfg)
+	installed := cfg.ReleaseTag
+	if installed == "" {
+		installed = "(none)"
 	}
+	ui.Info("Installed      : %s", installed)
 
-	added, modified, removed := 0, 0, 0
-	fmt.Println()
-	ui.Bold.Printf("  %-10s  %s\n", "CHANGE", "FILE")
-	ui.Dim.Printf("  %-10s  %s\n", "──────────", "────────────────────────────────────────")
-	for _, c := range changes {
-		switch c.Kind {
-		case "added":
-			added++
-			ui.Cyan.Printf("  %-10s  %s\n", "+ added", c.RelPath)
-		case "modified":
-			modified++
-			ui.Yellow.Printf("  %-10s  %s\n", "~ modified", c.RelPath)
-		case "removed":
-			removed++
-			ui.Dim.Printf("  %-10s  %s\n", "- removed", c.RelPath)
-		}
-	}
-	fmt.Println()
-	ui.Info("%d added, %d modified, %d removed (tfvars/tfstate/.terraform untouched)", added, modified, removed)
-
-	if updateDryRun {
-		ui.Warn("Dry run — no files were changed")
-		return nil
-	}
-
-	if !updateYes {
+	if installed == latest.TagName && !updateForce {
 		fmt.Println()
-		if !ui.Confirm(fmt.Sprintf("Apply these %d change(s) and update to %s?", len(changes), rel.TagName)) {
-			ui.Info("Aborted.")
-			return nil
+		ui.Success("Already up to date — %s is the latest release.", latest.TagName)
+		ui.Info("Use --force to re-download and re-apply anyway.")
+		fmt.Println()
+		return nil
+	}
+
+	if installed == latest.TagName && updateForce {
+		ui.Warn("Forcing re-download of %s (--force)", latest.TagName)
+	} else {
+		ui.Info("Update available: %s → %s", installed, latest.TagName)
+	}
+
+	if !ui.Confirm(fmt.Sprintf("Update to %s?", latest.TagName)) {
+		ui.Info("Aborted.")
+		return nil
+	}
+
+	// ── Step 3: Download & extract new release ─────────────────────────────
+	ui.Step(3, fmt.Sprintf("Downloading %s", latest.TagName))
+
+	destDir := config.DefaultInfraDir()
+	if cfg.InfraDir != "" {
+		destDir = cfg.InfraDir
+	}
+
+	dlSpin := ui.NewSpinner(fmt.Sprintf("Downloading %s…", latest.TagName))
+	infraDir, err := release.DownloadAndExtract(latest, destDir)
+	dlSpin.Stop(err == nil)
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	ui.Success("Extracted to %s", infraDir)
+
+	// ── Step 4: Wipe Terragrunt/Terraform caches ───────────────────────────
+	if !updateSkipClean {
+		ui.Step(4, "Wiping stale caches (preserving tfvars)")
+		ui.Dim.Println("  Stale .terragrunt-cache/ dirs from the old release cause provider")
+		ui.Dim.Println("  version mismatches — removing them so the next deploy starts clean.")
+		fmt.Println()
+
+		envsDir := filepath.Join(infraDir, "environments")
+		count, freed := wipeCaches(envsDir)
+
+		if count == 0 {
+			ui.Info("No caches found — already clean.")
+		} else {
+			ui.Success("Removed %d cache director%s, freed ~%s",
+				count, pluralY(count), humanSize(freed))
 		}
+		ui.Info("terraform.tfvars files preserved — run 'social-platform configure --regen'")
+		ui.Info("if you need to regenerate them after a config schema change.")
+	} else {
+		ui.Warn("Skipping cache wipe (--skip-clean). Run 'social-platform clean' manually if needed.")
 	}
 
-	ui.Step(4, "Applying update")
-	if err := release.ApplyUpdate(changes, newInfraRoot, cfg.InfraDir); err != nil {
-		return fmt.Errorf("applying update: %w", err)
-	}
-
-	cfg.ReleaseTag = rel.TagName
+	// ── Step 5: Save updated config ────────────────────────────────────────
+	ui.Step(5, "Saving updated configuration")
+	cfg.InfraDir = infraDir
+	cfg.ReleaseTag = latest.TagName
 	if err := config.Save(cfg); err != nil {
 		return fmt.Errorf("saving config: %w", err)
 	}
+	ui.Success("Release tag updated to %s in %s", latest.TagName, config.Path())
 
-	ui.Success("Updated to %s (%d file(s) changed)", rel.TagName, len(changes))
-	ui.Dim.Println("  Run 'social-platform deploy' to apply any infrastructure changes.")
+	// ── Done ───────────────────────────────────────────────────────────────
+	fmt.Println()
+	ui.Green.Println("  Update complete!")
+	fmt.Println()
+	ui.Info("Caches wiped — Terragrunt will re-download providers on next deploy.")
+	ui.Info("Next step: run 'social-platform deploy' to apply any infra changes.")
+	fmt.Println()
 	return nil
+}
+
+// wipeCaches removes every .terragrunt-cache/ and .terraform/ directory
+// under envsDir. It intentionally leaves terraform.tfvars files alone.
+// Returns (count of dirs removed, total bytes freed).
+func wipeCaches(envsDir string) (count int, freed int64) {
+	if _, err := os.Stat(envsDir); err != nil {
+		return 0, 0
+	}
+
+	_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !info.IsDir() {
+			return nil
+		}
+		base := filepath.Base(path)
+		if base != ".terragrunt-cache" && base != ".terraform" {
+			return nil
+		}
+
+		sz := dirSize(path)
+		rel, _ := filepath.Rel(envsDir, path)
+
+		if removeErr := os.RemoveAll(path); removeErr != nil {
+			ui.Warn("  Could not remove %s: %v", rel, removeErr)
+			return filepath.SkipDir
+		}
+
+		ui.Green.Printf("  ✓ removed %s (%s)\n", rel, humanSize(sz))
+		count++
+		freed += sz
+		return filepath.SkipDir
+	})
+	return
+}
+
+func pluralY(n int) string {
+	if n == 1 {
+		return "y"
+	}
+	return "ies"
+}
+
+// versionNewer returns true if next is strictly newer than current using
+// naive semver prefix comparison (handles "v1.2.3" style tags).
+// Used only for display — the real gate is tag equality.
+func versionNewer(current, next string) bool {
+	return strings.TrimPrefix(next, "v") > strings.TrimPrefix(current, "v")
 }

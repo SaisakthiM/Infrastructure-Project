@@ -123,7 +123,7 @@ var logsEnv string
 var logsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Stream Terragrunt debug logs",
-	Long: `Runs terragrunt plan with --terragrunt-log-level debug and streams
+	Long: `Runs terragrunt plan with --log-level debug and streams
 all output live. Useful for diagnosing provider errors, state lock issues,
 or slow apply runs.`,
 	Example: `  social-platform logs                    # all environments

@@ -3,8 +3,9 @@
 // same infrastructure and config as the CLI binary.
 //
 // Usage:
-//   social-platform-webui              # starts on http://localhost:8080
-//   social-platform-webui --port 9090  # custom port
+//
+//	social-platform-webui              # starts on http://localhost:8080
+//	social-platform-webui --port 9090  # custom port
 package main
 
 import (
@@ -12,20 +13,20 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/checker"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/deploy"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/release"
+	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
 )
 
 //go:embed static
@@ -36,9 +37,9 @@ var staticFiles embed.FS
 type JobStatus string
 
 const (
-	JobRunning  JobStatus = "running"
-	JobDone     JobStatus = "done"
-	JobFailed   JobStatus = "failed"
+	JobRunning JobStatus = "running"
+	JobDone    JobStatus = "done"
+	JobFailed  JobStatus = "failed"
 )
 
 type Job struct {
@@ -108,7 +109,7 @@ func (j *Job) finish(err error) {
 // ─── main ────────────────────────────────────────────────────────────────────
 
 func main() {
-	port := flag.String("port", "8080", "Port to listen on")
+	port := flag.String("port", "9000", "Port to listen on")
 	flag.Parse()
 
 	mux := http.NewServeMux()
@@ -117,15 +118,29 @@ func main() {
 	stripped, _ := fs.Sub(staticFiles, "static")
 	mux.Handle("/", http.FileServer(http.FS(stripped)))
 
-	// API routes.
+	// Core API routes.
 	mux.HandleFunc("/api/status", handleStatus)
 	mux.HandleFunc("/api/envs", handleEnvs)
 	mux.HandleFunc("/api/run", handleRun)
-	mux.HandleFunc("/api/job/", handleJobStream) // GET /api/job/<id>/stream or /api/job/<id>
+	mux.HandleFunc("/api/job/", handleJobStream)
 	mux.HandleFunc("/api/import/scan", handleImportScan)
 	mux.HandleFunc("/api/import/run", handleImportRun)
+
+	// Install routes.
+	mux.HandleFunc("/api/install/check", handleInstallCheck)
+	mux.HandleFunc("/api/install/releases", handleInstallReleases)
+	mux.HandleFunc("/api/install/run", handleInstallRun)
+
+	// Configure routes.
+	mux.HandleFunc("/api/configure/load", handleConfigureLoad)
+	mux.HandleFunc("/api/configure/save", handleConfigureSave)
+
+	// Update routes.
 	mux.HandleFunc("/api/update/check", handleUpdateCheck)
-	mux.HandleFunc("/api/update/apply", handleUpdateApply)
+	mux.HandleFunc("/api/update/run", handleUpdateRun)
+
+	// Clean route.
+	mux.HandleFunc("/api/clean", handleClean)
 
 	addr := ":" + *port
 	fmt.Printf("\n  social-platform Web UI\n")
@@ -133,7 +148,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
-// ─── handlers ────────────────────────────────────────────────────────────────
+// ─── core handlers ────────────────────────────────────────────────────────────
 
 func handleStatus(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
@@ -159,9 +174,10 @@ func handleEnvs(w http.ResponseWriter, r *http.Request) {
 }
 
 type runRequest struct {
-	Command     string `json:"command"`     // "deploy" | "destroy" | "plan" | "logs"
-	Env         string `json:"env"`         // environment name
-	Target      string `json:"target"`      // optional resource target
+	Command     string `json:"command"`
+	Env         string `json:"env"`
+	Target      string `json:"target"`
+	Replace     string `json:"replace"`
 	AutoApprove bool   `json:"auto_approve"`
 }
 
@@ -191,82 +207,32 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
+type jobWriter struct{ job *Job }
+
+func (w jobWriter) Write(p []byte) (int, error) {
+	w.job.write(p)
+	return len(p), nil
+}
+
 func executeCommand(cfg *config.Config, req runRequest, job *Job) error {
 	env := deploy.Environment(req.Env)
-	dir := deploy.WorkDir(cfg, env)
+	out := jobWriter{job: job}
 
-	if _, statErr := os.Stat(dir); statErr != nil {
-		return fmt.Errorf("environment directory not found: %s", dir)
-	}
-
-	var args []string
 	switch req.Command {
 	case "deploy":
-		if env == deploy.EnvAll {
-			args = []string{"run", "--all", "apply", "--auto-approve"}
-		} else {
-			args = []string{"apply", "-auto-approve"}
-			if req.Target != "" {
-				args = append(args, "--target="+req.Target)
-			}
-		}
+		return deploy.Apply(cfg, env, req.AutoApprove, req.Target, req.Replace, out)
 	case "destroy":
-		if env == deploy.EnvAll {
-			args = []string{"run", "--all", "destroy", "--auto-approve"}
-		} else {
-			args = []string{"destroy", "-auto-approve"}
-		}
+		return deploy.Destroy(cfg, env, req.AutoApprove, out)
 	case "plan":
-		if env == deploy.EnvAll {
-			args = []string{"run", "--all", "plan"}
-		} else {
-			args = []string{"plan"}
-		}
+		return deploy.Status(cfg, env, out)
 	case "logs":
-		if env == deploy.EnvAll {
-			args = []string{"run", "--all", "plan", "--terragrunt-log-level", "debug"}
-		} else {
-			args = []string{"plan", "--terragrunt-log-level", "debug"}
-		}
+		return deploy.Logs(cfg, env, out)
 	default:
 		return fmt.Errorf("unknown command: %s", req.Command)
 	}
-
-	cmd := exec.Command("terragrunt", args...)
-	cmd.Dir = dir
-	cmd.Env = os.Environ()
-
-	pr, pw, _ := os.Pipe()
-	cmd.Stdout = io.MultiWriter(pw)
-	cmd.Stderr = io.MultiWriter(pw)
-
-	if startErr := cmd.Start(); startErr != nil {
-		pw.Close()
-		pr.Close()
-		return fmt.Errorf("starting terragrunt: %w", startErr)
-	}
-
-	// Stream output to job buffer.
-	go func() {
-		buf := make([]byte, 4096)
-		for {
-			n, readErr := pr.Read(buf)
-			if n > 0 {
-				job.write(buf[:n])
-			}
-			if readErr != nil {
-				break
-			}
-		}
-	}()
-
-	err := cmd.Wait()
-	pw.Close()
-	return err
 }
 
 func handleJobStream(w http.ResponseWriter, r *http.Request) {
-	// Parse job ID from path: /api/job/<id> or /api/job/<id>/stream
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/job/"), "/")
 	jobID := parts[0]
 
@@ -277,7 +243,6 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(parts) >= 2 && parts[1] == "stream" {
-		// Server-Sent Events stream.
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -294,7 +259,6 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 			out := job.output()
 			if len(out) > sent {
 				chunk := out[sent:]
-				// Escape for SSE format.
 				for _, line := range strings.Split(chunk, "\n") {
 					fmt.Fprintf(w, "data: %s\n\n", line)
 				}
@@ -303,8 +267,7 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if job.Status != JobRunning {
-				status := job.Status
-				fmt.Fprintf(w, "event: done\ndata: %s\n\n", status)
+				fmt.Fprintf(w, "event: done\ndata: %s\n\n", job.Status)
 				flusher.Flush()
 				return
 			}
@@ -317,7 +280,6 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// JSON status.
 	writeJSON(w, map[string]interface{}{
 		"id":      job.ID,
 		"status":  job.Status,
@@ -329,7 +291,12 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleImportScan(w http.ResponseWriter, r *http.Request) {
-	candidates, err := deploy.DetectImportCandidates()
+	cfg, err := config.Load()
+	if err != nil || !cfg.InfraExists() {
+		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
+		return
+	}
+	candidates, err := deploy.DetectImportCandidates(cfg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -356,8 +323,8 @@ func handleImportScan(w http.ResponseWriter, r *http.Request) {
 }
 
 type importRunRequest struct {
-	TFAddress string `json:"tf_address"`
-	ImportID  string `json:"import_id"`
+	TFAddress  string `json:"tf_address"`
+	ImportID   string `json:"import_id"`
 	DockerName string `json:"docker_name"`
 	Kind       string `json:"kind"`
 }
@@ -392,133 +359,551 @@ func handleImportRun(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"status": "imported"})
 }
 
-// ─── update ──────────────────────────────────────────────────────────────────
+// ─── install handlers ─────────────────────────────────────────────────────────
 
-// updateState caches the result of the last /api/update/check call so that
-// /api/update/apply doesn't need to re-download and re-diff.
-var (
-	updateMu      sync.Mutex
-	pendingTag    string
-	pendingTmp    string
-	pendingNewDir string
-	pendingChange []release.FileChange
-)
-
-type updateChangeJSON struct {
-	Path string `json:"path"`
-	Kind string `json:"kind"`
+// GET /api/install/check — returns prerequisite check results.
+func handleInstallCheck(w http.ResponseWriter, r *http.Request) {
+	results := checker.CheckAll()
+	type toolResult struct {
+		Name      string `json:"name"`
+		Installed bool   `json:"installed"`
+		Version   string `json:"version"`
+		ManualURL string `json:"manual_url"`
+	}
+	out := make([]toolResult, len(results))
+	for i, res := range results {
+		out[i] = toolResult{
+			Name:      res.Tool.Name,
+			Installed: res.Installed,
+			Version:   res.Version,
+			ManualURL: res.Tool.ManualURL,
+		}
+	}
+	writeJSON(w, out)
 }
 
-func handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Load()
-	if err != nil || !cfg.InfraExists() {
-		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
-		return
-	}
-
-	rel, err := release.LatestRelease()
+// GET /api/install/releases — returns list of GitHub releases.
+func handleInstallReleases(w http.ResponseWriter, r *http.Request) {
+	releases, err := release.ListReleases()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-
-	if rel.TagName == cfg.ReleaseTag {
-		writeJSON(w, map[string]interface{}{
-			"up_to_date":     true,
-			"current_tag":    cfg.ReleaseTag,
-			"latest_tag":     rel.TagName,
-			"changes":        []updateChangeJSON{},
-		})
-		return
+	type relJSON struct {
+		Tag string `json:"tag"`
 	}
-
-	tmpRoot, newInfraRoot, err := release.DownloadToTemp(rel)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("downloading release: %v", err), http.StatusInternalServerError)
-		return
+	out := make([]relJSON, len(releases))
+	for i, rel := range releases {
+		out[i] = relJSON{Tag: rel.TagName}
 	}
-
-	changes, err := release.DiffInfra(newInfraRoot, cfg.InfraDir)
-	if err != nil {
-		os.RemoveAll(tmpRoot)
-		http.Error(w, fmt.Sprintf("diffing: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Cache for the follow-up apply call. Clean up any previous pending download first.
-	updateMu.Lock()
-	if pendingTmp != "" {
-		os.RemoveAll(pendingTmp)
-	}
-	pendingTag = rel.TagName
-	pendingTmp = tmpRoot
-	pendingNewDir = newInfraRoot
-	pendingChange = changes
-	updateMu.Unlock()
-
-	out := make([]updateChangeJSON, 0, len(changes))
-	for _, c := range changes {
-		out = append(out, updateChangeJSON{Path: c.RelPath, Kind: c.Kind})
-	}
-
-	writeJSON(w, map[string]interface{}{
-		"up_to_date":  len(changes) == 0,
-		"current_tag": cfg.ReleaseTag,
-		"latest_tag":  rel.TagName,
-		"changes":     out,
-	})
+	writeJSON(w, out)
 }
 
-func handleUpdateApply(w http.ResponseWriter, r *http.Request) {
+// POST /api/install/run — downloads + extracts the chosen release tag.
+// Body: { "tag": "v1.2.3" }  (empty or "latest" picks the newest release)
+func handleInstallRun(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
 		return
 	}
 
+	var req struct {
+		Tag string `json:"tag"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	job := newJob("install", req.Tag)
+	writeJSON(w, map[string]string{"job_id": job.ID})
+
+	go func() {
+		jw := jobWriter{job: job}
+
+		releases, err := release.ListReleases()
+		if err != nil {
+			fmt.Fprintf(jw, "error listing releases: %v\n", err)
+			job.finish(err)
+			return
+		}
+
+		var chosen *release.GHRelease
+		if req.Tag == "" || req.Tag == "latest" {
+			if len(releases) == 0 {
+				r, e := release.LatestRelease()
+				if e != nil {
+					fmt.Fprintf(jw, "error: %v\n", e)
+					job.finish(e)
+					return
+				}
+				chosen = r
+			} else {
+				chosen = &releases[0]
+			}
+		} else {
+			for i := range releases {
+				if releases[i].TagName == req.Tag {
+					chosen = &releases[i]
+					break
+				}
+			}
+			if chosen == nil {
+				e := fmt.Errorf("release tag %q not found", req.Tag)
+				fmt.Fprintf(jw, "error: %v\n", e)
+				job.finish(e)
+				return
+			}
+		}
+
+		fmt.Fprintf(jw, "Selected release: %s\n", chosen.TagName)
+		fmt.Fprintf(jw, "Downloading infrastructure files…\n")
+
+		destDir := config.DefaultInfraDir()
+		infraDir, err := release.DownloadAndExtract(chosen, destDir)
+		if err != nil {
+			fmt.Fprintf(jw, "error: %v\n", err)
+			job.finish(err)
+			return
+		}
+		fmt.Fprintf(jw, "Extracted to %s\n", infraDir)
+
+		cfg, loadErr := config.Load()
+		if loadErr != nil {
+			cfg = &config.Config{}
+		}
+		cfg.InfraDir = infraDir
+		cfg.ReleaseTag = chosen.TagName
+		if saveErr := config.Save(cfg); saveErr != nil {
+			fmt.Fprintf(jw, "error saving config: %v\n", saveErr)
+			job.finish(saveErr)
+			return
+		}
+		fmt.Fprintf(jw, "Configuration saved.\n")
+		fmt.Fprintf(jw, "✓ Install complete — run Configure next to set your secrets.\n")
+		job.finish(nil)
+	}()
+}
+
+// ─── configure handlers ───────────────────────────────────────────────────────
+
+// GET /api/configure/load — returns current non-secret config values.
+func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
-	if err != nil || !cfg.InfraExists() {
-		http.Error(w, "infra not found", http.StatusPreconditionFailed)
-		return
+	if err != nil {
+		cfg = &config.Config{}
 	}
 
-	updateMu.Lock()
-	tag, tmpRoot, newDir, changes := pendingTag, pendingTmp, pendingNewDir, pendingChange
-	updateMu.Unlock()
+	type configResponse struct {
+		InfraDir   string `json:"infra_dir"`
+		ReleaseTag string `json:"release_tag"`
 
-	if tmpRoot == "" || newDir == "" {
-		http.Error(w, "no pending update — call /api/update/check first", http.StatusPreconditionFailed)
-		return
+		// prod-infra
+		Domain         string `json:"domain"`
+		MainServerIP   string `json:"main_server_ip"`
+		AtlantisGHUser string `json:"atlantis_gh_user"`
+		GitopsRepoURL  string `json:"gitops_repo_url"`
+		N8NPort        string `json:"n8n_port"`
+		N8NHost        string `json:"n8n_host"`
+		N8NProtocol    string `json:"n8n_protocol"`
+		N8NUser        string `json:"n8n_user"`
+
+		// prod-social
+		SocialGitopsURL string `json:"social_gitops_repo_url"`
+		SocialMinio     string `json:"social_minio_user"`
+		LoadImages      bool   `json:"load_images"`
+
+		// prod-docker
+		BlogDBName       string `json:"blog_db_name"`
+		BlogMinioUser    string `json:"blog_minio_user"`
+		BlogAllowedHosts string `json:"blog_allowed_hosts"`
+		NotesDBName      string `json:"notes_db_name"`
+		NotesDBUser      string `json:"notes_db_user"`
+		BankDBUser       string `json:"bank_db_user"`
+		BankDBName       string `json:"bank_db_name"`
+		DocDBName        string `json:"doc_db_name"`
+		DocMinioUser     string `json:"doc_minio_user"`
+		WhisperDBUser    string `json:"whisper_db_user"`
+		WhisperDBName    string `json:"whisper_db_name"`
+		WhisperDBTestDB  string `json:"whisper_db_test_db"`
+		WhisperMinioUser string `json:"whisper_minio_user"`
+
+		// prod-gateway
+		LetsEncryptPath string `json:"letsencrypt_path"`
 	}
 
-	if err := release.ApplyUpdate(changes, newDir, cfg.InfraDir); err != nil {
-		http.Error(w, fmt.Sprintf("applying update: %v", err), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, configResponse{
+		InfraDir:   cfg.InfraDir,
+		ReleaseTag: cfg.ReleaseTag,
 
-	cfg.ReleaseTag = tag
-	if err := config.Save(cfg); err != nil {
-		http.Error(w, fmt.Sprintf("saving config: %v", err), http.StatusInternalServerError)
-		return
-	}
+		Domain:         cfg.ProdInfra.Domain,
+		MainServerIP:   cfg.ProdInfra.MainServerIP,
+		AtlantisGHUser: cfg.ProdInfra.AtlantisGHUser,
+		GitopsRepoURL:  cfg.ProdInfra.GitopsRepoURL,
+		N8NPort:        orDefault(cfg.ProdInfra.N8NPort, "5678"),
+		N8NHost:        orDefault(cfg.ProdInfra.N8NHost, "0.0.0.0"),
+		N8NProtocol:    orDefault(cfg.ProdInfra.N8NProtocol, "https"),
+		N8NUser:        orDefault(cfg.ProdInfra.N8NUser, "admin"),
 
-	updateMu.Lock()
-	os.RemoveAll(tmpRoot)
-	pendingTag, pendingTmp, pendingNewDir, pendingChange = "", "", "", nil
-	updateMu.Unlock()
+		SocialGitopsURL: cfg.ProdSocial.GitopsRepoURL,
+		SocialMinio:     orDefault(cfg.ProdSocial.SocialMinio, "minio"),
+		LoadImages:      cfg.ProdSocial.LoadImages,
 
-	writeJSON(w, map[string]interface{}{
-		"status":  "updated",
-		"tag":     tag,
-		"changed": len(changes),
+		BlogDBName:       orDefault(cfg.ProdDocker.BlogDBName, "blog_db"),
+		BlogMinioUser:    orDefault(cfg.ProdDocker.BlogMinioUser, "admin"),
+		BlogAllowedHosts: orDefault(cfg.ProdDocker.BlogAllowedHosts, "['localhost','127.0.0.1']"),
+		NotesDBName:      orDefault(cfg.ProdDocker.NotesDBName, "notes_app"),
+		NotesDBUser:      orDefault(cfg.ProdDocker.NotesDBUser, "saisakthi"),
+		BankDBUser:       orDefault(cfg.ProdDocker.BankDBUser, "bankmanagement"),
+		BankDBName:       orDefault(cfg.ProdDocker.BankDBName, "bank"),
+		DocDBName:        orDefault(cfg.ProdDocker.DocDBName, "book_db"),
+		DocMinioUser:     orDefault(cfg.ProdDocker.DocMinioUser, "admin"),
+		WhisperDBUser:    orDefault(cfg.ProdDocker.WhisperDBUser, "admin"),
+		WhisperDBName:    orDefault(cfg.ProdDocker.WhisperDBName, "chat"),
+		WhisperDBTestDB:  orDefault(cfg.ProdDocker.WhisperDBTestDB, "chat_test"),
+		WhisperMinioUser: orDefault(cfg.ProdDocker.WhisperMinioUser, "minioadmin"),
+
+		LetsEncryptPath: orDefault(cfg.ProdGateway.LetsEncryptPath, "/home/saisakthi/letsencrypt/"),
 	})
 }
 
+// POST /api/configure/save — saves non-secret config and regenerates tfvars.
+// Accepts the same flat JSON shape that /api/configure/load returns.
+func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Domain         string `json:"domain"`
+		MainServerIP   string `json:"main_server_ip"`
+		AtlantisGHUser string `json:"atlantis_gh_user"`
+		GitopsRepoURL  string `json:"gitops_repo_url"`
+		N8NPort        string `json:"n8n_port"`
+		N8NHost        string `json:"n8n_host"`
+		N8NProtocol    string `json:"n8n_protocol"`
+		N8NUser        string `json:"n8n_user"`
+
+		SocialGitopsURL string `json:"social_gitops_repo_url"`
+		SocialMinio     string `json:"social_minio_user"`
+		LoadImages      bool   `json:"load_images"`
+
+		BlogDBName       string `json:"blog_db_name"`
+		BlogMinioUser    string `json:"blog_minio_user"`
+		BlogAllowedHosts string `json:"blog_allowed_hosts"`
+		NotesDBName      string `json:"notes_db_name"`
+		NotesDBUser      string `json:"notes_db_user"`
+		BankDBUser       string `json:"bank_db_user"`
+		BankDBName       string `json:"bank_db_name"`
+		DocDBName        string `json:"doc_db_name"`
+		DocMinioUser     string `json:"doc_minio_user"`
+		WhisperDBUser    string `json:"whisper_db_user"`
+		WhisperDBName    string `json:"whisper_db_name"`
+		WhisperDBTestDB  string `json:"whisper_db_test_db"`
+		WhisperMinioUser string `json:"whisper_minio_user"`
+
+		LetsEncryptPath string `json:"letsencrypt_path"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cfg, loadErr := config.Load()
+	if loadErr != nil {
+		cfg = &config.Config{}
+	}
+
+	cfg.ProdInfra.Domain = req.Domain
+	cfg.ProdInfra.MainServerIP = req.MainServerIP
+	cfg.ProdInfra.AtlantisGHUser = req.AtlantisGHUser
+	cfg.ProdInfra.GitopsRepoURL = req.GitopsRepoURL
+	cfg.ProdInfra.N8NPort = req.N8NPort
+	cfg.ProdInfra.N8NHost = req.N8NHost
+	cfg.ProdInfra.N8NProtocol = req.N8NProtocol
+	cfg.ProdInfra.N8NUser = req.N8NUser
+
+	cfg.ProdSocial.GitopsRepoURL = req.SocialGitopsURL
+	cfg.ProdSocial.SocialMinio = req.SocialMinio
+	cfg.ProdSocial.LoadImages = req.LoadImages
+
+	cfg.ProdDocker.BlogDBName = req.BlogDBName
+	cfg.ProdDocker.BlogMinioUser = req.BlogMinioUser
+	cfg.ProdDocker.BlogAllowedHosts = req.BlogAllowedHosts
+	cfg.ProdDocker.NotesDBName = req.NotesDBName
+	cfg.ProdDocker.NotesDBUser = req.NotesDBUser
+	cfg.ProdDocker.BankDBUser = req.BankDBUser
+	cfg.ProdDocker.BankDBName = req.BankDBName
+	cfg.ProdDocker.DocDBName = req.DocDBName
+	cfg.ProdDocker.DocMinioUser = req.DocMinioUser
+	cfg.ProdDocker.WhisperDBUser = req.WhisperDBUser
+	cfg.ProdDocker.WhisperDBName = req.WhisperDBName
+	cfg.ProdDocker.WhisperDBTestDB = req.WhisperDBTestDB
+	cfg.ProdDocker.WhisperMinioUser = req.WhisperMinioUser
+
+	cfg.ProdGateway.LetsEncryptPath = req.LetsEncryptPath
+
+	if saveErr := config.Save(cfg); saveErr != nil {
+		http.Error(w, "saving config: "+saveErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if genErr := secrets.GenerateAll(cfg); genErr != nil {
+		writeJSON(w, map[string]string{
+			"status":  "partial",
+			"warning": "config saved but tfvars generation failed: " + genErr.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
+
+func orDefault(v, def string) string {
+	if v != "" {
+		return v
+	}
+	return def
+}
 
 func writeJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
 }
 
-// Ensure filepath is used.
-var _ = filepath.Join
+// ── clean handler ─────────────────────────────────────────────────────────────
+
+// POST /api/clean  body: { "env": "all"|"prod-social"|…, "state": false }
+// Removes .terragrunt-cache, .terraform, *.tfvars, and optionally *.tfstate.
+func handleClean(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Env   string `json:"env"`
+		State bool   `json:"state"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	cfg, err := config.Load()
+	if err != nil || !cfg.InfraExists() {
+		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
+		return
+	}
+
+	envsDir := cfg.InfraDir + "/environments"
+
+	var envDirs []string
+	if req.Env != "" && req.Env != "all" {
+		envDirs = []string{envsDir + "/" + req.Env}
+	} else {
+		entries, readErr := os.ReadDir(envsDir)
+		if readErr != nil {
+			http.Error(w, "reading envs: "+readErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				envDirs = append(envDirs, envsDir+"/"+e.Name())
+			}
+		}
+	}
+
+	type result struct {
+		Path string `json:"path"`
+		Size int64  `json:"bytes"`
+	}
+	var removed []result
+	var totalBytes int64
+
+	for _, dir := range envDirs {
+		_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			base := filepath.Base(path)
+			del := false
+			if info.IsDir() && (base == ".terragrunt-cache" || base == ".terraform") {
+				del = true
+			}
+			if !info.IsDir() {
+				switch {
+				case base == "terraform.tfvars",
+					base == ".terraform.lock.hcl",
+					strings.HasSuffix(base, ".tfvars"):
+					del = true
+				case req.State && (base == "terraform.tfstate" ||
+					strings.HasPrefix(base, "terraform.tfstate.") ||
+					strings.HasSuffix(base, ".tfstate") ||
+					strings.HasSuffix(base, ".tfstate.backup")):
+					del = true
+				}
+			}
+			if del {
+				sz := webDirSize(path)
+				if removeErr := os.RemoveAll(path); removeErr == nil {
+					removed = append(removed, result{Path: path, Size: sz})
+					totalBytes += sz
+				}
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+			}
+			return nil
+		})
+	}
+
+	writeJSON(w, map[string]interface{}{
+		"removed":     removed,
+		"total_bytes": totalBytes,
+		"count":       len(removed),
+	})
+}
+
+func webDirSize(path string) int64 {
+	var total int64
+	_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
+}
+
+// ── update handlers ───────────────────────────────────────────────────────────
+
+// GET /api/update/check — returns installed tag vs latest GitHub release.
+func handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
+	latest, err := release.LatestRelease()
+	if err != nil {
+		http.Error(w, "reaching GitHub: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	cfg, _ := config.Load()
+	installed := ""
+	if cfg != nil {
+		installed = cfg.ReleaseTag
+	}
+	writeJSON(w, map[string]interface{}{
+		"installed": installed,
+		"tag":       latest.TagName,
+		"up_to_date": installed == latest.TagName,
+	})
+}
+
+// POST /api/update/run — downloads latest release, wipes caches, saves config.
+// Body: { "force": false, "skip_clean": false }
+func handleUpdateRun(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Force     bool `json:"force"`
+		SkipClean bool `json:"skip_clean"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	cfg, _ := config.Load()
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+
+	job := newJob("update", "infra")
+	writeJSON(w, map[string]string{"job_id": job.ID})
+
+	go func() {
+		jw := jobWriter{job: job}
+
+		// Check latest release.
+		fmt.Fprintf(jw, "Fetching latest release from GitHub…\n")
+		latest, err := release.LatestRelease()
+		if err != nil {
+			fmt.Fprintf(jw, "error: %v\n", err)
+			job.finish(err)
+			return
+		}
+		fmt.Fprintf(jw, "Latest release : %s\n", latest.TagName)
+
+		installed := cfg.ReleaseTag
+		if installed == "" {
+			installed = "(none)"
+		}
+		fmt.Fprintf(jw, "Installed      : %s\n\n", installed)
+
+		if installed == latest.TagName && !req.Force {
+			fmt.Fprintf(jw, "Already up to date — %s is the latest release.\n", latest.TagName)
+			fmt.Fprintf(jw, "Use force=true to re-download anyway.\n")
+			job.finish(nil)
+			return
+		}
+		if req.Force {
+			fmt.Fprintf(jw, "Force flag set — re-downloading %s\n\n", latest.TagName)
+		} else {
+			fmt.Fprintf(jw, "Updating %s → %s\n\n", installed, latest.TagName)
+		}
+
+		// Download + extract.
+		destDir := config.DefaultInfraDir()
+		if cfg.InfraDir != "" {
+			destDir = cfg.InfraDir
+		}
+		fmt.Fprintf(jw, "Downloading %s…\n", latest.TagName)
+		infraDir, err := release.DownloadAndExtract(latest, destDir)
+		if err != nil {
+			fmt.Fprintf(jw, "error downloading: %v\n", err)
+			job.finish(err)
+			return
+		}
+		fmt.Fprintf(jw, "Extracted to %s\n\n", infraDir)
+
+		// Wipe caches.
+		if !req.SkipClean {
+			fmt.Fprintf(jw, "Wiping stale .terragrunt-cache/ and .terraform/ dirs…\n")
+			envsDir := infraDir + "/environments"
+			count := 0
+			var freed int64
+			_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, walkErr error) error {
+				if walkErr != nil || !info.IsDir() {
+					return nil
+				}
+				base := filepath.Base(path)
+				if base != ".terragrunt-cache" && base != ".terraform" {
+					return nil
+				}
+				sz := webDirSize(path)
+				if rmErr := os.RemoveAll(path); rmErr == nil {
+					rel, _ := filepath.Rel(envsDir, path)
+					fmt.Fprintf(jw, "  removed %s\n", rel)
+					count++
+					freed += sz
+				}
+				return filepath.SkipDir
+			})
+			if count == 0 {
+				fmt.Fprintf(jw, "  No caches found — already clean.\n")
+			} else {
+				fmt.Fprintf(jw, "  Removed %d cache dir(s)\n\n", count)
+				_ = freed // logged per-entry above
+			}
+			fmt.Fprintf(jw, "terraform.tfvars files preserved.\n\n")
+		} else {
+			fmt.Fprintf(jw, "Skipping cache wipe (skip_clean=true)\n\n")
+		}
+
+		// Save config.
+		cfg.InfraDir = infraDir
+		cfg.ReleaseTag = latest.TagName
+		if saveErr := config.Save(cfg); saveErr != nil {
+			fmt.Fprintf(jw, "error saving config: %v\n", saveErr)
+			job.finish(saveErr)
+			return
+		}
+		fmt.Fprintf(jw, "Config updated — release tag: %s\n", latest.TagName)
+		fmt.Fprintf(jw, "Done! Run deploy to apply any infra changes.\n")
+		job.finish(nil)
+	}()
+}
