@@ -24,7 +24,7 @@ variable "load_images" {
 variable "gitops_repo_url" {
   description = "Git URL ArgoCD pulls gitops/ from. Must match the repo you push this whole infra/ tree to."
   type        = string
-  default     = "https://github.com/SaisakthiM/Coding-Project"
+  default     = "git@github.com:SaisakthiM/Infrastructure-Project.git"
 }
 
 variable "gitops_repo_ssh_key" {

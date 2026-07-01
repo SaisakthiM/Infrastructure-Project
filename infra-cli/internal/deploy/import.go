@@ -18,7 +18,7 @@ import (
 type ResourceKind string
 
 const (
-	KindVolume ResourceKind = "volume"
+	KindVolume    ResourceKind = "volume"
 	KindContainer ResourceKind = "container"
 	// KindImage is intentionally omitted: kreuzwerker/docker v3.x does not
 	// support terraform import for docker_image resources. Images are always
@@ -60,8 +60,10 @@ var dockerVolumeCatalog = []ImportEntry{
 	{"docker_volume.whisper_minio_data", KindVolume, "whisper_minio_data"},
 }
 
-// dockerContainerCatalog lists all docker_container resources in prod-docker.
-// The DockerName is the 'name' field from the Terraform resource block.
+// dockerContainerCatalog lists the "support" docker_container resources in
+// prod-docker (postgres/mysql/minio sidecars and *_frontend_build one-shot
+// build containers). These are declared directly in main.tf, not via the
+// docker_app module.
 var dockerContainerCatalog = []ImportEntry{
 	{"docker_container.notes_postgres", KindContainer, "notes-postgres"},
 	{"docker_container.notes_frontend_build", KindContainer, "notes-frontend-build"},
@@ -82,9 +84,31 @@ var dockerContainerCatalog = []ImportEntry{
 	{"docker_container.doc_frontend_build", KindContainer, "doc-frontend-build"},
 }
 
-// docker_image resources are NOT in the catalog — kreuzwerker/docker v3.x
-// does not support import for docker_image. Terraform rebuilds them on apply.
+// dockerAppContainerCatalog lists the docker_container.app resource created
+// by each instance of the generic "../../modules/docker_app" module. This
+// was previously missing from the catalog entirely, which is why the import
+// scanner reported "No matching Docker resources found" even though these
+// were exactly the containers causing "name already in use" conflicts on
+// apply. TFAddress must be "module.<instance_name>.docker_container.app" —
+// the module's internal resource is always named "app" (see
+// modules/docker_app/main.tf line 1). DockerName must match each module's
+// `name` argument EXACTLY, including the whisper_backend underscore
+// inconsistency (it uses "whisper_backend", not "whisper-backend", unlike
+// every other module instance which uses hyphens).
+var dockerAppContainerCatalog = []ImportEntry{
+	{"module.notes_backend.docker_container.app", KindContainer, "notes-backend"},
+	{"module.whisper_backend.docker_container.app", KindContainer, "whisper_backend"}, // underscore, not a typo
+	{"module.bank_backend.docker_container.app", KindContainer, "bank-backend"},
+	{"module.compiler_server.docker_container.app", KindContainer, "compiler-server"},
+	{"module.video_backend.docker_container.app", KindContainer, "video-uploader-backend"},
+	{"module.hospital_management.docker_container.app", KindContainer, "hospital-management"},
+	{"module.blog_website.docker_container.app", KindContainer, "blog-website"},
+	{"module.api_service_backend.docker_container.app", KindContainer, "api-service-backend"},
+	{"module.doc_backend.docker_container.app", KindContainer, "doc-backend"},
+}
 
+// docker_image resources are NOT in any catalog — kreuzwerker/docker v3.x
+// does not support import for docker_image. Terraform rebuilds them on apply.
 
 // ImportCandidate is a resource that was found in Docker and is ready to import.
 type ImportCandidate struct {
@@ -126,12 +150,22 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 		}
 	}
 
-	// ── Containers ───────────────────────────────────────────────────────────
+	// ── Containers (support: postgres/mysql/minio/*_frontend_build) ────────────
 	existingContainers, err := listDockerContainers()
 	if err != nil {
 		ui.Warn("Could not list docker containers: %v", err)
 	} else {
 		for _, entry := range dockerContainerCatalog {
+			if inState[entry.TFAddress] {
+				continue
+			}
+			if id, ok := existingContainers[entry.DockerName]; ok {
+				candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
+			}
+		}
+
+		// ── Containers (docker_app module instances) ───────────────────────
+		for _, entry := range dockerAppContainerCatalog {
 			if inState[entry.TFAddress] {
 				continue
 			}

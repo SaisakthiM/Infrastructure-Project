@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zalando/go-keyring"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/zalando/go-keyring"
 )
 
 func key(env, variable string) string {
@@ -322,6 +322,19 @@ gitops_repo_ssh_key = <<EOF
 	return write(filepath.Join(envPath, "prod-social", "terraform.tfvars"), content)
 }
 
+// generateInfraTfvars writes terraform.tfvars for prod-infra.
+//
+// BUGFIX: this previously passed g("docker_host") as the LAST Sprintf
+// argument while the format string's "docker_host = %q" placeholder is the
+// SECOND one. Sprintf fills placeholders purely positionally, so every value
+// from N8N_PORT onward silently shifted one slot to the left — docker_host
+// ended up written as inf.N8NPort's value (e.g. "5678"), which is exactly
+// what Terraform's docker provider choked on: `unable to parse docker host
+// \`5678\``. Every other field after docker_host was ALSO off by one (e.g.
+// N8N_HOST likely got N8NProtocol's value, etc.) — it just didn't error
+// loudly for those because they're not host strings the Docker provider
+// validates. Fixed by moving g("docker_host") to be the 2nd argument, right
+// after projectsDir(cfg), so argument order matches placeholder order.
 func generateInfraTfvars(cfg *config.Config, envPath string) error {
 	inf := cfg.ProdInfra
 	g := func(k string) string { return Get("prod-infra", k) }
@@ -368,6 +381,7 @@ atlantis_gh_token          = %q
 atlantis_gh_webhook_secret = %q
 `,
 		projectsDir(cfg),
+		g("docker_host"), // FIX: was previously passed last; now matches "docker_host = %q" placeholder position
 		inf.N8NPort,
 		inf.N8NHost,
 		inf.N8NProtocol,
@@ -380,7 +394,6 @@ atlantis_gh_webhook_secret = %q
 		inf.AtlantisGHUser,
 		g("atlantis_gh_token"),
 		g("atlantis_gh_webhook_secret"),
-		g("docker_host"),
 	)
 	return write(filepath.Join(envPath, "prod-infra", "terraform.tfvars"), content)
 }

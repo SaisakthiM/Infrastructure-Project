@@ -36,7 +36,7 @@ variable "observability_redis_password" {
 variable "gitops_repo_url" {
   description = "Git URL ArgoCD pulls gitops/ from. Must match prod-social's value and the repo you actually push to."
   type        = string
-  default     = "git@github.com:SaisakthiM/Coding-Project.git"
+  default     = "git@github.com:SaisakthiM/Infrastructure-Project.git"
 }
 
 # ─── Atlantis ───────────────────────────────────────────────
