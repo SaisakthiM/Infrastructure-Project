@@ -20,7 +20,9 @@ type ResourceKind string
 const (
 	KindVolume    ResourceKind = "volume"
 	KindContainer ResourceKind = "container"
-	KindImage     ResourceKind = "image"
+	// KindImage is intentionally omitted: kreuzwerker/docker v3.x does not
+	// support terraform import for docker_image resources. Images are always
+	// rebuilt by Terraform on the next apply.
 )
 
 // ImportEntry maps a Terraform resource address to its Docker lookup name.
@@ -78,27 +80,9 @@ var dockerContainerCatalog = []ImportEntry{
 	{"docker_container.doc_frontend_build", KindContainer, "doc-frontend-build"},
 }
 
-// dockerImageCatalog lists all docker_image resources in prod-docker.
-// DockerName is "repo:tag". Import ID will be resolved to sha256 via docker inspect.
-var dockerImageCatalog = []ImportEntry{
-	{"docker_image.bank_backend", KindImage, "bankmanager-backend:latest"},
-	{"docker_image.bank_frontend_build", KindImage, "bank-frontend-build:latest"},
-	{"docker_image.blog_website", KindImage, "blogsite:latest"},
-	{"docker_image.hospital_management", KindImage, "hospital_management:latest"},
-	{"docker_image.quiz_frontend_build", KindImage, "quiz-frontend-build:latest"},
-	{"docker_image.video_backend", KindImage, "video-uploader-backend:latest"},
-	{"docker_image.video_frontend_build", KindImage, "video-frontend-build:latest"},
-	{"docker_image.notes_frontend_build", KindImage, "notes-frontend-build:latest"},
-	{"docker_image.notes_backend", KindImage, "notesapp-backend:latest"},
-	{"docker_image.api_service_backend", KindImage, "api-service-backend:latest"},
-	{"docker_image.api_service_frontend_build", KindImage, "api-service-frontend:latest"},
-	{"docker_image.doc_backend", KindImage, "documentintelligenceplatform-backend:latest"},
-	{"docker_image.doc_frontend_build", KindImage, "documentintelligenceplatform-frontend:latest"},
-	{"docker_image.whisper_backend", KindImage, "whisper_backend:latest"},
-	{"docker_image.whisper_frontend", KindImage, "whisper-frontend:latest"},
-	{"docker_image.compiler_db", KindImage, "online_compiler_db:latest"},
-	{"docker_image.compiler_server", KindImage, "online_compiler_server:latest"},
-}
+// docker_image resources are NOT in the catalog — kreuzwerker/docker v3.x
+// does not support import for docker_image. Terraform rebuilds them on apply.
+
 
 // ImportCandidate is a resource that was found in Docker and is ready to import.
 type ImportCandidate struct {
@@ -155,20 +139,8 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 		}
 	}
 
-	// ── Images ───────────────────────────────────────────────────────────────
-	existingImages, err := listDockerImages()
-	if err != nil {
-		ui.Warn("Could not list docker images: %v", err)
-	} else {
-		for _, entry := range dockerImageCatalog {
-			if inState[entry.TFAddress] {
-				continue
-			}
-			if id, ok := existingImages[entry.DockerName]; ok {
-				candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
-			}
-		}
-	}
+	// docker_image resources are skipped — kreuzwerker/docker v3.x does not
+	// support terraform import for docker_image. They are rebuilt on next apply.
 
 	return candidates, nil
 }
@@ -285,36 +257,6 @@ func listDockerContainers() (map[string]string, error) {
 	return result, nil
 }
 
-// listDockerImages returns map["repo:tag"]imageID (with sha256: prefix).
-func listDockerImages() (map[string]string, error) {
-	out, err := exec.Command("docker", "images", "--format", "{{json .}}").Output()
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[string]string)
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if line == "" {
-			continue
-		}
-		var img struct {
-			Repository string `json:"Repository"`
-			Tag        string `json:"Tag"`
-			ID         string `json:"ID"`
-		}
-		if err := json.Unmarshal([]byte(line), &img); err != nil {
-			continue
-		}
-		key := img.Repository + ":" + img.Tag
-		// Resolve the short ID to sha256 for Terraform import.
-		fullID := fullImageID(img.Repository + ":" + img.Tag)
-		if fullID == "" {
-			fullID = img.ID
-		}
-		result[key] = fullID
-	}
-	return result, nil
-}
-
 // fullContainerID calls docker inspect to get the full container ID.
 func fullContainerID(nameOrID string) string {
 	out, err := exec.Command("docker", "inspect", "--format", "{{.Id}}", nameOrID).Output()
@@ -324,11 +266,4 @@ func fullContainerID(nameOrID string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// fullImageID calls docker inspect to get the full sha256 image ID.
-func fullImageID(repoTag string) string {
-	out, err := exec.Command("docker", "inspect", "--format", "{{.Id}}", repoTag).Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
+

@@ -1069,7 +1069,7 @@ async function scanImport() {
     }
     document.getElementById('import-tbody').innerHTML = importCandidates.map(c => `
       <tr>
-        <td style="color:${c.kind==='container'?'var(--cyan)':c.kind==='volume'?'var(--purple)':'var(--yellow)'}">${c.kind}</td>
+        <td style="color:${c.kind==='container'?'var(--cyan)':'var(--purple)'}">${c.kind}</td>
         <td>${c.tf_address}</td>
         <td>${c.docker_name}</td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)"
