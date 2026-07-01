@@ -331,6 +331,9 @@ func generateInfraTfvars(cfg *config.Config, envPath string) error {
 # ─── PATHS ────────────────────────────────────────────────────
 projects_dir = %q
 
+# ─── DOCKER ───────────────────────────────────────────────────
+docker_host = %q
+
 # ─── n8n ────────────────────────────────────────────────────
 n8n_env = {
   N8N_PORT                        = %q
