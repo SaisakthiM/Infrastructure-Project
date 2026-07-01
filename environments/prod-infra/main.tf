@@ -24,7 +24,7 @@ locals {
   # else that used to read from this path (prometheus.yml, grafana-values.yml,
   # loki-config.yml, etc.) is now referenced directly from git by the ArgoCD
   # Applications in gitops/observability/apps/, not read by Terraform.
-  obs_path = "${var.projects_dir}/platform/observability"
+  obs_path = "${var.project_dir}/platform/observability"
 }
 
 # ---------------------------------------------------------------------------
