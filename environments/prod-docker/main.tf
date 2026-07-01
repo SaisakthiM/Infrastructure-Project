@@ -60,13 +60,13 @@ resource "docker_image" "bank_backend" {
   name         = "bankmanager-backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Bank Manager/backend/bank_management")
+    context    = abspath("${var.projects_dir}/Bank Manager/backend/bank_management")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Bank Manager/backend/bank_management", "**") :
-      filesha256("${path.module}/../../projects/Bank Manager/backend/bank_management/${f}")
+      for f in fileset("${var.projects_dir}/Bank Manager/backend/bank_management", "**") :
+      filesha256("${var.projects_dir}/Bank Manager/backend/bank_management/${f}")
       if !can(regex("(\\.git|target|__pycache__|\\.pyc)", f))
     ]))
   }
@@ -76,13 +76,13 @@ resource "docker_image" "bank_frontend_build" {
   name         = "bank-frontend-build:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Bank Manager/frontend")
+    context    = abspath("${var.projects_dir}/Bank Manager/frontend")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Bank Manager/frontend", "**") :
-      filesha256("${path.module}/../../projects/Bank Manager/frontend/${f}")
+      for f in fileset("${var.projects_dir}/Bank Manager/frontend", "**") :
+      filesha256("${var.projects_dir}/Bank Manager/frontend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -92,13 +92,13 @@ resource "docker_image" "blog_website" {
   name         = "blogsite:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Blog Website")
+    context    = abspath("${var.projects_dir}/Blog Website")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Blog Website", "**") :
-      filesha256("${path.module}/../../projects/Blog Website/${f}")
+      for f in fileset("${var.projects_dir}/Blog Website", "**") :
+      filesha256("${var.projects_dir}/Blog Website/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc|staticfiles|media)", f))
     ]))
   }
@@ -108,13 +108,13 @@ resource "docker_image" "hospital_management" {
   name         = "hospital_management:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/hospital_management")
+    context    = abspath("${var.projects_dir}/hospital_management")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/hospital_management", "**") :
-      filesha256("${path.module}/../../projects/hospital_management/${f}")
+      for f in fileset("${var.projects_dir}/hospital_management", "**") :
+      filesha256("${var.projects_dir}/hospital_management/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc|staticfiles|media)", f))
     ]))
   }
@@ -124,13 +124,13 @@ resource "docker_image" "quiz_frontend_build" {
   name         = "quiz-frontend-build:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Quiz App/quiz-app")
+    context    = abspath("${var.projects_dir}/Quiz App/quiz-app")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Quiz App/quiz-app", "**") :
-      filesha256("${path.module}/../../projects/Quiz App/quiz-app/${f}")
+      for f in fileset("${var.projects_dir}/Quiz App/quiz-app", "**") :
+      filesha256("${var.projects_dir}/Quiz App/quiz-app/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -140,13 +140,13 @@ resource "docker_image" "video_backend" {
   name         = "video-uploader-backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Video Uploader/Main/backend")
+    context    = abspath("${var.projects_dir}/Video Uploader/Main/backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Video Uploader/Main/backend", "**") :
-      filesha256("${path.module}/../../projects/Video Uploader/Main/backend/${f}")
+      for f in fileset("${var.projects_dir}/Video Uploader/Main/backend", "**") :
+      filesha256("${var.projects_dir}/Video Uploader/Main/backend/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
     ]))
   }
@@ -156,13 +156,13 @@ resource "docker_image" "video_frontend_build" {
   name         = "video-frontend-build:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Video Uploader/Main/frontend/video-uploader")
+    context    = abspath("${var.projects_dir}/Video Uploader/Main/frontend/video-uploader")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Video Uploader/Main/frontend/video-uploader", "**") :
-      filesha256("${path.module}/../../projects/Video Uploader/Main/frontend/video-uploader/${f}")
+      for f in fileset("${var.projects_dir}/Video Uploader/Main/frontend/video-uploader", "**") :
+      filesha256("${var.projects_dir}/Video Uploader/Main/frontend/video-uploader/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -172,13 +172,13 @@ resource "docker_image" "notes_frontend_build" {
   name         = "notes-frontend-build:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Notes App/frontend/notes_app_frontend")
+    context    = abspath("${var.projects_dir}/Notes App/frontend/notes_app_frontend")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Notes App/frontend/notes_app_frontend", "**") :
-      filesha256("${path.module}/../../projects/Notes App/frontend/notes_app_frontend/${f}")
+      for f in fileset("${var.projects_dir}/Notes App/frontend/notes_app_frontend", "**") :
+      filesha256("${var.projects_dir}/Notes App/frontend/notes_app_frontend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -188,13 +188,13 @@ resource "docker_image" "notes_backend" {
   name         = "notesapp-backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Notes App/backend")
+    context    = abspath("${var.projects_dir}/Notes App/backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Notes App/backend", "**") :
-      filesha256("${path.module}/../../projects/Notes App/backend/${f}")
+      for f in fileset("${var.projects_dir}/Notes App/backend", "**") :
+      filesha256("${var.projects_dir}/Notes App/backend/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
     ]))
   }
@@ -204,13 +204,13 @@ resource "docker_image" "api_service_backend" {
   name         = "api-service-backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/API Service/backend")
+    context    = abspath("${var.projects_dir}/API Service/backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/API Service/backend", "**") :
-      filesha256("${path.module}/../../projects/API Service/backend/${f}")
+      for f in fileset("${var.projects_dir}/API Service/backend", "**") :
+      filesha256("${var.projects_dir}/API Service/backend/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
     ]))
   }
@@ -220,13 +220,13 @@ resource "docker_image" "api_service_frontend_build" {
   name         = "api-service-frontend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/API Service/frontend/api-service")
+    context    = abspath("${var.projects_dir}/API Service/frontend/api-service")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/API Service/frontend/api-service", "**") :
-      filesha256("${path.module}/../../projects/API Service/frontend/api-service/${f}")
+      for f in fileset("${var.projects_dir}/API Service/frontend/api-service", "**") :
+      filesha256("${var.projects_dir}/API Service/frontend/api-service/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -236,13 +236,13 @@ resource "docker_image" "doc_backend" {
   name         = "documentintelligenceplatform-backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Document Intelligence Platform/backend/document_backend")
+    context    = abspath("${var.projects_dir}/Document Intelligence Platform/backend/document_backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Document Intelligence Platform/backend/document_backend", "**") :
-      filesha256("${path.module}/../../projects/Document Intelligence Platform/backend/document_backend/${f}")
+      for f in fileset("${var.projects_dir}/Document Intelligence Platform/backend/document_backend", "**") :
+      filesha256("${var.projects_dir}/Document Intelligence Platform/backend/document_backend/${f}")
       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
     ]))
   }
@@ -252,13 +252,13 @@ resource "docker_image" "doc_frontend_build" {
   name         = "documentintelligenceplatform-frontend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Document Intelligence Platform/frontend/document_frontend")
+    context    = abspath("${var.projects_dir}/Document Intelligence Platform/frontend/document_frontend")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Document Intelligence Platform/frontend/document_frontend", "**") :
-      filesha256("${path.module}/../../projects/Document Intelligence Platform/frontend/document_frontend/${f}")
+      for f in fileset("${var.projects_dir}/Document Intelligence Platform/frontend/document_frontend", "**") :
+      filesha256("${var.projects_dir}/Document Intelligence Platform/frontend/document_frontend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -268,13 +268,13 @@ resource "docker_image" "whisper_backend" {
   name         = "whisper_backend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Whatsapp/whatsapp-backend")
+    context    = abspath("${var.projects_dir}/Whatsapp/whatsapp-backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Whatsapp/whatsapp-backend", "**") :
-      filesha256("${path.module}/../../projects/Whatsapp/whatsapp-backend/${f}")
+      for f in fileset("${var.projects_dir}/Whatsapp/whatsapp-backend", "**") :
+      filesha256("${var.projects_dir}/Whatsapp/whatsapp-backend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -284,13 +284,13 @@ resource "docker_image" "whisper_frontend" {
   name         = "whisper-frontend:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Whatsapp/whatsapp-frontend")
+    context    = abspath("${var.projects_dir}/Whatsapp/whatsapp-frontend")
     dockerfile = "Dockerfile.prod"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/projects/Whatsapp/whatsapp-frontend", "**") :
-      filesha256("${path.module}/../../projects/projects/Whatsapp/whatsapp-frontend/${f}")
+      for f in fileset("${var.projects_dir}/Whatsapp/whatsapp-frontend", "**") :
+      filesha256("${var.projects_dir}/Whatsapp/whatsapp-frontend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
     ]))
   }
@@ -490,13 +490,13 @@ resource "docker_image" "compiler_db" {
   name         = "online_compiler_db:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Online Compiler/database_new")
+    context    = abspath("${var.projects_dir}/Online Compiler/database_new")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Online Compiler/database_new", "**") :
-      filesha256("${path.module}/../../projects/Online Compiler/database_new/${f}")
+      for f in fileset("${var.projects_dir}/Online Compiler/database_new", "**") :
+      filesha256("${var.projects_dir}/Online Compiler/database_new/${f}")
       if !can(regex("(\\.git|\\.dockerignore|dbserver|\\.o|data/)", f))
     ]))
   }
@@ -506,13 +506,13 @@ resource "docker_image" "compiler_server" {
   name         = "online_compiler_server:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Online Compiler/server_new")
+    context    = abspath("${var.projects_dir}/Online Compiler/server_new")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Online Compiler/server_new", "**") :
-      filesha256("${path.module}/../../projects/Online Compiler/server_new/${f}")
+      for f in fileset("${var.projects_dir}/Online Compiler/server_new", "**") :
+      filesha256("${var.projects_dir}/Online Compiler/server_new/${f}")
       if !can(regex("(\\.git|\\.dockerignore|^server$|\\.o|users\\.db)", f))
     ]))
   }

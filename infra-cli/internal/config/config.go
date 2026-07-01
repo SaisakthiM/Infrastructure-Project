@@ -24,10 +24,21 @@ type Config struct {
 	InfraDir   string `mapstructure:"infra_dir"`
 	ReleaseTag string `mapstructure:"release_tag"`
 
+	Paths PathsEnv `mapstructure:"paths"`
+
 	ProdDocker  DockerEnv  `mapstructure:"prod_docker"`
 	ProdSocial  SocialEnv  `mapstructure:"prod_social"`
 	ProdInfra   InfraEnv   `mapstructure:"prod_infra"`
 	ProdGateway GatewayEnv `mapstructure:"prod_gateway"`
+}
+
+// PathsEnv holds filesystem paths that are machine-specific and therefore
+// must never be hardcoded into the Terraform source. Shared by every
+// environment that builds Docker images or mounts files from project source
+// (prod-docker, prod-gateway, prod-infra, prod-social) — they all take the
+// same var.projects_dir.
+type PathsEnv struct {
+	ProjectsDir string `mapstructure:"projects_dir"`
 }
 
 // DockerEnv holds non-secret variables for prod-docker.
@@ -122,6 +133,9 @@ func Save(cfg *Config) error {
 	v.Set("infra_dir", cfg.InfraDir)
 	v.Set("release_tag", cfg.ReleaseTag)
 
+	// paths — machine-specific, never hardcoded into .tf source.
+	v.Set("paths.projects_dir", cfg.Paths.ProjectsDir)
+
 	// prod_docker — explicit keys match mapstructure tags exactly.
 	v.Set("prod_docker.blog_db_name", cfg.ProdDocker.BlogDBName)
 	v.Set("prod_docker.blog_allowed_hosts", cfg.ProdDocker.BlogAllowedHosts)
@@ -173,4 +187,51 @@ func (c *Config) InfraExists() bool {
 func DefaultInfraDir() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, "."+appName, "infra")
+}
+
+// knownProjectDirs is a sample of subfolders that only exist inside a real
+// "projects" directory. Used to validate a candidate path before trusting it.
+var knownProjectDirs = []string{
+	"Bank Manager", "Blog Website", "Whatsapp", "Notes App",
+	"Social Media App", "Quiz App", "Video Uploader",
+}
+
+// looksLikeProjectsDir reports whether dir contains at least one of the
+// known project subfolders, i.e. it's actually the "projects/" root and not
+// some unrelated directory.
+func looksLikeProjectsDir(dir string) bool {
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	for _, name := range knownProjectDirs {
+		if st, err := os.Stat(filepath.Join(dir, name)); err == nil && st.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
+// DetectProjectsDir scans the usual candidate locations for the "projects"
+// directory (sibling of "environments" inside the infra monorepo) and
+// returns the first absolute path that looks right. Returns "" if nothing
+// was found — callers should fall back to prompting the user.
+func DetectProjectsDir(infraDir string) string {
+	if infraDir == "" {
+		return ""
+	}
+	candidates := []string{
+		filepath.Join(infraDir, "projects"),          // infra-dir/projects (standard layout)
+		filepath.Join(filepath.Dir(infraDir), "projects"), // sibling of infra-dir
+	}
+	for _, c := range candidates {
+		abs, err := filepath.Abs(c)
+		if err != nil {
+			continue
+		}
+		if looksLikeProjectsDir(abs) {
+			return abs
+		}
+	}
+	return ""
 }

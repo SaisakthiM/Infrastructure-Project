@@ -115,6 +115,19 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		ui.Success("Section 1 complete — all other config values set to defaults.")
 
+		// ── File Paths ─────────────────────────────────────────────────────
+		fmt.Println()
+		ui.Bold.Println("  ┌─────────────────────────────────────────┐")
+		ui.Bold.Println("  │  File Paths                             │")
+		ui.Bold.Println("  └─────────────────────────────────────────┘")
+		ui.Dim.Println("  Absolute path to the projects/ directory (Bank Manager, Blog Website, ...).")
+		ui.Dim.Println("  This is machine-specific and is never committed to the repo.")
+		fmt.Println()
+
+		if err := promptProjectsDir(cfg); err != nil {
+			return err
+		}
+
 		// ── Section 2: Secrets & Keys ──────────────────────────────────────
 		fmt.Println()
 		ui.Bold.Println("  ┌─────────────────────────────────────────┐")
@@ -170,6 +183,7 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	ui.Success("prod-docker/terraform.tfvars  written")
 	ui.Success("prod-social/terraform.tfvars  written")
 	ui.Success("prod-infra/terraform.tfvars   written")
+	ui.Success("prod-gateway/terraform.tfvars written")
 
 	fmt.Println()
 	ui.Green.Println("  Configuration complete!")
@@ -214,6 +228,24 @@ func setDef(field *string, def string) {
 	if strings.TrimSpace(*field) == "" {
 		*field = def
 	}
+}
+
+// promptProjectsDir auto-detects the projects/ directory relative to
+// InfraDir and asks the user to confirm/override it. If a value is already
+// saved, that's offered as the default instead of re-detecting.
+func promptProjectsDir(cfg *config.Config) error {
+	current := cfg.Paths.ProjectsDir
+	if current == "" {
+		current = config.DetectProjectsDir(cfg.InfraDir)
+		if current != "" {
+			ui.Dim.Printf("  Auto-detected: %s\n", current)
+		} else {
+			ui.Warn("  Could not auto-detect projects/ directory — please enter it manually.")
+		}
+	}
+
+	cfg.Paths.ProjectsDir = ui.Prompt("  Path to projects/ directory", current)
+	return nil
 }
 
 func orDefault(val, def string) string {

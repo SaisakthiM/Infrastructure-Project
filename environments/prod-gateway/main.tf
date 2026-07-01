@@ -86,7 +86,7 @@ resource "null_resource" "intro_page" {
   depends_on = [module.gateway]
 
   triggers = {
-    file_sha   = filesha256("${path.module}/../../projects/intro/index.html")
+    file_sha   = filesha256("${var.projects_dir}/intro/index.html")
     always_run = timestamp()
   }
   provisioner "local-exec" {
@@ -94,7 +94,7 @@ resource "null_resource" "intro_page" {
       docker pull alpine && \
       docker run --rm \
         -v gateway_intro-dist:/dest \
-        -v "${abspath("${path.module}/../../projects/intro")}:/src:ro" \
+        -v "${abspath("${var.projects_dir}/intro")}:/src:ro" \
         alpine sh -c "cp -r /src/. /dest/"
     EOT
   }
@@ -104,7 +104,7 @@ resource "null_resource" "record_page" {
   depends_on = [module.gateway]
 
   triggers = {
-    file_sha   = filesha256("${path.module}/../../projects/security_tests/record.html")
+    file_sha   = filesha256("${var.projects_dir}/security_tests/record.html")
     always_run = timestamp()
   }
   provisioner "local-exec" {
@@ -112,7 +112,7 @@ resource "null_resource" "record_page" {
       docker pull alpine && \
       docker run --rm \
         -v gateway_record-dist:/dest \
-        -v "${abspath("${path.module}/../../projects/security_tests")}:/src:ro" \
+        -v "${abspath("${var.projects_dir}/security_tests")}:/src:ro" \
         alpine sh -c "cp -r /src/. /dest/"
     EOT
   }

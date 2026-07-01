@@ -420,6 +420,23 @@ function fitTerm(t) {
     </div>
   </div>
 
+  <!-- ── File Paths ── -->
+  <div class="card">
+    <div class="card-title" style="color:var(--cyan);font-size:14px">
+      <span>📁</span> File Paths
+      <span style="margin-left:8px;font-size:11px;color:var(--muted);font-weight:400">Machine-specific — never committed to the repo</span>
+    </div>
+    <div class="form-row">
+      <div class="field" style="flex:1">
+        <label>Projects Directory <span style="color:var(--muted);text-transform:none;font-weight:400">(var.projects_dir)</span></label>
+        <input type="text" id="cfg-projects_dir" placeholder="/path/to/Infrastruture-Project/projects" />
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn btn-ghost" type="button" onclick="detectProjectsDir()">⟳ Auto-detect</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Section 2: Secrets ── -->
   <div class="card">
     <div class="card-title" style="color:var(--yellow);font-size:14px">
@@ -801,6 +818,7 @@ async function loadConfig() {
     // All fields — apply saved value OR default (never leave blank).
     const allFields = [
       'domain','main_server_ip','atlantis_gh_user','gitops_repo_url',
+      'projects_dir',
       'n8n_port','n8n_host','n8n_protocol','n8n_user',
       'social_gitops_repo_url','social_minio_user',
       'blog_db_name','blog_minio_user','blog_allowed_hosts',
@@ -832,6 +850,22 @@ async function loadConfig() {
   }
 }
 
+async function detectProjectsDir() {
+  const el = document.getElementById('cfg-projects_dir');
+  const statusEl = document.getElementById('cfg-save-status');
+  try {
+    const d = await getJSON('/api/configure/detect-paths');
+    if (d.projects_dir) {
+      el.value = d.projects_dir;
+      statusEl.textContent = '✓ Detected projects directory'; statusEl.style.color = 'var(--green)';
+    } else {
+      statusEl.textContent = '⚠ Could not auto-detect — enter the path manually'; statusEl.style.color = 'var(--yellow)';
+    }
+  } catch(e) {
+    statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--red)';
+  }
+}
+
 async function saveConfig() {
   const statusEl = document.getElementById('cfg-save-status');
   const btn = event.currentTarget;
@@ -843,6 +877,7 @@ async function saveConfig() {
     main_server_ip:       val('cfg-main_server_ip'),
     atlantis_gh_user:     val('cfg-atlantis_gh_user'),
     gitops_repo_url:      val('cfg-gitops_repo_url'),
+    projects_dir:         val('cfg-projects_dir'),
     n8n_port:             val('cfg-n8n_port'),
     n8n_host:             val('cfg-n8n_host'),
     n8n_protocol:         val('cfg-n8n_protocol'),

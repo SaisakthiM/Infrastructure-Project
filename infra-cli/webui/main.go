@@ -134,6 +134,7 @@ func main() {
 	// Configure routes.
 	mux.HandleFunc("/api/configure/load", handleConfigureLoad)
 	mux.HandleFunc("/api/configure/save", handleConfigureSave)
+	mux.HandleFunc("/api/configure/detect-paths", handleDetectPaths)
 
 	// Update routes.
 	mux.HandleFunc("/api/update/check", handleUpdateCheck)
@@ -484,6 +485,21 @@ func handleInstallRun(w http.ResponseWriter, r *http.Request) {
 
 // ─── configure handlers ───────────────────────────────────────────────────────
 
+// GET /api/configure/detect-paths — auto-scans for the projects/ directory
+// relative to the currently configured InfraDir. Returns "" if not found;
+// the frontend falls back to leaving the field for manual entry.
+func handleDetectPaths(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Load()
+	if err != nil {
+		cfg = &config.Config{}
+	}
+	writeJSON(w, struct {
+		ProjectsDir string `json:"projects_dir"`
+	}{
+		ProjectsDir: config.DetectProjectsDir(cfg.InfraDir),
+	})
+}
+
 // GET /api/configure/load — returns current non-secret config values.
 func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
@@ -494,6 +510,9 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 	type configResponse struct {
 		InfraDir   string `json:"infra_dir"`
 		ReleaseTag string `json:"release_tag"`
+
+		// paths
+		ProjectsDir string `json:"projects_dir"`
 
 		// prod-infra
 		Domain         string `json:"domain"`
@@ -535,6 +554,8 @@ func handleConfigureLoad(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, configResponse{
 		InfraDir:   cfg.InfraDir,
 		ReleaseTag: cfg.ReleaseTag,
+
+		ProjectsDir: orDefault(cfg.Paths.ProjectsDir, config.DetectProjectsDir(cfg.InfraDir)),
 
 		Domain:         cfg.ProdInfra.Domain,
 		MainServerIP:   cfg.ProdInfra.MainServerIP,
@@ -586,6 +607,8 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 		N8NProtocol    string `json:"n8n_protocol"`
 		N8NUser        string `json:"n8n_user"`
 
+		ProjectsDir string `json:"projects_dir"`
+
 		SocialGitopsURL string `json:"social_gitops_repo_url"`
 		SocialMinio     string `json:"social_minio_user"`
 		LoadImages      bool   `json:"load_images"`
@@ -626,6 +649,8 @@ func handleConfigureSave(w http.ResponseWriter, r *http.Request) {
 	cfg.ProdInfra.N8NHost = req.N8NHost
 	cfg.ProdInfra.N8NProtocol = req.N8NProtocol
 	cfg.ProdInfra.N8NUser = req.N8NUser
+
+	cfg.Paths.ProjectsDir = req.ProjectsDir
 
 	cfg.ProdSocial.GitopsRepoURL = req.SocialGitopsURL
 	cfg.ProdSocial.SocialMinio = req.SocialMinio

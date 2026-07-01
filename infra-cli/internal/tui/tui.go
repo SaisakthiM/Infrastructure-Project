@@ -145,6 +145,12 @@ type configTab struct {
 func buildConfigTabs(cfg *config.Config) []configTab {
 	return []configTab{
 		{
+			name: "file-paths",
+			fields: []formField{
+				{key: "projects_dir", label: "Projects Directory", value: orDef(cfg.Paths.ProjectsDir, config.DetectProjectsDir(cfg.InfraDir))},
+			},
+		},
+		{
 			name: "prod-infra",
 			fields: []formField{
 				{key: "domain", label: "Public Domain", value: cfg.ProdInfra.Domain},
@@ -752,6 +758,11 @@ func (m model) saveConfig() tea.Cmd {
 // applyField writes a single form value back to the right config field.
 func applyField(cfg *config.Config, tab, key, value string) {
 	switch tab {
+	case "file-paths":
+		switch key {
+		case "projects_dir":
+			cfg.Paths.ProjectsDir = value
+		}
 	case "prod-infra":
 		switch key {
 		case "domain":

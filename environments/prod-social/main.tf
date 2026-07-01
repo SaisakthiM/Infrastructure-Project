@@ -42,13 +42,13 @@ resource "docker_image" "social_django" {
   name         = "socialmediaapp-django:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Social Media App/apps/backend")
+    context    = abspath("${var.projects_dir}/Social Media App/apps/backend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Social Media App/apps/backend", "**") :
-      filesha256("${path.module}/../../projects/Social Media App/apps/backend/${f}")
+      for f in fileset("${var.projects_dir}/Social Media App/apps/backend", "**") :
+      filesha256("${var.projects_dir}/Social Media App/apps/backend/${f}")
       if !can(regex("(__pycache__|.pyc|.git)", f))
     ]))
   }
@@ -58,13 +58,13 @@ resource "docker_image" "social_frontend" {
   name         = "socialmediaapp-frontend-prod:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Social Media App/apps/frontend")
+    context    = abspath("${var.projects_dir}/Social Media App/apps/frontend")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Social Media App/apps/frontend", "**") :
-      filesha256("${path.module}/../../projects/Social Media App/apps/frontend/${f}")
+      for f in fileset("${var.projects_dir}/Social Media App/apps/frontend", "**") :
+      filesha256("${var.projects_dir}/Social Media App/apps/frontend/${f}")
       if !can(regex("(node_modules|dist|.git)", f))
     ]))
   }
@@ -74,13 +74,13 @@ resource "docker_image" "social_go" {
   name         = "socialmediaapp-microservice-go:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Social Media App/apps/microservice-go")
+    context    = abspath("${var.projects_dir}/Social Media App/apps/microservice-go")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Social Media App/apps/microservice-go", "**") :
-      filesha256("${path.module}/../../projects/Social Media App/apps/microservice-go/${f}")
+      for f in fileset("${var.projects_dir}/Social Media App/apps/microservice-go", "**") :
+      filesha256("${var.projects_dir}/Social Media App/apps/microservice-go/${f}")
       if !can(regex(".git", f))
     ]))
   }
@@ -90,13 +90,13 @@ resource "docker_image" "social_java" {
   name         = "socialmediaapp-microservice-java:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Social Media App/apps/microservice-java")
+    context    = abspath("${var.projects_dir}/Social Media App/apps/microservice-java")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Social Media App/apps/microservice-java", "**") :
-      filesha256("${path.module}/../../projects/Social Media App/apps/microservice-java/${f}")
+      for f in fileset("${var.projects_dir}/Social Media App/apps/microservice-java", "**") :
+      filesha256("${var.projects_dir}/Social Media App/apps/microservice-java/${f}")
       if !can(regex("(target|.git)", f))
     ]))
   }
@@ -106,13 +106,13 @@ resource "docker_image" "social_minio" {
   name         = "socialmediaapp-minio:latest"
   keep_locally = true
   build {
-    context    = abspath("${path.module}/../../projects/Social Media App/storage/minio")
+    context    = abspath("${var.projects_dir}/Social Media App/storage/minio")
     dockerfile = "Dockerfile"
   }
   triggers = {
     dir_sha = sha256(join("", [
-      for f in fileset("${path.module}/../../projects/Social Media App/storage/minio", "**") :
-      filesha256("${path.module}/../../projects/Social Media App/storage/minio/${f}")
+      for f in fileset("${var.projects_dir}/Social Media App/storage/minio", "**") :
+      filesha256("${var.projects_dir}/Social Media App/storage/minio/${f}")
       if !can(regex(".git", f))
     ]))
   }
@@ -123,12 +123,12 @@ resource "docker_image" "social_minio" {
 # ---------------------------------------------------------------------------
 resource "null_resource" "kind_cluster" {
   triggers = {
-    kind_config = filesha256("${path.module}/../../projects/Social Media App/infrastructure/kind/kind-config.yaml")
+    kind_config = filesha256("${var.projects_dir}/Social Media App/infrastructure/kind/kind-config.yaml")
   }
   provisioner "local-exec" {
     command = <<-EOT
       if ! kind get clusters | grep -q "social-media"; then
-        kind create cluster --config "${abspath("${path.module}/../../projects/Social Media App/infrastructure/kind/kind-config.yaml")}"
+        kind create cluster --config "${abspath("${var.projects_dir}/Social Media App/infrastructure/kind/kind-config.yaml")}"
       fi
     EOT
   }
