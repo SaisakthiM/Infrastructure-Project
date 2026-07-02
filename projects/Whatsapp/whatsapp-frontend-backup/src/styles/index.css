@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-aurora-900 text-white font-sans antialiased;
+  }
+
+  input, textarea {
+    @apply focus:outline-none;
+  }
+}
+
+@layer components {
+  /* Animated aurora backdrop used on full-screen pages */
+  .aurora-bg {
+    @apply relative w-full overflow-hidden bg-aurora-gradient;
+  }
+
+  .aurora-bg::before,
+  .aurora-bg::after {
+    content: '';
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .aurora-bg::before {
+    @apply animate-float-slow;
+    width: 22rem;
+    height: 22rem;
+    top: -6rem;
+    left: -6rem;
+    background: radial-gradient(circle, rgba(37,211,102,0.18), transparent 70%);
+  }
+
+  .aurora-bg::after {
+    @apply animate-float-slower;
+    width: 24rem;
+    height: 24rem;
+    bottom: -8rem;
+    right: -8rem;
+    background: radial-gradient(circle, rgba(31,170,133,0.14), transparent 70%);
+  }
+
+  /* Glass panels */
+  .glass {
+    @apply bg-aurora-glass border border-aurora-border backdrop-blur-xl;
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35)];
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply relative bg-btn-gradient text-aurora-900 font-semibold py-2.5 px-4 rounded-xl
+      transition-all duration-300 ease-out
+      hover:shadow-[0_0_24px_rgba(52,232,158,0.55)] hover:-translate-y-0.5
+      active:translate-y-0 active:scale-[0.98]
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none;
+  }
+
+  .btn-secondary {
+    @apply glass text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300
+      hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98];
+  }
+
+  .icon-btn {
+    @apply p-2 rounded-full transition-all duration-200 ease-out
+      hover:bg-white/10 hover:scale-110 active:scale-95;
+  }
+
+  .card {
+    @apply glass-card;
+  }
+
+  .divider {
+    @apply border-b border-aurora-border;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/5 border border-aurora-border rounded-xl text-white placeholder-white/40
+      transition-all duration-200
+      focus:border-aurora-teal focus:ring-2 focus:ring-aurora-teal/30 focus:bg-white/[0.08];
+  }
+
+  /* Message bubbles */
+  .message-bubble {
+    @apply max-w-xs sm:max-w-sm px-4 py-2 rounded-2xl text-sm shadow-lg transition-transform duration-200;
+  }
+
+  .message-sent {
+    @apply bg-sent-gradient text-aurora-900 rounded-br-md shadow-[0_4px_18px_rgba(52,232,158,0.25)];
+  }
+
+  .message-received {
+    @apply glass text-white rounded-bl-md;
+  }
+
+  /* Connection status pill */
+  .status-pill {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors duration-300;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-btn-gradient;
+  }
+
+  .bg-animated-gradient {
+    background-size: 200% 200%;
+    @apply bg-btn-gradient animate-gradient-shift;
+  }
+
+  .shimmer-bg {
+    background-size: 200% 100%;
+    @apply bg-shimmer animate-shimmer;
+  }
+}
+
+/* Chat background pattern - WhatsApp-style doodle wallpaper, subtle on dark glass */
+.chat-bg {
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M30 40h40a8 8 0 018 8v18a8 8 0 01-8 8H46l-10 10v-10h-6a8 8 0 01-8-8V48a8 8 0 018-8z'/%3E%3Ccircle cx='150' cy='40' r='10'/%3E%3Cpath d='M150 30v-6M150 56v-6M140 40h-6M166 40h-6M143 33l-4-4M157 47l4 4M157 33l4-4M143 47l-4 4'/%3E%3Cpath d='M230 30c10 0 18 8 18 18s-8 18-18 18-18-8-18-18 8-18 18-18z'/%3E%3Cpath d='M222 40c2-4 14-4 16 0'/%3E%3Ccircle cx='225' cy='35' r='1.4' fill='%23ffffff'/%3E%3Ccircle cx='235' cy='35' r='1.4' fill='%23ffffff'/%3E%3Cpath d='M40 120c8-10 22-10 28 0 6-12 22-10 24 2 2 10-8 18-26 28-16-10-28-18-26-30z'/%3E%3Cpath d='M150 110l40 0M150 120l30 0M150 130l36 0'/%3E%3Cpath d='M250 100h36v26h-10l-8 8v-8h-18z'/%3E%3Cpath d='M30 200h30v22h-30z'/%3E%3Cpath d='M30 200l15-10 15 10'/%3E%3Ccircle cx='45' cy='213' r='4'/%3E%3Cpath d='M140 190a14 14 0 1014 14M154 190v14M148 196h12'/%3E%3Cpath d='M230 190l10 24 10-24M236 208h8'/%3E%3Cpath d='M50 270a16 16 0 1132 0'/%3E%3Cpath d='M60 270v6M72 270v6'/%3E%3Ccircle cx='62' cy='262' r='1.2' fill='%23ffffff'/%3E%3Ccircle cx='70' cy='262' r='1.2' fill='%23ffffff'/%3E%3Cpath d='M150 250c0-8 6-14 14-14s14 6 14 14-6 10-14 16c-8-6-14-8-14-16z'/%3E%3Cpath d='M250 240h30M250 250h22M250 260h28'/%3E%3Cpath d='M40 60l4 4-4 4-4-4z'/%3E%3Cpath d='M280 70l4 4-4 4-4-4z'/%3E%3Cpath d='M100 150l4 4-4 4-4-4z'/%3E%3Cpath d='M200 280l4 4-4 4-4-4z'/%3E%3Cpath d='M10 150l4 4-4 4-4-4z'/%3E%3Cpath d='M290 200l4 4-4 4-4-4z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+/* Typing indicator dots */
+.typing-dot {
+  @apply w-1.5 h-1.5 rounded-full bg-white/70;
+  animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

@@ -421,6 +421,9 @@ resource "docker_container" "whisper_frontend_build" {
     target = "/dist"
     type   = "volume"
   }
+  env = [
+    
+  ]
 }
 
 resource "docker_container" "bank_postgres" {

@@ -1,0 +1,393 @@
+/* ─── Base ─────────────────────────────────────────────────── */
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0B141A;
+  color: #E9EDEF;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Auth page background ─────────────────────────────────── */
+.wa-auth-bg {
+  background: radial-gradient(ellipse at 20% 50%, rgba(0,168,132,0.07) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 10%, rgba(0,168,132,0.05) 0%, transparent 50%),
+              #0B141A;
+  position: relative;
+  overflow: hidden;
+}
+
+.wa-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wa-blob-1 {
+  width: 360px;
+  height: 360px;
+  top: -100px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(0,168,132,0.14) 0%, transparent 70%);
+  animation: blobDrift 12s ease-in-out infinite alternate;
+}
+
+.wa-blob-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -120px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(0,90,60,0.12) 0%, transparent 70%);
+  animation: blobDrift 16s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes blobDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.06); }
+}
+
+/* ─── Card (auth forms) ─────────────────────────────────────── */
+.wa-card {
+  background: rgba(32, 44, 51, 0.85);
+  border: 1px solid rgba(134, 150, 160, 0.18);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ─── Modal ─────────────────────────────────────────────────── */
+.wa-modal {
+  background: #202C33;
+  border: 1px solid rgba(134, 150, 160, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+
+/* ─── Form elements ─────────────────────────────────────────── */
+.wa-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #8696A0;
+  margin-bottom: 6px;
+}
+
+.wa-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(42, 57, 66, 0.8);
+  border: 1px solid rgba(134, 150, 160, 0.2);
+  border-radius: 10px;
+  color: #E9EDEF;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.wa-input::placeholder {
+  color: rgba(134, 150, 160, 0.7);
+}
+
+.wa-input:focus {
+  border-color: #00A884;
+  background: rgba(42, 57, 66, 1);
+  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.2);
+}
+
+.wa-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wa-search-input {
+  width: 100%;
+  padding: 8px 14px;
+  background: #2A3942;
+  border: none;
+  border-radius: 8px;
+  color: #E9EDEF;
+  font-size: 0.875rem;
+  outline: none;
+  transition: background 0.15s;
+}
+
+.wa-search-input::placeholder {
+  color: rgba(134, 150, 160, 0.8);
+}
+
+.wa-search-input:focus {
+  background: #314550;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────── */
+.wa-btn-primary {
+  background: #00A884;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0, 168, 132, 0.35);
+}
+
+.wa-btn-primary:hover:not(:disabled) {
+  background: #00C49A;
+  box-shadow: 0 4px 18px rgba(0, 168, 132, 0.5);
+}
+
+.wa-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wa-btn-sm {
+  background: #00A884;
+  color: white;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wa-btn-sm:hover {
+  background: #00C49A;
+}
+
+.wa-btn-xs {
+  background: rgba(0, 168, 132, 0.15);
+  color: #00A884;
+  border: 1px solid rgba(0, 168, 132, 0.3);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wa-btn-xs:hover {
+  background: rgba(0, 168, 132, 0.25);
+}
+
+.wa-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #AEBAC1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: transparent;
+}
+
+.wa-icon-btn:hover {
+  background: rgba(134, 150, 160, 0.15);
+  color: #E9EDEF;
+}
+
+/* ─── Misc ─────────────────────────────────────────────────── */
+.wa-divider {
+  border: none;
+  border-top: 1px solid rgba(134, 150, 160, 0.15);
+  margin: 4px 0;
+}
+
+.wa-link {
+  color: #00A884;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.wa-link:hover {
+  color: #00C49A;
+}
+
+.wa-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #FCA5A5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+/* ─── App shell ─────────────────────────────────────────────── */
+.wa-root {
+  background: #0B141A;
+}
+
+/* ─── Sidebar ───────────────────────────────────────────────── */
+.wa-sidebar {
+  background: #111B21;
+  border-right: 1px solid rgba(134, 150, 160, 0.12);
+}
+
+.wa-sidebar-header {
+  background: #202C33;
+  border-bottom: 1px solid rgba(134, 150, 160, 0.1);
+  min-height: 60px;
+}
+
+.wa-chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(134, 150, 160, 0.06);
+  transition: background 0.12s;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+
+.wa-chat-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wa-chat-item-active {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.wa-section-label {
+  padding: 8px 16px 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #00A884;
+  background: rgba(0,168,132,0.04);
+  border-bottom: 1px solid rgba(134,150,160,0.06);
+}
+
+/* ─── Chat view ─────────────────────────────────────────────── */
+.wa-chat-header {
+  background: #202C33;
+  border-bottom: 1px solid rgba(134, 150, 160, 0.1);
+  min-height: 60px;
+}
+
+/* WhatsApp-style tiled chat background */
+.wa-chat-bg {
+  background-color: #0B141A;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='304' height='304' viewBox='0 0 304 304'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.03'%3E%3Cpath d='M38 48h42a6 6 0 016 6v16a6 6 0 01-6 6H52l-9 9v-9h-5a6 6 0 01-6-6V54a6 6 0 016-6z'/%3E%3Ccircle cx='152' cy='44' r='9'/%3E%3Cpath d='M152 35v-5M152 58v-5M143 44h-5M164 44h-5M145 37l-3-3M159 51l3 3M159 37l3-3M145 51l-3 3'/%3E%3Cpath d='M232 34c9 0 16 7 16 16s-7 16-16 16-16-7-16-16 7-16 16-16z'/%3E%3Cpath d='M225 44c2-4 12-4 14 0'/%3E%3Ccircle cx='228' cy='39' r='1.3' fill='%23fff'/%3E%3Ccircle cx='236' cy='39' r='1.3' fill='%23fff'/%3E%3Cpath d='M44 116c7-9 20-9 26 0 5-11 20-9 22 2 2 9-7 16-24 25-14-9-25-16-24-27z'/%3E%3Cpath d='M152 108l36 0M152 118l28 0M152 128l32 0'/%3E%3Cpath d='M248 100h32v24h-9l-7 7v-7h-16z'/%3E%3Cpath d='M34 192h28v20H34z'/%3E%3Cpath d='M34 192l14-9 14 9'/%3E%3Ccircle cx='48' cy='204' r='3.5'/%3E%3Cpath d='M142 184a12 12 0 1112 12M154 184v12M148 190h12'/%3E%3Cpath d='M228 184l9 22 9-22M234 200h8'/%3E%3Cpath d='M46 262a14 14 0 1128 0'/%3E%3Cpath d='M56 262v5M66 262v5'/%3E%3Ccircle cx='58' cy='255' r='1' fill='%23fff'/%3E%3Ccircle cx='66' cy='255' r='1' fill='%23fff'/%3E%3Cpath d='M148 244c0-7 5-12 12-12s12 5 12 12-5 9-12 14c-7-5-12-7-12-14z'/%3E%3Cpath d='M248 236h28M248 246l20 0M248 256h24'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 304px 304px;
+}
+
+/* ─── Message bubbles ───────────────────────────────────────── */
+.wa-bubble {
+  max-width: min(72%, 480px);
+  padding: 7px 12px 5px;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  position: relative;
+  word-break: break-word;
+}
+
+.wa-bubble-sent {
+  background: #005C4B;
+  color: #E9EDEF;
+  border-bottom-right-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.3);
+}
+
+.wa-bubble-received {
+  background: #202C33;
+  color: #E9EDEF;
+  border-bottom-left-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.3);
+}
+
+/* ─── Input bar ─────────────────────────────────────────────── */
+.wa-input-bar {
+  background: #202C33;
+  border-top: 1px solid rgba(134, 150, 160, 0.1);
+}
+
+.wa-msg-input {
+  background: #2A3942;
+  border: none;
+  border-radius: 24px;
+  padding: 9px 16px;
+  color: #E9EDEF;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: background 0.15s;
+}
+
+.wa-msg-input::placeholder {
+  color: rgba(134, 150, 160, 0.8);
+}
+
+.wa-msg-input:focus {
+  background: #314550;
+}
+
+.wa-msg-input:disabled {
+  opacity: 0.5;
+}
+
+.wa-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #00A884;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(0, 168, 132, 0.4);
+}
+
+.wa-send-btn:hover:not(:disabled) {
+  background: #00C49A;
+}
+
+.wa-send-btn:disabled {
+  background: #2A3942;
+  box-shadow: none;
+  cursor: not-allowed;
+  color: #8696A0;
+}
+
+/* ─── Date pill ─────────────────────────────────────────────── */
+.wa-date-pill {
+  background: rgba(17, 27, 33, 0.88);
+  color: #8696A0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(134, 150, 160, 0.12);
+}
+
+/* ─── Welcome screen ────────────────────────────────────────── */
+.wa-welcome-bg {
+  background: #0B141A;
+  border-left: 1px solid rgba(134, 150, 160, 0.1);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+.wa-scrollbar::-webkit-scrollbar { width: 6px; }
+.wa-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.wa-scrollbar::-webkit-scrollbar-thumb { background: rgba(134,150,160,0.2); border-radius: 3px; }
+.wa-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(134,150,160,0.35); }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(134,150,160,0.2) transparent;
+}
