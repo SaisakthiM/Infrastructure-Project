@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⬡ Infrastruture-Project
+# ⬡ Infrastructure-Project
 
 **A production-style personal development cluster — 10 full-stack applications behind a single Nginx gateway, provisioned with Terraform + Terragrunt, orchestrated across Docker and Kubernetes, with GitOps via ArgoCD and PR automation via Atlantis.**
 
