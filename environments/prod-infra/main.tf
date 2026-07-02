@@ -29,11 +29,6 @@ locals {
   obs_path = "${var.projects_dir}/platform/observability"
 }
 
-module "network" {
-  source = "../../modules/networking"
-  name   = "gateway-net"
-}
-
 # ---------------------------------------------------------------------------
 # Docker-side OTEL bridge: forwards from gateway-net into the kind cluster's
 # NodePort collector. Both networks are joined by literal name -- "gateway-net"
