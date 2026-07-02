@@ -102,36 +102,49 @@ var dockerAppContainerCatalog = []ImportEntry{
 }
 
 // ─── prod-infra catalog ────────────────────────────────────────────────────
-// Entries marked UNVERIFIED are inferred from `docker ps` names + the
-// resource addresses seen in your apply-error logs (docker_container.jenkins
-// at main.tf:162, module.node_exporter.docker_container.app, docker_volume
-// .jenkins_home name="jenkins_home", docker_volume.atlantis_data
-// name="gateway_atlantis-data"). I don't have prod-infra/main.tf, so the
-// exact `name` attribute for jenkins_agent, atlantis, otel_gateway, and
-// nginx_exporter is a best guess. If an import 404s or matches the wrong
-// container, run and paste:
+// Confirmed against prod-infra/main.tf via:
 //   rg "resource \"docker_(container|volume)\"" -A 6 ~/.social-platform/infra/environments/prod-infra/main.tf
+//
+// otel_gateway (line 54), jenkins (line 167), jenkins_agent (line 205),
+// atlantis (line 311), jenkins_home volume (line 160), atlantis_data volume
+// (line 266), n8n container + n8n_data volume (lines 132/136) all confirmed
+// exact — including catching that n8n_data's real name is
+// "gateway_n8n-data", not "n8n_data" as previously guessed.
+//
+// STILL UNRESOLVED: "nginx-exporter" (running per `docker ps`) did NOT
+// appear anywhere in this grep, so its actual resource address is unknown —
+// dropped from the catalog rather than leave a guess in. Also
+// module.node_exporter.docker_container.app is confirmed only via the
+// earlier apply-error log, not this grep (module-internal resources don't
+// match the "resource \"docker_container\"" pattern since they live inside
+// modules/docker_app/main.tf, referenced here only via `module "node_exporter" {...}`).
+// To find nginx-exporter, try:
+//   rg "nginx.exporter" -B 2 -A 6 ~/.social-platform/infra/environments/prod-infra/main.tf
 var dockerInfraContainerCatalog = []ImportEntry{
+	{EnvInfra, "docker_container.otel_gateway", KindContainer, "otel-gateway"},
+	{EnvInfra, "docker_container.n8n", KindContainer, "n8n"},
 	{EnvInfra, "docker_container.jenkins", KindContainer, "jenkins"},
-	{EnvInfra, "docker_container.jenkins_agent", KindContainer, "jenkins-agent"},           // UNVERIFIED
-	{EnvInfra, "docker_container.atlantis", KindContainer, "atlantis"},                     // UNVERIFIED
-	{EnvInfra, "docker_container.otel_gateway", KindContainer, "otel-gateway"},              // UNVERIFIED — currently failing to start, name guessed
-	{EnvInfra, "docker_container.nginx_exporter", KindContainer, "nginx-exporter"},          // UNVERIFIED
-	{EnvInfra, "module.node_exporter.docker_container.app", KindContainer, "node-exporter"}, // confirmed via error log
+	{EnvInfra, "docker_container.jenkins_agent", KindContainer, "jenkins-agent"},
+	{EnvInfra, "docker_container.atlantis", KindContainer, "atlantis"},
+	{EnvInfra, "module.node_exporter.docker_container.app", KindContainer, "node-exporter"}, // confirmed via error log only
 }
 
 var dockerInfraVolumeCatalog = []ImportEntry{
+	{EnvInfra, "docker_volume.n8n_data", KindVolume, "gateway_n8n-data"}, // corrected: was "n8n_data", actually "gateway_n8n-data"
 	{EnvInfra, "docker_volume.jenkins_home", KindVolume, "jenkins_home"},
 	{EnvInfra, "docker_volume.atlantis_data", KindVolume, "gateway_atlantis-data"},
-	{EnvInfra, "docker_volume.n8n_data", KindVolume, "n8n_data"}, // UNVERIFIED name
 }
 
 // ─── prod-gateway catalog ──────────────────────────────────────────────────
-// UNVERIFIED: I don't have prod-gateway/main.tf. Run and paste:
+// UNRESOLVED: the rg against prod-gateway/main.tf returned no output (the
+// prompt after it showed a non-zero exit). Running two rg commands pasted
+// together makes the second one's actual result ambiguous — re-run just
+// this one on its own:
 //   rg "resource \"docker_container\"" -A 6 ~/.social-platform/infra/environments/prod-gateway/main.tf
-var dockerGatewayContainerCatalog = []ImportEntry{
-	{EnvGateway, "docker_container.gateway", KindContainer, "gateway"}, // UNVERIFIED resource address
-}
+// Left empty rather than guessing again — the last guess (n8n_data) turned
+// out wrong, so a second unverified entry isn't worth risking a
+// terragrunt import misfiring against the wrong container.
+var dockerGatewayContainerCatalog = []ImportEntry{}
 
 // docker_image resources are NOT in any catalog — kreuzwerker/docker v3.x
 // does not support import for docker_image. Terraform rebuilds them on apply.
