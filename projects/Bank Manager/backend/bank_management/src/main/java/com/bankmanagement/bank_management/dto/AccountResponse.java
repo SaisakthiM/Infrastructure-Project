@@ -18,5 +18,5 @@ public class AccountResponse {
     private Integer creditScore;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+    private String description;
 }

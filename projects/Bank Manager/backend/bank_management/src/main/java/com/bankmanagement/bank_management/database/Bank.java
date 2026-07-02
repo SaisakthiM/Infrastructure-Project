@@ -39,6 +39,9 @@ public class Bank {
     
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(nullable = true)
+    private String description;
     
     // Custom method to update balance and timestamp
     public void updateBalance(Long newBalance) {

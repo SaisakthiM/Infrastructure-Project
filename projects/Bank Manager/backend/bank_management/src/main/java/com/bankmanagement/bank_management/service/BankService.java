@@ -75,6 +75,7 @@ public class BankService {
 
         account.setBalance(account.getBalance() + amount);
         account.setUpdatedAt(LocalDateTime.now());
+        account.setDescription(account.getDescription());
 
         Bank updatedAccount = bankRepository.save(account);
         return mapToResponse(updatedAccount);
@@ -95,6 +96,7 @@ public class BankService {
 
         account.setBalance(account.getBalance() - amount);
         account.setUpdatedAt(LocalDateTime.now());
+        account.setDescription(account.getDescription());
 
         Bank updatedAccount = bankRepository.save(account);
         return mapToResponse(updatedAccount);
@@ -141,6 +143,7 @@ public class BankService {
         account.setBalance(account.getBalance() + amount);
         account.setLoanBalance(amount);
         account.setUpdatedAt(LocalDateTime.now());
+        account.setDescription(account.getDescription());
 
         syncCreditScore(account, user, creditScore - 5L);       // ✅ both updated
         userRepository.save(user);
@@ -176,6 +179,7 @@ public class BankService {
         }
 
         account.setBalance(account.getBalance() - amount);
+        account.setDescription(account.getDescription());
         long remaining = account.getLoanBalance() - amount;
 
         if (remaining <= 0) {
@@ -202,7 +206,8 @@ public class BankService {
             account.getLoanBalance(),
             account.getCreditScore(),   // ✅ Bank and User are always in sync now
             account.getCreatedAt(),
-            account.getUpdatedAt()
+            account.getUpdatedAt(),
+            account.getDescription()
         );
     }
 
@@ -215,7 +220,8 @@ public class BankService {
             account.getLoanBalance(),
             account.getCreditScore(),
             account.getCreatedAt(),
-            account.getUpdatedAt()
+            account.getUpdatedAt(),
+            account.getDescription()
         );
     }
 }
