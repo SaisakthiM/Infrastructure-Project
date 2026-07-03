@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	githubAPI  = "https://api.github.com"
-	repoOwner  = "SaisakthiM"
-	repoName   = "Infrastructure-Project"
-	assetName  = "infra.tar.gz" // the release asset name
+	githubAPI = "https://api.github.com"
+	repoOwner = "SaisakthiM"
+	repoName  = "Infrastructure-Project"
+	assetName = "infra.tar.gz" // the release asset name
 )
 
 // GHRelease is a minimal GitHub release API response.
