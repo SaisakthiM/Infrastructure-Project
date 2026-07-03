@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.test  –  React / Vite frontend test image
+#
+# Installs Vitest + React Testing Library on top of the project's existing
+# npm dependencies and runs the full test suite in a jsdom environment.
+# No browser, no server, no backend needed.
+#
+# Build:
+#   docker build -f Dockerfile.test -t doc-frontend-test .
+#
+# Run:
+#   docker run --rm doc-frontend-test
+#
+# Run with coverage report:
+#   docker run --rm doc-frontend-test \
+#     npx vitest run --coverage
+#
+# Run with JUnit XML for CI:
+#   docker run --rm doc-frontend-test \
+#     npx vitest run --reporter=junit --outputFile=/results/report.xml
+#
+# GitHub Actions example:
+#   - name: Run frontend tests
+#     run: |
+#       docker build -f Dockerfile.test -t doc-frontend-test .
+#       docker run --rm doc-frontend-test
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM node:24-bookworm-slim AS test
+
+WORKDIR /app
+
+# ── Production + dev dependency layer (cached unless package*.json changes) ───
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    npm install --legacy-peer-deps
+
+# ── Install test-only packages on top ────────────────────────────────────────
+# Kept separate so the test layer can be rebuilt without reinstalling
+# the full app's node_modules from scratch.
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    npm install --legacy-peer-deps --save-dev \
+    vitest@2 \
+    @vitest/coverage-v8@2 \
+    @testing-library/dom@10 \
+    @testing-library/react@16 \
+    @testing-library/user-event@14 \
+    @testing-library/jest-dom@6 \
+    jsdom@25
+
+# ── Source ───────────────────────────────────────────────────────────────────
+COPY . .
+
+# ── Inject vitest config into vite.config.js if not already present ──────────
+# This adds the `test` block at build time so the project's own vite.config.js
+# doesn't need to be modified manually.
+RUN node - <<'JS'
+const fs   = require('fs');
+const path = 'vite.config.js';
+let   src  = fs.readFileSync(path, 'utf8');
+
+if (!src.includes('test:')) {
+  // Insert test block before the closing brace of defineConfig({...})
+  const testBlock = `
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/test/**'],
+    },
+  },`;
+  src = src.replace(/(\}\s*\)\s*$)/, `${testBlock}\n$1`);
+  fs.writeFileSync(path, src);
+  console.log('Injected vitest test block into vite.config.js');
+} else {
+  console.log('vite.config.js already has a test block — skipping.');
+}
+JS
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Default command: run all tests once (CI mode, no watch).
+# ─────────────────────────────────────────────────────────────────────────────
+CMD ["npx", "vitest", "run"]

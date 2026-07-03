@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow max-w-md mx-auto">
+    <h2 class="text-xl font-bold mb-4">Book Appointment</h2>
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label class="block font-semibold mb-1">Patient</label>
+            <select name="patient" class="w-full border p-2 rounded">
+                <option value="" disabled selected>Select a patient</option>
+                {% for patient in patients %}
+                <option value="{{ patient.id }}">{{ patient.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block font-semibold mb-1">Doctor</label>
+            <select name="doctor" class="w-full border p-2 rounded">
+                <option value="" disabled selected>Select a doctor</option>
+                {% for doctor in doctors %}
+                <option value="{{ doctor.id }}">{{ doctor.name }} ({{ doctor.specialty }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block font-semibold mb-1">Date</label>
+            <input type="date" name="date" class="w-full border p-2 rounded" />
+        </div>
+        <div>
+            <label class="block font-semibold mb-1">Time</label>
+            <input type="time" name="time" class="w-full border p-2 rounded" />
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Book</button>
+    </form>
+</div>
+{% endblock %}

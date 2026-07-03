@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-v2-config
+  namespace: monitoring
+data:
+  config.yaml: |
+    service:
+      extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+      pipelines:
+        traces:
+          receivers: [otlp, jaeger]
+          exporters: [jaeger_storage]
+
+    extensions:
+      healthcheckv2:
+        use_v2: true
+        http:
+          endpoint: 0.0.0.0:13133
+
+      jaeger_storage:
+        backends:
+          some_storage:
+            memory:
+              max_traces: 50000
+
+      jaeger_query:
+        storage:
+          traces: some_storage
+        base_path: /jaeger
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+
+    exporters:
+      jaeger_storage:
+        trace_storage: some_storage

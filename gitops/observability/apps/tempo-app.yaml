@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: tempo
+      targetRevision: 1.24.4 # TODO: confirm against `helm search repo tempo --versions` and pin deliberately
+      helm:
+        valueFiles:
+          - $values/gitops/platform/observability/tempo-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastructure-Project
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+# Originally depended on kubectl_manifest.minio_service (the social-media
+# app's MinIO, used here as Tempo's trace storage backend). That Service
+# lives in a different ArgoCD Application now (social-media-workload, a
+# different Terraform environment). Same-cluster Service DNS still resolves
+# fine across namespaces, but there's no sync-wave ordering across separate
+# Applications -- if Tempo starts before MinIO exists, it'll just retry
+# until MinIO comes up. Bump this app's sync-wave higher if you see it fail
+# to settle on a clean cluster.

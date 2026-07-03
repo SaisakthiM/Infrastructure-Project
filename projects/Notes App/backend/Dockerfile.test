@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+ARG CACHE_BUST
+COPY . .
+
+ENV DJANGO_SETTINGS_MODULE=notes_app.settings \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DATABASE_NAME=test_db \
+    DATABASE_USER=test \
+    DATABASE_PASSWORD=test \
+    DATABASE_HOST=localhost
+
+# manage.py is inside notes_app/ subfolder
+CMD ["sh", "-c", "cd notes_app && python manage.py migrate --run-syncdb && python manage.py test api.tests --verbosity=2"]

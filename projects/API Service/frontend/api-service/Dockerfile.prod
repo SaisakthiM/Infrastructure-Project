@@ -1,0 +1,12 @@
+FROM node:24-bookworm-slim AS builder
+WORKDIR /app
+COPY *.json .
+RUN npm install --legacy-peer-deps
+COPY . .
+RUN npm run build
+
+
+
+FROM alpine:latest
+COPY --from=builder /app/dist /dist
+CMD ["sh", "-c", "cp -r /dist/. /output/ && echo 'Done'"]

@@ -1,0 +1,190 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Job 1: Package the infra directory ─────────────────────────────────────
+  package-infra:
+    name: Package infra/
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create infra.tar.gz
+        run: |
+          tar --exclude='*/.terraform' \
+              --exclude='*/terraform.tfstate*' \
+              --exclude='*/terraform.tfvars' \
+              --exclude='*/.terraform.lock.hcl' \
+              -czf infra.tar.gz \
+              environments modules gitops projects atlantis.yaml
+
+      - name: Upload infra artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-tarball
+          path: infra.tar.gz
+
+  # ── Job 2: Build CLI + Web UI binaries ─────────────────────────────────────
+  build-cli:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: linux
+            goarch: arm64
+            suffix: ""
+          - goos: darwin
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: arm64
+            suffix: ""
+          - goos: windows
+            goarch: amd64
+            suffix: ".exe"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: infra-cli/go.sum
+
+      - name: Download modules
+        working-directory: infra-cli
+        run: go mod download
+
+      # ── Main CLI binary ──
+      - name: Build CLI
+        working-directory: infra-cli
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build \
+            -ldflags="-s -w -X main.version=${{ github.ref_name }}" \
+            -o social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} \
+            .
+
+      # ── Web UI binary ──
+      - name: Build Web UI
+        working-directory: infra-cli
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build \
+            -ldflags="-s -w -X main.version=${{ github.ref_name }}" \
+            -o social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} \
+            ./webui/
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: infra-cli/social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+
+      - name: Upload Web UI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: infra-cli/social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+
+  # ── Job 3: Create GitHub Release ───────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [package-infra, build-cli]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: List dist contents
+        run: find dist/ -type f | sort
+
+      - name: Create checksums
+        run: |
+          cd dist
+          find . -type f -not -name 'SHA256SUMS' | sort | xargs sha256sum > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            ## social-platform ${{ github.ref_name }}
+
+            ### Two binaries per platform
+
+            | Binary | Purpose |
+            |---|---|
+            | `social-platform-*` | CLI — all commands, TUI (`ui`), deploy, import, etc. |
+            | `social-platform-webui-*` | Web UI — browser dashboard on `localhost:8080` |
+
+            ---
+
+            ### Install CLI (Linux amd64)
+            ```bash
+            curl -Lo social-platform \
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
+            chmod +x social-platform && sudo mv social-platform /usr/local/bin/
+            ```
+
+            ### Install CLI (macOS Apple Silicon)
+            ```bash
+            curl -Lo social-platform \
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-darwin-arm64
+            chmod +x social-platform && sudo mv social-platform /usr/local/bin/
+            ```
+
+            ### Install Web UI (Linux amd64)
+            ```bash
+            curl -Lo social-platform-webui \
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
+            chmod +x social-platform-webui
+            ./social-platform-webui          # opens http://localhost:8080
+            ./social-platform-webui --port 9090   # custom port
+            ```
+
+            ---
+
+            ### First run
+            ```bash
+            social-platform install    # install prereqs + download infra
+            social-platform configure  # enter secrets → generates tfvars
+            social-platform deploy     # terragrunt run --all apply
+            social-platform ui         # launch TUI
+            ```
+
+            ### New in this release
+            - `deploy --target <resource>` — target a specific resource in a single env
+            - `import-state` — auto-detect & import Docker resources into Terraform state
+            - `ui` — interactive Bubble Tea TUI
+            - `social-platform-webui` — browser dashboard with SSE log streaming
+
+            ### Changelog
+            See commit history for full details.
+          files: |
+            dist/**/*
+          fail_on_unmatched_files: false
+          generate_release_notes: true

@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 65.5.1 # TODO: confirm against `helm search repo kube-prometheus-stack --versions` and pin deliberately
+      helm:
+        valueFiles:
+          - $values/gitops/platform/observability/prometheus.yml
+          - $values/gitops/platform/observability/grafana-values.yml
+        values: |
+          prometheus:
+            prometheusSpec:
+              enableRemoteWriteReceiver: true
+              resources:
+                requests: { cpu: 200m, memory: 512Mi }
+                limits: { cpu: "1000m", memory: 2Gi }
+    - repoURL: https://github.com/SaisakthiM/Infrastructure-Project # same monorepo as the other sources below
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  ignoreDifferences:
+    # ArgoCD's bundled K8s schema doesn't yet know this StatefulSet status
+    # field (added in newer K8s than ArgoCD's vendored OpenAPI schema covers)
+    # — causes a ComparisonError during diff calc, not a real problem.
+    # See: github.com/argoproj/argo-cd/issues/18778, /17358
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /status/terminatingReplicas
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+
+# Original Terraform had `lifecycle { ignore_changes = [values] }` to stop
+# every `terraform apply` from re-triggering an upgrade. That problem goes
+# away here: ArgoCD only re-syncs when this file (or prometheus.yml /
+# grafana-values.yml) actually changes in git.

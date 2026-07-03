@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: social-media-workload
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/SaisakthiM/Infrastructure-Project # e.g. git@github.com:you/your-infra-repo.git
+    targetRevision: HEAD
+    path: gitops/social-media/raw
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+# postgres-secret and social-minio-secret are created directly by Terraform
+# (environments/prod-social) before this Application's first sync, not by
+# ArgoCD. If you see CrashLoopBackOff on postgres/backend/minio right after
+# a fresh `terragrunt run-all apply`, give Terraform's secret resources a
+# few seconds and hit Refresh in the ArgoCD UI.

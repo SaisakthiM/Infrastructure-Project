@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Patients</h2>
+    <a href="{% url 'add_patient' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Add Patient</a>
+    <table class="table-auto w-full mt-4">
+        <thead>
+            <tr class="bg-gray-200">
+                <th class="px-4 py-2">Name</th>
+                <th class="px-4 py-2">Age</th>
+                <th class="px-4 py-2">Contact</th>
+                <th class="px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for patient in patients %}
+            <tr class="border-b">
+                <td class="px-4 py-2">{{ patient.name }}</td>
+                <td class="px-4 py-2">{{ patient.age }}</td>
+                <td class="px-4 py-2">{{ patient.contact }}</td>
+                <td class="px-4 py-2">
+                    <a href="{% url 'update_patient' patient.id %}" class="text-blue-600">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

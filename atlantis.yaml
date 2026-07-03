@@ -1,0 +1,71 @@
+version: 3
+
+automerge: false
+parallel_plan: true
+parallel_apply: false # apply order matters here (see each environment's terragrunt.hcl), don't risk a race
+
+projects:
+  - name: prod-gateway
+    dir: environments/prod-gateway
+    workflow: terragrunt
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars", "terragrunt.hcl", "../terragrunt.hcl", "nginx/*"]
+      enabled: true
+    apply_requirements: [approved, mergeable]
+
+  - name: prod-social
+    dir: environments/prod-social
+    workflow: terragrunt
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars", "terragrunt.hcl", "../terragrunt.hcl", "../../gitops/social-media/**/*"]
+      enabled: true
+    apply_requirements: [approved, mergeable]
+
+  - name: prod-docker
+    dir: environments/prod-docker
+    workflow: terragrunt
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars", "terragrunt.hcl", "../terragrunt.hcl"]
+      enabled: true
+    apply_requirements: [approved, mergeable]
+
+  - name: prod-infra
+    dir: environments/prod-infra
+    workflow: terragrunt
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars", "terragrunt.hcl", "../terragrunt.hcl", "../../gitops/observability/**/*"]
+      enabled: true
+    apply_requirements: [approved, mergeable]
+
+  - name: prod-manage
+    dir: environments/prod-manage
+    workflow: terragrunt
+    autoplan:
+      when_modified: ["*.tf", "terragrunt.hcl", "../terragrunt.hcl"]
+      enabled: true
+    apply_requirements: [approved, mergeable]
+
+workflows:
+  terragrunt:
+    plan:
+      steps:
+        - run: terragrunt init -input=false
+        - run: terragrunt plan -input=false -out=$PLANFILE
+    apply:
+      steps:
+        - run: terragrunt apply -input=false $PLANFILE
+
+# Notes:
+# - Atlantis needs `terragrunt` on PATH in whatever image/host runs it, plus
+#   network access to wherever you point `gitops_repo_url` (this repo
+#   itself), the docker socket, and the kind cluster's kubeconfig context.
+#   Since this whole stack is built around a single local dev box (kind,
+#   the docker socket path under /home/saisakthi/...), Atlantis has to run
+#   ON that same box -- a remote/ephemeral Atlantis runner won't have access
+#   to either. This is the same constraint a `local` Terraform backend
+#   implies: state has to persist on the box that applies it.
+# - prod-docker, prod-infra, and prod-manage's autoplan won't fire just
+#   because gitops/ changed for THEIR OWN sake -- those Applications sync
+#   independently via ArgoCD, not via a terraform apply. The when_modified
+#   globs above for prod-social/prod-infra are really only about catching
+#   changes to gitops_repo_url or similar, not about gitops content itself.

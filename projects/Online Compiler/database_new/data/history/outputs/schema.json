@@ -1,0 +1,12 @@
+{
+"table_name":"outputs",
+"columns":{
+"code":"string",
+"exit_code":"string",
+"language":"string",
+"output":"string",
+"timestamp":"string",
+"username":"string"
+},
+"rows":[]
+}

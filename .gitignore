@@ -1,0 +1,57 @@
+# ==============================================================================
+# infra-cli/.gitignore
+# ==============================================================================
+
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+social-platform
+social-platform.exe
+social-platform-webui
+dist/
+
+
+# ── Go toolchain ──────────────────────────────────────────────────────────────
+# Go module vendor directory — ignored globally too, belt-and-suspenders
+
+# BUT the xterm.js files bundled for the web UI live at webui/static/vendor/
+# and are NOT a Go vendor dir — they must be committed so the embed.FS can
+# serve them. Negation un-ignores that specific subtree.
+
+
+# ── Terraform / Terragrunt ────────────────────────────────────────────────────
+**/.terragrunt-cache/
+**/.terraform/
+**/.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate
+*.tfstate.backup
+terraform.locl.hcl
+
+
+# ── Config / secrets ──────────────────────────────────────────────────────────
+.social-platform/
+
+
+# ── OS / Editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+Thumbs.db
+Desktop.ini
+*~
+.nfs*
+*.swp
+*.tmp
+*.bak
+*.old
+.idea/
+*.iml
+.vscode/
+
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+*.cache
+*.zip

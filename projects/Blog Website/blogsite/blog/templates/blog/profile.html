@@ -1,0 +1,105 @@
+{% extends "blog/layout.html" %}
+{% block title %}Profile — Inkwell{% endblock %}
+{% block content %}
+{% load static %}
+
+<div style="max-width:700px;margin:0 auto;">
+
+  <!-- Header with current avatar -->
+  <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid #ddd8cc;">
+    <div>
+      {% if request.user.profile.avatar and request.user.profile.avatar.name %}
+        <img src="/blog/media/{{ request.user.profile.avatar.name }}"
+             style="width:5rem;height:5rem;border-radius:50%;object-fit:cover;border:3px solid var(--accent);"
+             alt="Your avatar">
+      {% else %}
+        <div style="width:5rem;height:5rem;border-radius:50%;background:var(--cream);border:3px solid #ddd8cc;display:flex;align-items:center;justify-content:center;">
+          <span style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--muted);">
+            {{ request.user.username|first|upper }}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+    <div>
+      <h1 style="font-size:1.8rem;margin-bottom:0.2rem;">{{ request.user.username }}</h1>
+      {% if request.user.profile.bio %}
+        <p style="color:var(--muted);font-size:0.95rem;line-height:1.5;">{{ request.user.profile.bio }}</p>
+      {% else %}
+        <p style="color:var(--muted);font-size:0.9rem;font-style:italic;">No bio yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Edit Profile Form -->
+  <span class="tag">Account</span>
+  <h2 style="font-size:1.6rem;margin-top:0.5rem;margin-bottom:1.5rem;">Edit Profile</h2>
+
+  <div class="card" style="padding:2rem;margin-bottom:3rem;">
+    <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:1.2rem;">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+            <p style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;">{{ field.help_text }}</p>
+          {% endif %}
+          {% for error in field.errors %}
+            <p style="color:var(--accent);font-size:0.82rem;margin-top:0.3rem;">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary" style="margin-top:0.5rem;">Update Profile</button>
+    </form>
+  </div>
+
+  <!-- User's Posts -->
+  <span class="tag">Writing</span>
+  <h2 style="font-size:1.6rem;margin-top:0.5rem;margin-bottom:1.5rem;">Your Posts</h2>
+
+  {% if user_posts %}
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+      {% for post in user_posts %}
+        <article class="card" style="padding:1.5rem;display:flex;gap:1.2rem;align-items:flex-start;">
+          {% if post.image and post.image.name %}
+            <img src="/blog/media/{{ post.image.name }}"
+                 style="width:6rem;height:6rem;object-fit:cover;border:1px solid #ddd8cc;flex-shrink:0;"
+                 alt="{{ post.title }}">
+          {% endif %}
+          <div style="flex:1;">
+            <h3 style="font-size:1.2rem;margin-bottom:0.3rem;">
+              <a href="{% url 'post_detail' post.pk %}"
+                 style="text-decoration:none;color:var(--ink);"
+                 onmouseover="this.style.color='var(--accent)'"
+                 onmouseout="this.style.color='var(--ink)'">
+                {{ post.title }}
+              </a>
+            </h3>
+            <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;">
+              {{ post.created_at|date:"F j, Y" }}
+            </p>
+            <p style="font-size:0.9rem;color:#4a4438;line-height:1.6;">{{ post.content|truncatewords:20 }}</p>
+            <div style="display:flex;gap:1rem;margin-top:0.8rem;">
+              <a href="{% url 'edit_post' post.pk %}"
+                 style="font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent2);text-decoration:none;">Edit</a>
+              <a href="{% url 'delete_post' post.pk %}"
+                 style="font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);text-decoration:none;">Delete</a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align:center;padding:3rem 2rem;border:1px dashed #ccc5b5;">
+      <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:var(--muted);">
+        You haven't written anything yet.
+      </p>
+      <a href="{% url 'create_post' %}"
+         style="display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;">
+        Write your first post →
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

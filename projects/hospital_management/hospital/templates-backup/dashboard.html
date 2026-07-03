@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-bold">Doctors</h2>
+        <p class="text-2xl">{{ doctor_count }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-bold">Patients</h2>
+        <p class="text-2xl">{{ patient_count }}</p>
+    </div>
+    <div class="bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-bold">Appointments</h2>
+        <p class="text-2xl">{{ appointment_count }}</p>
+    </div>
+</div>
+{% endblock %}

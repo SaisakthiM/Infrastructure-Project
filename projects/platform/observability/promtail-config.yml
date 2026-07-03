@@ -1,0 +1,145 @@
+# promtail-config.yml — Helm values for grafana/promtail
+
+config:
+  clients:
+    - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push
+      tenant_id: ""
+      batchwait: 1s
+      batchsize: 1048576
+      timeout: 10s
+      backoff_config:
+        min_period: 500ms
+        max_period: 5m
+        max_retries: 10
+
+  server:
+    http_listen_port: 3101
+    grpc_listen_port: 0
+    log_level: info
+
+  positions:
+    filename: /run/promtail/positions.yaml
+
+  snippets:
+    scrapeConfigs: |
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: time
+                level: level
+                message: msg
+                trace_id: trace_id
+                span_id: span_id
+                service_name: service
+                logger: logger
+          - labels:
+              trace_id: ""
+              span_id: ""
+              level: ""
+          - match:
+              selector: '{app="gateway"}'
+              stages:
+                - regex:
+                    expression: >-
+                      ^(?P<remote_addr>\S+) - (?P<remote_user>\S+)
+                      \[(?P<time_local>[^\]]+)\]
+                      "(?P<method>\S+) (?P<path>\S+) (?P<protocol>[^"]+)"
+                      (?P<status>\d+) (?P<body_bytes_sent>\d+)
+                      "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"
+                - labels:
+                    method: ""
+                    status: ""
+                    path: ""
+          - match:
+              selector: '{app=~"bank-backend|social-java"}'
+              stages:
+                - multiline:
+                    firstline: '^\d{4}-\d{2}-\d{2}'
+                    max_wait_time: 3s
+                - regex:
+                    expression: >-
+                      ^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)
+                      \s+(?P<level>\w+)\s+(?P<pid>\d+)\s+---\s+
+                      \[(?P<thread>[^\]]+)\]\s+(?P<logger>\S+)\s*:\s+(?P<message>.*)
+                - labels:
+                    level: ""
+                    logger: ""
+          - drop:
+              expression: '(GET /health|GET /actuator/health|GET /metrics)'
+              drop_counter_reason: healthcheck
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_promtail_io_scrape]
+            action: drop
+            regex: "false"
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+            separator: /
+            replacement: /var/log/pods/*$1/*.log
+          - source_labels: [__meta_kubernetes_pod_container_runtime]
+            action: replace
+            regex: (containerd|cri-o)
+            target_label: __path__
+            replacement: /var/log/pods/*${1}*/${2}/*.log
+
+      - job_name: node-syslog
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: syslog
+              __path__: /var/log/syslog
+
+      - job_name: kind-control-plane
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: kind-control-plane
+              node: kind-control-plane
+              __path__: /var/log/containers/*kube-system*.log
+        pipeline_stages:
+          - json:
+              expressions:
+                log: log
+          - output:
+              source: log
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+
+# REMOVED: extraVolumes and extraVolumeMounts blocks.
+# The promtail chart already mounts these by default:
+#   /var/log                    → for pod/container logs
+#   /var/lib/docker/containers  → for docker container metadata
+# Adding them again caused: duplicate entries for mountPath
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack

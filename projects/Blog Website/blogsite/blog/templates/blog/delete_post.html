@@ -1,0 +1,23 @@
+{% extends "blog/layout.html" %}
+{% block title %}Delete Post — Inkwell{% endblock %}
+{% block content %}
+
+<div style="max-width:540px;margin:0 auto;">
+  <div class="card" style="padding:2rem;border-color:var(--accent);box-shadow:4px 4px 0 #f0c8b8;">
+    <span class="tag" style="background:#fee2e2;color:var(--accent);">Danger Zone</span>
+    <h1 style="font-size:1.8rem;margin-top:0.8rem;margin-bottom:1rem;">Delete Post</h1>
+    <p style="color:#4a4438;line-height:1.6;margin-bottom:1.5rem;">
+      Are you sure you want to delete <strong>"{{ post.title }}"</strong>? This action cannot be undone.
+    </p>
+    <hr class="divider">
+    <form method="post" style="display:flex;gap:1rem;margin-top:1.2rem;">
+      {% csrf_token %}
+      <button type="submit" class="btn-primary" style="background:var(--accent);">Yes, Delete</button>
+      <a href="{% url 'post_detail' post.pk %}" style="flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #ccc5b5;color:var(--muted);text-decoration:none;font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;transition:background 0.2s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='transparent'">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,14 @@
+repos:
+  - id: github.com/SaisakthiM/Coding-Project
+    repo_config_file: "Projects/Terraform/infra/atlantis.yaml"
+    allowed_overrides: [apply_requirements, workflow]
+    allow_custom_workflows: true
+
+workflows:
+  terragrunt:
+    plan:
+      steps:
+        - run: ssh saisakthi@192.168.50.52 "cd ~/Coding-Project && git pull && cd Projects/Terraform/infra/environments/$PROJECT_NAME && terragrunt plan -input=false -out=/tmp/tfplan-$PROJECT_NAME 2>&1"
+    apply:
+      steps:
+        - run: ssh saisakthi@192.168.50.52 "cd ~/Coding-Project/Projects/Terraform/infra/environments/$PROJECT_NAME && terragrunt apply -input=false /tmp/tfplan-$PROJECT_NAME 2>&1"

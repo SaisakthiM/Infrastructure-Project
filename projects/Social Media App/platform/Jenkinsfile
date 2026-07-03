@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-id')
+        REGISTRY = "your-dockerhub-username"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/yourrepo.git'
+            }
+        }
+
+        stage('Build & Test Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm run lint'
+                    sh 'npm run test -- --watchAll=false'
+                    sh "docker build -t $REGISTRY/frontend:latest ."
+                    sh "docker push $REGISTRY/frontend:latest"
+                }
+            }
+        }
+
+        stage('Build & Test Django Backend') {
+            steps {
+                dir('backend-django') {
+                    sh 'pip install -r requirements.txt'
+                    sh 'pytest'
+                    sh "docker build -t $REGISTRY/backend:latest ."
+                    sh "docker push $REGISTRY/backend:latest"
+                }
+            }
+        }
+
+        stage('Build & Test Java Service') {
+            steps {
+                dir('microservice-java') {
+                    sh 'mvn clean test'
+                    sh "docker build -t $REGISTRY/java-service:latest ."
+                    sh "docker push $REGISTRY/java-service:latest"
+                }
+            }
+        }
+
+        stage('Build & Test Go Service') {
+            steps {
+                dir('microservice-go') {
+                    sh 'go test ./...'
+                    sh "docker build -t $REGISTRY/go-service:latest ."
+                    sh "docker push $REGISTRY/go-service:latest"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'docker-compose pull'
+                sh 'docker-compose up -d --remove-orphans'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed.'
+        }
+    }
+}

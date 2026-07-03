@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.test  –  Go microservice test image
+#
+# Runs the full unit + benchmark suite entirely in-process.
+# miniredis provides a fake Redis, so NO external Redis sidecar is needed.
+#
+# Build:
+#   docker build -f Dockerfile.test -t microservice-go-test .
+#
+# Run (plain):
+#   docker run --rm microservice-go-test
+#
+# Run (JUnit XML for CI):
+#   docker run --rm -v $(pwd)/results:/results microservice-go-test \
+#     -json 2>&1 | go-junit-report -set-exit-code > /results/report.xml
+#
+# GitHub Actions example:
+#   - name: Run Go tests
+#     run: |
+#       docker build -f Dockerfile.test -t microservice-go-test .
+#       docker run --rm microservice-go-test
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM golang:1.22-alpine AS test
+
+# Install git (needed for go get with VCS sources)
+RUN apk add --no-cache git gcc musl-dev
+
+ENV CGO_ENABLED=1
+
+WORKDIR /app
+
+# ── Dependency layer (cached unless go.mod / go.sum change) ──────────────────
+COPY go.mod go.sum ./
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod \
+    --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build \
+    go mod download
+
+# ── Add miniredis (in-process fake Redis — no sidecar needed) ────────────────
+# We add it here so it's cached separately from source changes.
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod \
+    --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build \
+    go get github.com/alicebob/miniredis/v2
+
+# ── Source ───────────────────────────────────────────────────────────────────
+COPY main.go main_test.go wait-for-redis.go ./
+
+# ── Tidy: record miniredis in go.mod / go.sum ────────────────────────────────
+RUN go mod tidy
+
+# ── Compile check (fast fail before the test runner starts) ──────────────────
+RUN go build ./...
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Default command: run all tests with race detector and verbose output.
+# -count=1  disables the test cache so results are always fresh in CI.
+# ─────────────────────────────────────────────────────────────────────────────
+CMD ["go", "test", "-v", "-race", "-count=1", "./..."]

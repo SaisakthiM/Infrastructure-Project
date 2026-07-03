@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+ARG CACHE_BUST
+COPY . .
+
+ENV DJANGO_SETTINGS_MODULE=blogsite.settings \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+
+
+# manage.py is inside blogsite/ subfolder
+CMD ["sh", "-c", "cd blogsite && python manage.py makemigrations && python manage.py migrate && python manage.py test blog.tests --verbosity=2"]

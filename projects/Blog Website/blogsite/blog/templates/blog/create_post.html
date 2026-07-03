@@ -1,0 +1,66 @@
+{% extends "blog/layout.html" %}
+{% block title %}New Post — Inkwell{% endblock %}
+{% block content %}
+
+<div style="max-width:640px;margin:0 auto;">
+  <span class="tag">Writing</span>
+  <h1 style="font-size:2.2rem;margin-top:0.5rem;margin-bottom:2rem;">Create New Post</h1>
+
+  <div class="card" style="padding:2rem;">
+    <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:1.2rem;">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p style="color:var(--accent);font-size:0.82rem;margin-top:0.3rem;">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <!-- Image upload with preview -->
+      <div>
+        <label>Cover Image</label>
+        <input type="file" name="image" accept="image/*" id="coverImageInput"
+               style="padding:0.5rem 0.8rem;background:var(--paper);border:1px solid #ccc5b5;width:100%;cursor:pointer;">
+        <div id="imagePreviewWrapper" style="display:none;margin-top:0.8rem;position:relative;">
+          <img id="imagePreview"
+               style="width:100%;max-height:220px;object-fit:cover;border:1px solid #ddd8cc;"
+               alt="Preview">
+          <button type="button" onclick="clearImage()"
+                  style="position:absolute;top:0.4rem;right:0.4rem;background:rgba(15,14,12,0.7);color:white;border:none;cursor:pointer;padding:0.2rem 0.5rem;font-size:0.75rem;letter-spacing:0.06em;">
+            ✕ Remove
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" style="margin-top:0.5rem;">Publish Post</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById('coverImageInput');
+  const preview = document.getElementById('imagePreview');
+  const wrapper = document.getElementById('imagePreviewWrapper');
+
+  input.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        wrapper.style.display = 'block';
+      };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  function clearImage() {
+    input.value = '';
+    preview.src = '';
+    wrapper.style.display = 'none';
+  }
+</script>
+
+{% endblock %}

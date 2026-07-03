@@ -1,0 +1,25 @@
+[package]
+name = "whatsapp-backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = { version = "0.8.9", features = ["multipart", "ws"] }
+axum-macros = "0.5.1"
+bcrypt = "0.19.1"
+chrono = { version = "0.4", features = ["serde"] }
+config = "0.15.23"
+dotenvy = "0.15.7"
+env = "1.0.1"
+futures-util = "0.3.32"
+jsonwebtoken = { version = "10", default-features = false, features = ["rust_crypto"] }
+minio = "0.4.0"
+reqwest = { version = "0.13.4", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"] }
+tokio = { version = "1.52.3", features = ["full"] }
+tokio-tungstenite = "0.29.0"
+tower-http = { version = "0.6.11", features = ["cors"] }
+uuid = { version = "1.23.3", features = ["serde", "v4"] }
+ws = "0.9.2"

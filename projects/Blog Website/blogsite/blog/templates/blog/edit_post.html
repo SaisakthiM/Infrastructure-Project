@@ -1,0 +1,26 @@
+{% extends "blog/layout.html" %}
+{% block title %}Edit Post — Inkwell{% endblock %}
+{% block content %}
+
+<div style="max-width:640px;margin:0 auto;">
+  <a href="{% url 'post_detail' post.pk %}" style="font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;">← Back to post</a>
+  <h1 style="font-size:2.2rem;margin-top:1rem;margin-bottom:2rem;">Edit Post</h1>
+
+  <div class="card" style="padding:2rem;">
+    <form method="post" style="display:flex;flex-direction:column;gap:1.2rem;">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p style="color:var(--accent);font-size:0.82rem;margin-top:0.3rem;">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary" style="margin-top:0.5rem;">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

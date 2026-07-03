@@ -1,0 +1,102 @@
+services:
+
+  # ─── MySQL Database ───────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: blog-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: saisakthi2008
+      MYSQL_DATABASE: blog_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psaisakthi2008"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - blog-network
+
+  # ─── MinIO Object Storage ─────────────────────────────────────────
+  minio:
+    image: quay.io/minio/minio
+    container_name: blog-minio
+    restart: always
+    command: server /data --console-address ":9091"
+    ports:
+      - "9090:9000"   # ← changed to avoid conflict with social media minio
+      - "9091:9091"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/dataaldready there"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - blog-network
+
+# ─── MinIO bucket setup (runs once then exits) ────────────────────
+  minio-init:
+    image: quay.io/minio/mc
+    container_name: blog-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set blogminio http://minio:9000 admin password123; do
+          echo "Waiting for MinIO..."; sleep 2;
+        done
+        mc mb --ignore-existing blogminio/blog-media
+        mc anonymous set download blogminio/blog-media
+        mc anonymous set public blogminio/blog-media
+        echo "Bucket setup complete!"
+    networks:
+      - blog-network
+
+  # ─── Django Backend ───────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog-website
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully  # ← IMPORTANT!
+    networks:
+      - blog-network
+      - gateway-net  
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# ─── Volumes ──────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+  minio_data:
+
+# ─── Networks ─────────────────────────────────────────────────────
+networks:
+  blog-network:
+    driver: bridge
+  gateway-net:
+    external: true       # ← join existing gateway network
+    name: gateway-net 

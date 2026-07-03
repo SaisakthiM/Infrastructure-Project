@@ -1,0 +1,37 @@
+{% extends "blog/layout.html" %}
+{% block title %}Register — Inkwell{% endblock %}
+{% block content %}
+
+<div style="max-width:420px;margin:2rem auto;">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:2rem;color:var(--ink);">Join Inkwell</p>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:0.3rem;">Create an account to start writing</p>
+  </div>
+
+  <div class="card" style="padding:2rem;">
+    <form method="post" style="display:flex;flex-direction:column;gap:1.2rem;">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+            <p style="font-size:0.78rem;color:var(--muted);margin-top:0.25rem;">{{ field.help_text }}</p>
+          {% endif %}
+          {% for error in field.errors %}
+            <p style="color:var(--accent);font-size:0.82rem;margin-top:0.3rem;">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary" style="margin-top:0.3rem;">Create Account</button>
+    </form>
+
+    <hr class="divider">
+    <p style="text-align:center;font-size:0.85rem;color:var(--muted);">
+      Already have an account?
+      <a href="{% url 'login' %}" style="color:var(--accent);text-decoration:none;font-weight:500;">Login →</a>
+    </p>
+  </div>
+</div>
+
+{% endblock %}

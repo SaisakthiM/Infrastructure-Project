@@ -1,0 +1,230 @@
+# otel-collector-values.yml — kind-side OTEL Collector
+mode: deployment
+replicaCount: 1
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: "0.127.0"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    protocol: TCP
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    protocol: TCP
+  metrics:
+    enabled: true
+    containerPort: 8888
+    servicePort: 8888
+    protocol: TCP
+  zipkin:
+    enabled: true
+    containerPort: 9411
+    servicePort: 9411
+    protocol: TCP
+  prometheus:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+          cors:
+            allowed_origins: ["*"]
+
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: otel-collector-self
+            scrape_interval: 15s
+            static_configs:
+              - targets: ["localhost:8888"]
+
+    hostmetrics:
+      collection_interval: 30s
+      scrapers:
+        cpu: {}
+        memory: {}
+        disk: {}
+        filesystem: {}
+        network: {}
+        load: {}
+        processes: {}
+
+    k8s_cluster:
+      collection_interval: 30s
+
+  # ─── SPANMETRICS CONNECTOR ────────────────────────────────────
+  connectors:
+    spanmetrics:
+      namespace: traces_span_metrics
+      histogram:
+        explicit:
+          buckets: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s]
+      dimensions:
+        - name: http.method
+        - name: http.status_code
+        - name: http.route
+        - name: deployment.environment
+      exemplars:
+        enabled: true
+      metrics_flush_interval: 15s
+
+  processors:
+    batch:
+      timeout: 5s
+      send_batch_size: 1024
+      send_batch_max_size: 2048
+
+    filter/drop_health:
+      error_mode: ignore
+      traces:
+        span:
+          - 'attributes["http.route"] == "/health"'
+          - 'attributes["http.route"] == "/healthz"'
+          - 'attributes["http.route"] == "/actuator/health"'
+          - 'attributes["http.route"] == "/metrics"'
+      metrics:
+        metric:
+          - 'name == "up" and IsMatch(resource.attributes["job"], ".*health.*")'
+
+    k8sattributes:
+      auth_type: serviceAccount
+      passthrough: false
+
+    resource:
+      attributes:
+        - key: cluster
+          value: kind-social-media
+          action: insert
+        - key: environment
+          value: local
+          action: insert
+
+    memory_limiter:
+      check_interval: 5s
+      limit_mib: 400
+      spike_limit_mib: 100
+
+  exporters:
+    prometheusremotewrite:
+      endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write
+      tls:
+        insecure: true
+      resource_to_telemetry_conversion:
+        enabled: true
+
+    otlphttp/loki:
+      endpoint: http://loki-gateway.monitoring.svc.cluster.local/otlp
+      tls:
+        insecure: true
+
+    otlp/tempo:
+      endpoint: http://tempo.monitoring.svc:4317
+      tls:
+        insecure: true
+      compression: gzip
+
+    debug:
+      verbosity: basic
+      sampling_initial: 5
+      sampling_thereafter: 200
+
+  service:
+    telemetry:
+      logs:
+        level: info
+      metrics:
+        level: detailed
+        address: "0.0.0.0:8888"
+
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, resource, filter/drop_health, batch]
+        exporters: [otlp/tempo, spanmetrics]   # ← added spanmetrics
+
+      # spanmetrics connector output feeds this pipeline
+      metrics/spanmetrics:
+        receivers: [spanmetrics]
+        processors: [memory_limiter, batch]
+        exporters: [prometheusremotewrite]
+
+      metrics:
+        receivers: [otlp, prometheus, hostmetrics, k8s_cluster]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [prometheusremotewrite]
+
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/loki]
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources:
+        - pods
+        - namespaces
+        - nodes
+        - services
+        - endpoints
+        - replicationcontrollers
+        - resourcequotas
+        - persistentvolumes
+        - persistentvolumeclaims
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources:
+        - deployments
+        - replicasets
+        - statefulsets
+        - daemonsets
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["autoscaling"]
+      resources:
+        - horizontalpodautoscalers
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["batch"]
+      resources:
+        - jobs
+        - cronjobs
+      verbs: ["get", "list", "watch"]
+
+serviceAccount:
+  create: true
+
+extraEnvs:
+  - name: KUBE_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+serviceMonitor:
+  enabled: true
+  metricsEndpoints:
+    - port: metrics
+      interval: 30s
+  extraLabels:
+    release: kube-prometheus-stack

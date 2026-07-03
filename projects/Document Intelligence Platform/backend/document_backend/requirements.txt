@@ -1,0 +1,20 @@
+django
+python-dotenv
+requests
+google-genai
+minio
+django-cors-headers
+pymysql
+mysqlclient
+numpy
+scikit-learn
+djangorestframework
+gunicorn
+mysqlclient
+sentence-transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+opentelemetry-distro
+opentelemetry-exporter-otlp
+django-prometheus
+

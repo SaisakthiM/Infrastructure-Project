@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+ARG CACHE_BUST
+COPY . .
+
+ENV DJANGO_SETTINGS_MODULE=hospital_management.test_settings \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+CMD ["sh", "-c", "python manage.py migrate --run-syncdb && python manage.py test --verbosity=2"]

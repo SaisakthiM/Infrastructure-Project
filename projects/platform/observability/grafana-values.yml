@@ -1,0 +1,90 @@
+grafana:
+  enableServiceLinks: false   # <-- add this; stops k8s injecting JAEGER_AGENT_* env vars
+
+  adminPassword: "admin"
+
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/grafana/"
+      serve_from_sub_path: true
+
+  securityContext:
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+
+  ingress:
+    enabled: false
+
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      uid: prometheus
+      url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+      access: proxy
+      jsonData:
+        timeInterval: 15s
+        httpMethod: POST
+
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki-gateway.monitoring.svc.cluster.local
+      access: proxy
+      jsonData:
+        derivedFields:
+          - name: TraceID
+            matcherRegex: '"trace_id":"(\w+)"'
+            url: "$${__value.raw}"
+            datasourceUid: tempo
+
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo.monitoring.svc.cluster.local:3200
+      access: proxy
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: loki
+          tags:
+            - key: service.name
+              value: app
+          filterByTraceID: true
+          filterBySpanID: false
+        tracesToMetrics:
+          datasourceUid: prometheus
+          tags:
+            - key: service.name
+              value: app
+          queries:
+            - name: Request rate
+              query: 'rate(http_server_requests_seconds_count{app="$${__tags.app}"}[5m])'
+            - name: Error rate
+              query: 'rate(http_server_requests_seconds_count{app="$${__tags.app}",status=~"5.."}[5m])'
+        serviceMap:
+          datasourceUid: prometheus
+        nodeGraph:
+          enabled: true
+        lokiSearch:
+          datasourceUid: loki
+
+    - name: Jaeger
+      type: jaeger
+      uid: jaeger
+      url: http://jaeger.monitoring.svc.cluster.local:16686
+      access: proxy
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: loki
+          tags:
+            - key: service.name
+              value: app
+          filterByTraceID: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

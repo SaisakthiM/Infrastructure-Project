@@ -1,0 +1,14 @@
+django 
+whitenoise
+gunicorn 
+pillow
+django-storages[s3]>=1.14
+boto3>=1.34
+Pillow>=10.0.0
+pymysql
+cryptography
+minio
+django-ratelimit
+opentelemetry-distro
+opentelemetry-exporter-otlp
+django-prometheus

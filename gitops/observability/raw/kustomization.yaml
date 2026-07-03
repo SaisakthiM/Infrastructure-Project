@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - 01-otel-nodeport.yaml
+  - 02-jaeger-v2-configmap.yaml
+  - 03-ingress-grafana.yaml
+  - 04-ingress-jaeger.yaml
+  - 05-ingress-otel.yaml

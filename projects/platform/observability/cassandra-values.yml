@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  repository: cassandra
+  tag: "5.0"
+  pullPolicy: Never
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1536Mi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+jvm:
+  maxHeapSize: "256M"
+  # newHeapSize: NEVER set this — crashes G1GC in Cassandra 4+
+
+env:
+  - name: MAX_HEAP_SIZE
+    value: "256M"
+  - name: HEAP_NEWSIZE
+    value: ""
+  - name: CASSANDRA_CLUSTER_NAME
+    value: "cassandra-cluster"
+
+persistence:
+  enabled: false
+
+readinessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 10
+
+livenessProbe:
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  failureThreshold: 5

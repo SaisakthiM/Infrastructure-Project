@@ -1,0 +1,322 @@
+services:
+
+  # -------- Django Backend --------
+  django:
+    build: ./apps/backend
+    container_name: django
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/backend/social_media:/app/social_media
+    environment:
+      DATABASE_URL: postgres://postgres:saisakthi2008@postgres:5432/socialmediaapp
+      MEDIA_STORAGE_URL: http://minio:9000
+      MEDIA_STORAGE_KEY: minio
+      MEDIA_STORAGE_SECRET: minio123
+      DB_NAME: socialmediaapp
+      DB_USER: postgres
+      DB_PASSWORD: saisakthi2008
+      DB_HOST: postgres
+      DB_PORT: 5432
+      RUNNING_IN_DOCKER: 1
+      DEBUG: "False"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  # -------- Postgres DB --------
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: socialmediaapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: saisakthi2008
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------- Frontend Dev --------
+  frontend-dev:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - django
+    networks:
+      - frontend-net
+      - backend-net
+    environment:
+      - VITE_DEV_SERVER_HOST=0.0.0.0
+      - VITE_API_URL=/api
+
+  # -------- Frontend Production --------
+  frontend-prod:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      django:
+        condition: service_started
+      microservice-java:
+        condition: service_healthy
+      microservice-go:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - frontend-net
+      - backend-net
+    restart: unless-stopped
+
+  # -------- Cassandra --------
+  cassandra:
+    image: cassandra:4
+    container_name: cassandra
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # -------- Java Microservice --------
+  microservice-java:
+    build: ./apps/microservice-java
+    container_name: microservice-java
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_CASSANDRA_CONTACT_POINTS: cassandra
+      SPRING_CASSANDRA_PORT: 9042
+      SPRING_CASSANDRA_LOCAL_DATACENTER: datacenter1
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - backend-net
+    volumes:
+      - ./apps/microservice-java/.m2:/root/.m2
+      - ./apps/microservice-java/target:/app/target
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # -------- Redis --------
+  redis:
+    image: redis:7
+    container_name: redis
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # -------- Go Microservice --------
+  microservice-go:
+    build: ./apps/microservice-go
+    container_name: microservice-go
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - backend-net
+    volumes:
+      - go_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # -------- Zookeeper --------
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    networks:
+      - backend-net
+
+  # -------- Kafka --------
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+    networks:
+      - backend-net
+
+  # -------- MinIO --------
+  minio:
+    build:
+      context: ./storage/minio
+      dockerfile: Dockerfile
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9004:9004"
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend-net
+    command: server /data --console-address ":9004"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------- Prometheus --------
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./platform/observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - backend-net
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    profiles:
+      - observability
+
+  # -------- Grafana --------
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - backend-net
+    depends_on:
+      - prometheus
+      - loki
+    profiles:
+      - observability
+
+  # -------- Loki --------
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./platform/observability/loki-config.yml:/etc/loki/local-config.yml
+      - loki_data:/loki
+    networks:
+      - backend-net
+    command: -config.file=/etc/loki/local-config.yml
+    user: root
+    profiles:
+      - observability
+
+  # -------- Promtail --------
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./platform/observability/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - backend-net
+    profiles:
+      - observability
+
+  # -------- Tempo --------
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "9095:9095"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./platform/observability/tempo-config.yml:/etc/tempo/tempo.yaml
+      - tempo_data:/tmp/tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    networks:
+      - backend-net
+    depends_on:
+      - minio
+    profiles:
+      - observability
+
+volumes:
+  db_data:
+  cassandra_data:
+  grafana_data:
+  minio_data:
+  go_cache:
+  go_build_cache:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+
+networks:
+  backend-net:
+    driver: bridge
+  frontend-net:
+    driver: bridge

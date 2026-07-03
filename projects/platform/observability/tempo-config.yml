@@ -1,0 +1,69 @@
+tempo:
+  structuredConfig:
+    metrics_generator:
+      registry:
+        external_labels:
+          source: tempo
+          cluster: kind-social-media
+      storage:
+        path: /var/tempo/generator/wal
+        remote_write:
+          - url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+            send_exemplars: true
+      processor:
+        service_graphs:
+          dimensions: [http.method, http.status_code, service.name]
+        span_metrics:
+          dimensions: [http.method, http.status_code, http.route, service.name]
+    overrides:
+      defaults:
+        metrics_generator:
+          processors: [service-graphs, span-metrics]
+      per_tenant_override_config: /conf/overrides.yaml
+    compactor:
+      compaction:
+        block_retention: 336h
+    ingester:
+      max_block_duration: 5m
+    querier:
+      max_concurrent_queries: 10
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /var/tempo/traces
+        wal:
+          path: /var/tempo/wal
+    distributor:
+      receivers:
+        jaeger:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:14250
+            thrift_http:
+              endpoint: 0.0.0.0:14268
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+
+persistence:
+  enabled: true
+  storageClassName: standard
+  size: 5Gi
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
+  interval: 30s

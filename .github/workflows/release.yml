@@ -1,0 +1,168 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Job 1: Package environments/ as infra.tar.gz ───────────────────────────
+  package-infra:
+    name: Package infra
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create infra.tar.gz
+        run: |
+          tar --exclude='environments/*/.terraform' \
+              --exclude='environments/*/terraform.tfstate*' \
+              --exclude='environments/*/terraform.tfvars' \
+              --exclude='environments/*/.terraform.lock.hcl' \
+              -czf infra.tar.gz \
+              environments/ \
+              modules/ \
+              gitops/ \
+              atlantis.yaml \
+              2>/dev/null || \
+          tar --exclude='environments/*/.terraform' \
+              --exclude='environments/*/terraform.tfstate*' \
+              --exclude='environments/*/terraform.tfvars' \
+              --exclude='environments/*/.terraform.lock.hcl' \
+              -czf infra.tar.gz \
+              environments/
+
+      - name: Verify
+        run: tar -tzf infra.tar.gz | head -30
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-tarball
+          path: infra.tar.gz
+
+  # ── Job 2: Build CLI + Web UI for all platforms ────────────────────────────
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64, suffix: "" }
+          - { goos: linux,   goarch: arm64, suffix: "" }
+          - { goos: darwin,  goarch: amd64, suffix: "" }
+          - { goos: darwin,  goarch: arm64, suffix: "" }
+          - { goos: windows, goarch: amd64, suffix: ".exe" }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: infra-cli/go.sum
+
+      - name: Download modules
+        working-directory: infra-cli
+        run: go mod download
+
+      - name: Build CLI  (includes TUI via `social-platform ui`)
+        working-directory: infra-cli
+        env:
+          GOOS:        ${{ matrix.goos }}
+          GOARCH:      ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build \
+            -ldflags="-s -w -X main.version=${{ github.ref_name }}" \
+            -o social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} \
+            .
+
+      - name: Build Web UI
+        working-directory: infra-cli
+        env:
+          GOOS:        ${{ matrix.goos }}
+          GOARCH:      ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build \
+            -ldflags="-s -w -X main.version=${{ github.ref_name }}" \
+            -o social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} \
+            ./webui/
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: infra-cli/social-platform-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+
+      - name: Upload Web UI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: infra-cli/social-platform-webui-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+
+  # ── Job 3: GitHub Release ──────────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: [package-infra, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List
+        run: find dist/ -type f | sort
+
+      - name: SHA256 checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "social-platform ${{ github.ref_name }}"
+          body: |
+            ## social-platform ${{ github.ref_name }}
+
+            ### Binaries
+
+            | Binary | Purpose |
+            |---|---|
+            | `social-platform-*` | CLI + TUI (`social-platform ui`) |
+            | `social-platform-webui-*` | Browser dashboard on `localhost:8080` |
+
+            ### Quick install (Linux amd64)
+            ```bash
+            # CLI
+            curl -Lo social-platform \
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
+            chmod +x social-platform && sudo mv social-platform /usr/local/bin/
+
+            # Web UI
+            curl -Lo social-platform-webui \
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
+            chmod +x social-platform-webui
+            ```
+
+            ### First run
+            ```bash
+            social-platform install
+            social-platform configure
+            social-platform deploy
+            social-platform ui          # TUI
+            social-platform-webui       # browser UI → http://localhost:8080
+            ```
+          files: dist/*
+          generate_release_notes: true

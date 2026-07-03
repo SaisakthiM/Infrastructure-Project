@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - 02-postgres-service.yaml
+  - 03-postgres-statefulset.yaml
+  - 04-backend-service.yaml
+  - 05-backend-deployment.yaml
+  - 06-frontend-service.yaml
+  - 07-frontend-deployment.yaml
+  - 08-microservice-go-service.yaml
+  - 09-microservice-go-deployment.yaml
+  - 10-microservice-java-service.yaml
+  - 11-microservice-java-deployment.yaml
+  - 12-kafka-statefulset.yaml
+  - 13-kafka-service.yaml
+  - 14-cassandra-statefulset.yaml
+  - 15-cassandra-service.yaml
+  - 16-redis-deployment.yaml
+  - 17-redis-service.yaml
+  - 18-minio-service.yaml
+  - 19-minio-deployment.yaml
+  - 20-ingress-api.yaml
+  - 21-ingress-minio.yaml
+  - 22-ingress-frontend.yaml
+
+# postgres-secret and social-minio-secret are deliberately NOT listed here.
+# They're created by Terraform (environments/prod-social) instead of being
+# committed to git, since they carry real credentials. ArgoCD just expects
+# them to already exist in the "default" namespace by the time it syncs
+# 03-postgres-statefulset.yaml / 05-backend-deployment.yaml / 19-minio-deployment.yaml.

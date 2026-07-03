@@ -1,0 +1,110 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-image: radial-gradient(circle at center, hsl(272, 62%, 58%), hsl(300, 100%, 25%));
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 640px;
+    border: 2px solid rgb(19, 32, 54);
+    padding: 40px 50px;
+    background-color: aliceblue;
+    border-radius: 12px;
+    font-family: 'Times New Roman', Times, serif;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.container hr {
+    height: 2px;
+    border: none;
+    background: rgb(26, 26, 199);
+    margin-bottom: 30px;
+}
+
+.container h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+.container h2 {
+    font-size: 22px;
+    margin: 20px 0;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.container p {
+    font-size: 20px;
+    margin-top: 20px;
+    color: rgb(50, 50, 50);
+}
+
+/* Options list */
+ul {
+    list-style: none;
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 2px solid rgb(19, 32, 54);
+    cursor: pointer;
+    font-size: 16px;
+    font-family: 'Times New Roman', Times, serif;
+    transition: background-color 0.2s, transform 0.1s;
+    background-color: white;
+}
+
+.option:hover {
+    background-color: rgb(220, 235, 255);
+    transform: scale(1.01);
+}
+
+.option.correct {
+    background-color: rgb(180, 240, 180);
+    border-color: green;
+    cursor: default;
+}
+
+.option.wrong {
+    background-color: rgb(255, 180, 180);
+    border-color: red;
+    cursor: default;
+}
+
+/* Next button */
+.button_quiz {
+    margin-top: 24px;
+}
+
+.button_quiz button {
+    width: 60%;
+    border: none;
+    border-radius: 15px;
+    background-color: rgb(100, 177, 245);
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.button_quiz button:hover {
+    background-color: rgb(59, 125, 224);
+}
+
+.button_quiz button:active {
+    background-color: rgb(16, 80, 182);
+}

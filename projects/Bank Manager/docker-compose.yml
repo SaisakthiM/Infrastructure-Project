@@ -1,0 +1,45 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: bank_postgres
+    environment:
+      POSTGRES_USER: bankmanagement
+      POSTGRES_PASSWORD: bankmanagement@2008
+      POSTGRES_DB: bank
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - bank-network
+
+  backend:
+    build:
+      context: "./backend/bank_management"
+    container_name: bank_backend
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/bank
+      SPRING_DATASOURCE_USERNAME: bankmanagement
+      SPRING_DATASOURCE_PASSWORD: bankmanagement@2008
+    ports:
+      - "8080:8080"
+    networks:
+      - bank-network
+
+  frontend_build:
+    build:
+      context: "./frontend"
+      dockerfile: Dockerfile
+    container_name: bank_frontend_build
+    volumes:
+      - bank-build:/dist
+    networks:
+      - bank-network
+
+volumes:
+  pgdata:
+  bank-build:
+
+networks:
+  bank-network:

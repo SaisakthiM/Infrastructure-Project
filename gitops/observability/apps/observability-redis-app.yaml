@@ -1,0 +1,65 @@
+# observability-redis-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: observability-redis
+  namespace: default
+  labels:
+    app: observability-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: observability-redis
+  template:
+    metadata:
+      labels:
+        app: observability-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth-secret
+                  key: REDIS_PASSWORD   # confirm this matches the real key, see step 2 below
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+# Named to match what the Bitnami chart used to create, so nothing
+# downstream that already points at "observability-redis-master" breaks.
+apiVersion: v1
+kind: Service
+metadata:
+  name: observability-redis-master
+  namespace: default
+  labels:
+    app: observability-redis
+spec:
+  selector:
+    app: observability-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis

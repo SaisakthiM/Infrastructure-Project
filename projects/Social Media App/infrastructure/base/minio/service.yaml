@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  selector:
+    app: minio
+  ports:
+    - name: api       # Required name for the first port
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: console   # Required name for the second port
+      protocol: TCP
+      port: 9004
+      targetPort: 9004
+  type: ClusterIP

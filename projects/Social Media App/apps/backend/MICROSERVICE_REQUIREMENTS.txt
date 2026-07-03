@@ -1,0 +1,29 @@
+# Add these to your backend/requirements.txt
+
+# Existing (keep these)
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+django-storages
+boto3
+graphene-django
+django-prometheus
+psycopg2-binary
+Pillow
+
+# NEW — Kafka producer
+confluent-kafka>=2.3.0
+
+# NEW — HTTP calls to Go/Java microservices
+requests>=2.31.0
+
+# NEW — MinIO media storage (already in compose, now wired)
+# boto3 already listed above — just uncomment MinIO settings
+
+# NEW — OpenTelemetry tracing (sends traces to Tempo)
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
+opentelemetry-instrumentation-django>=0.41b0
+opentelemetry-instrumentation-requests>=0.41b0
+

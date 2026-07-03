@@ -1,0 +1,70 @@
+defaultRules:
+  disabled:
+    # These recording rules fail on multi-node kind clusters because
+    # kube_pod_info returns multiple matches when joining on
+    # (cluster, namespace, pod) across 3 worker nodes.
+    # Disabling them stops the "multiple matches for labels" WARN spam
+    # and unblocks the Grafana panels that depend on them.
+    node_namespace_pod_container:container_memory_cache: true
+    node_namespace_pod_container:container_memory_working_set_bytes: true
+    node_namespace_pod_container:container_memory_rss: true
+    node_namespace_pod_container:container_memory_swap: true
+    node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate: true
+
+prometheus:
+  prometheusSpec:
+    # Required so recording rules that join on `cluster` label
+    # find a consistent value across all scraped metrics.
+    externalLabels:
+      cluster: kind-social-media
+
+    enableRemoteWriteReceiver: true
+
+    additionalScrapeConfigs:
+      # ── 1. Kind-side OTel Collector self-metrics ──────────────
+      - job_name: otel-collector-kind
+        scrape_interval: 15s
+        static_configs:
+          - targets: ["otel-collector.monitoring.svc.cluster.local:8888"]
+        relabel_configs:
+          - target_label: app
+            replacement: otel-collector-kind
+          - target_label: cluster
+            replacement: kind-social-media
+
+      # ── 2. Jaeger self-metrics ────────────────────────────────
+      # FIX: service name is "jaeger" not "jaeger-all-in-one"
+      # FIX: metrics port for jaeger v2 is 8888 (otelcol internal),
+      #      not 14269 (that was jaeger v1 admin port)
+      - job_name: jaeger
+        scrape_interval: 15s
+        static_configs:
+          - targets: ["jaeger.monitoring.svc.cluster.local:8888"]
+        relabel_configs:
+          - target_label: app
+            replacement: jaeger
+          - target_label: cluster
+            replacement: kind-social-media
+
+      # ── 3. Kubernetes cAdvisor ────────────────────────────────
+      - job_name: kubernetes-cadvisor
+        scrape_interval: 30s
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+          # FIX: add cluster label so join rules work
+          - target_label: cluster
+            replacement: kind-social-media

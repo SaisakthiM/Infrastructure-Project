@@ -1,0 +1,16 @@
+# Dockerfile.test — only for running tests, never deployed
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install deps first (cached layer — only rebuilds if package.json changes)
+COPY package*.json ./
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    npm install --legacy-peer-deps
+
+# Copy source
+ARG CACHE_BUST
+COPY . .
+
+# Run tests — container exits with code 1 if any test fails
+CMD ["npm", "run", "test:run"]

@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - repoURL: https://jaegertracing.github.io/helm-charts
+      chart: jaeger
+      targetRevision: 3.4.1 # TODO: confirm against `helm search repo jaeger --versions` and pin deliberately
+      helm:
+        valueFiles:
+          - $values/gitops/platform/observability/jaeger-config.yml
+    - repoURL: https://github.com/SaisakthiM/Infrastructure-Project
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+# Originally depended on helm_release.ingress_nginx, which now lives in the
+# prod-social Application set, not here. ingress-nginx syncs at wave "0" in
+# that app set and this cluster only has one ArgoCD instance, but ArgoCD
+# doesn't sequence across separate root Applications -- if you need a hard
+# guarantee, check ingress-nginx is Healthy in the ArgoCD UI before this
+# one's first sync.

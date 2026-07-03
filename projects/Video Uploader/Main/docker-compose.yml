@@ -1,0 +1,31 @@
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: video-uploader-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/Uploads:/app/Uploads
+    networks:
+      - video-uploader-net
+
+  frontend:
+    build:
+      context: ./frontend/video-uploader
+      dockerfile: Dockerfile
+    container_name: video-uploader-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    networks:
+      - video-uploader-net
+
+networks:
+  video-uploader-net:
+    driver: bridge

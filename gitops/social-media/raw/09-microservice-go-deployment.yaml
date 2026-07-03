@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-go
+  labels:
+    app: microservice-go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-go
+  template:
+    metadata:
+      labels:
+        app: microservice-go
+    spec:
+      containers:
+        - name: microservice-go
+          image: socialmediaapp-microservice-go:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"

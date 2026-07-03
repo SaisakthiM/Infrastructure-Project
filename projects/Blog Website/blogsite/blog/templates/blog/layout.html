@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a9 9 0 0 1 9 9'/><path d='M4 4a16 16 0 0 1 16 16'/><circle cx='5' cy='19' r='1'/></svg>">  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Inkwell{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0f0e0c;
+      --paper: #f5f0e8;
+      --cream: #ede8dc;
+      --accent: #c8501a;
+      --accent2: #2a5f8f;
+      --muted: #7a7060;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+
+    /* Grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    nav { 
+      background: var(--ink); 
+      border-bottom: 3px solid var(--accent);
+    }
+    .nav-brand { 
+      font-family: 'Playfair Display', serif; 
+      font-style: italic;
+      font-size: 1.8rem;
+      color: var(--paper);
+      letter-spacing: -0.02em;
+    }
+    .nav-link {
+      color: #b0a898;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--paper); border-color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+    }
+    .btn-primary:hover { background: #a8401a; transform: translateY(-1px); }
+
+    .card {
+      background: white;
+      border: 1px solid #ddd8cc;
+      box-shadow: 4px 4px 0 #ddd8cc;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #c8c0b0; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #ddd8cc;
+      margin: 1.5rem 0;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #ccc5b5;
+      background: var(--paper);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    label { 
+      font-size: 0.78rem; 
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .tag {
+      display: inline-block;
+      background: var(--cream);
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+    }
+
+    footer {
+      background: var(--ink);
+      color: #5a5448;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+    }
+
+    /* Page load animation */
+    main { animation: fadeUp 0.4s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div style="max-width:1100px;margin:0 auto;padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;">
+      <a href="{% url 'home' %}" class="nav-brand">Inkwell</a>
+      <div style="display:flex;gap:2rem;align-items:center;">
+        {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="nav-link">Profile</a>
+          <a href="{% url 'create_post' %}" class="nav-link" style="color:var(--accent)">+ New Post</a>
+          <form method="post" action="{% url 'logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="nav-link">Login</a>
+          <a href="{% url 'register' %}" class="nav-link" style="color:var(--accent);">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main style="max-width:900px;margin:0 auto;padding:3rem 1.5rem;">
+    {% if messages %}
+      {% for message in messages %}
+        <div style="background:{% if message.tags == 'error' %}#fee2e2{% else %}#d1fae5{% endif %};border-left:3px solid {% if message.tags == 'error' %}var(--accent){% else %}#059669{% endif %};padding:0.8rem 1rem;margin-bottom:1.5rem;font-size:0.9rem;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer style="text-align:center;padding:2rem 1.5rem;margin-top:4rem;">
+    <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:#3a3428;margin-bottom:0.5rem;">Inkwell</p>
+    <p>&copy; {{ year|default:"2026" }} · All rights reserved</p>
+  </footer>
+
+</body>
+</html>

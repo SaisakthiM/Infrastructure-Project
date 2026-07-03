@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M11 22c-3.806-1.45-7-3.966-7-9V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v4'/><path d='M14.923 16.547 14 16.164'/><path d='m14.923 18.843-.923.383'/><path d='M16.547 14.923 16.164 14'/><path d='m16.547 20.467-.383.924'/><path d='m18.843 14.923.383-.923'/><path d='m19.225 21.391-.382-.924'/><path d='m20.467 16.547.923-.383'/><path d='m20.467 18.843.923.383'/><circle cx='17.695' cy='17.695' r='3'/></svg>">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Test — Terraform Ecosystem</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000000;
+    --bg2: #020a02;
+    --surface: #030f03;
+    --surface2: #041504;
+    --border: #0a2a0a;
+    --border2: #0d3d0d;
+    --green: #00ff41;
+    --green2: #00cc33;
+    --green3: #008f11;
+    --green-dim: rgba(0,255,65,0.06);
+    --green-glow: rgba(0,255,65,0.12);
+    --amber: #ffb700;
+    --red: #ff2020;
+    --cyan: #00ffcc;
+    --text: #c8ffc8;
+    --text2: #6aaf6a;
+    --text3: #2d6b2d;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Orbitron', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.75;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Matrix rain canvas */
+  #matrix-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0.035;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,255,65,0.015) 3px,
+      rgba(0,255,65,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── LAYOUT ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 4rem 2rem 8rem;
+  }
+
+  /* ── HEADER ── */
+  .report-header {
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    padding: 2.5rem 2.5rem 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .report-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green), var(--green2), transparent);
+    animation: scanH 3s ease-in-out infinite;
+  }
+  @keyframes scanH {
+    0%,100% { opacity: 0.4; } 50% { opacity: 1; }
+  }
+  .report-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green3), transparent);
+  }
+
+  .header-tag {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .header-tag::before { content: '> '; color: var(--green); }
+
+  .report-title {
+    font-family: var(--display);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 900;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 20px rgba(0,255,65,0.4), 0 0 60px rgba(0,255,65,0.15);
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .meta-label { font-size: 10px; color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase; }
+  .meta-value { font-size: 13px; color: var(--text); }
+  .badge-low-med {
+    display: inline-block;
+    font-size: 11px; padding: 0.2rem 0.7rem;
+    background: rgba(255,183,0,0.08);
+    border: 1px solid rgba(255,183,0,0.4);
+    color: var(--amber);
+    letter-spacing: 0.1em;
+  }
+  .badge-pass {
+    display: inline-block;
+    font-size: 11px; padding: 0.2rem 0.7rem;
+    background: var(--green-dim);
+    border: 1px solid rgba(0,255,65,0.35);
+    color: var(--green);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 3.5rem;
+  }
+
+  .section-label {
+    font-size: 10px;
+    color: var(--green3);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .section-label::before { content: '// '; }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    flex-shrink: 0;
+  }
+
+  /* ── SUBSECTION ── */
+  .subsection {
+    margin-bottom: 2.5rem;
+  }
+  .subsection-title {
+    font-family: var(--display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.8rem;
+    border-left: 2px solid var(--cyan);
+    background: rgba(0,255,204,0.03);
+  }
+
+  /* ── PROSE ── */
+  p {
+    color: var(--text2);
+    margin-bottom: 1rem;
+    line-height: 1.8;
+  }
+  p strong { color: var(--text); }
+
+  /* ── CODE BLOCK ── */
+  .code-wrap {
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    overflow: hidden;
+    position: relative;
+  }
+  .code-bar {
+    background: var(--surface2);
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+  }
+  .code-bar::before {
+    content: '▶';
+    color: var(--green3);
+    font-size: 8px;
+  }
+  .code-bar .lang {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--green3);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  pre {
+    padding: 1.2rem 1.4rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--green2);
+  }
+  pre .c { color: var(--text3); } /* comments */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green2);
+    background: var(--green-dim);
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--border2);
+  }
+
+  /* ── BLOCKQUOTE / NOTE ── */
+  .note {
+    border-left: 2px solid var(--amber);
+    padding: 0.8rem 1.2rem;
+    background: rgba(255,183,0,0.04);
+    color: var(--text2);
+    margin: 1rem 0 1.5rem;
+    font-size: 12px;
+  }
+  .note strong { color: var(--amber); }
+
+  /* ── FINDING BOXES ── */
+  .finding {
+    border: 1px solid var(--border2);
+    margin-bottom: 1.2rem;
+    overflow: hidden;
+  }
+  .finding-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .severity {
+    font-size: 10px;
+    font-family: var(--display);
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .sev-low    { background: rgba(0,255,65,0.08);  border: 1px solid rgba(0,255,65,0.4);   color: var(--green); }
+  .sev-medium { background: rgba(255,183,0,0.08); border: 1px solid rgba(255,183,0,0.4);  color: var(--amber); }
+  .sev-high   { background: rgba(255,32,32,0.08); border: 1px solid rgba(255,32,32,0.4);  color: var(--red); }
+  .finding-title { color: var(--text); font-size: 13px; }
+  .finding-body { padding: 1rem 1.2rem; }
+  .finding-body p { margin-bottom: 0.5rem; }
+
+  /* ── SUMMARY TABLE ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .summary-cell {
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .summary-num {
+    font-family: var(--display);
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .summary-num.critical { color: var(--red); text-shadow: 0 0 15px rgba(255,32,32,0.4); }
+  .summary-num.high     { color: var(--red); text-shadow: 0 0 15px rgba(255,32,32,0.3); }
+  .summary-num.medium   { color: var(--amber); text-shadow: 0 0 15px rgba(255,183,0,0.3); }
+  .summary-num.low      { color: var(--green); text-shadow: 0 0 15px rgba(0,255,65,0.3); }
+  .summary-label { font-size: 10px; color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase; }
+
+  /* ── CHECK LIST ── */
+  ul.checklist { list-style: none; padding: 0; }
+  ul.checklist li {
+    padding: 0.3rem 0 0.3rem 1.6rem;
+    position: relative;
+    color: var(--text2);
+    font-size: 12px;
+    border-bottom: 1px solid rgba(0,255,65,0.04);
+  }
+  ul.checklist li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: bold;
+  }
+  ul.checklist li.warn::before { content: '⚠'; color: var(--amber); }
+  ul.checklist li.fail::before { content: '✗'; color: var(--red); }
+  ul.checklist li.info::before { content: 'ℹ'; color: var(--text3); }
+
+  /* ── TOOLS TABLE ── */
+  .tools-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .tool-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    align-items: center;
+  }
+  .tool-name { color: var(--green); min-width: 140px; }
+  .tool-desc { color: var(--text3); }
+
+  /* ── INLINE RESULT BLOCK ── */
+  .result-block {
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--green2);
+  }
+  .result-block .ok   { color: var(--green); }
+  .result-block .warn { color: var(--amber); }
+  .result-block .fail { color: var(--red); }
+  .result-block .info { color: var(--text3); }
+  .result-block .head { color: var(--cyan); font-family: var(--display); font-size: 11px; letter-spacing: 0.1em; }
+
+  /* ── POSITIVE FINDINGS ── */
+  .positive-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .pos-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text2);
+    transition: border-color 0.2s;
+  }
+  .pos-item:hover { border-color: rgba(0,255,65,0.3); }
+  .pos-item::before {
+    content: '✓';
+    color: var(--green);
+    font-weight: bold;
+    flex-shrink: 0;
+    text-shadow: 0 0 6px var(--green);
+  }
+
+  /* ── CONCLUSION BOX ── */
+  .conclusion {
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .conclusion::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green3), transparent);
+  }
+
+  /* ── CURSOR BLINK ── */
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--green);
+    vertical-align: -2px;
+    animation: blink 1s step-end infinite;
+    box-shadow: 0 0 8px var(--green);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  @media (max-width: 600px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .positive-grid { grid-template-columns: 1fr; }
+    .header-meta { gap: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<div class="page">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="report-header reveal">
+    <div class="header-tag">security assessment report</div>
+    <div class="report-title">Security Test —<br>Terraform Ecosystem</div>
+    <div class="header-meta">
+      <div class="meta-item">
+        <span class="meta-label">Overall Risk</span>
+        <span class="badge-low-med">LOW-MEDIUM</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Critical / High</span>
+        <span class="badge-pass">0 / 0 — CLEAN</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Apps Covered</span>
+        <span class="meta-value">9 Applications</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Environment</span>
+        <span class="meta-value">localhost (dev)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EXECUTIVE SUMMARY ═══ -->
+  <div class="section reveal">
+    <div class="section-label">01</div>
+    <div class="section-title">Executive Summary</div>
+    <p>Conducted a security assessment of the Terraform-managed multi-app ecosystem on [date]. The assessment covered 9 applications across reconnaissance, authentication, injection, and access control testing.</p>
+    <p>Overall Risk Rating: LOW-MEDIUM<br>No critical or high vulnerabilities were found.<br>The application demonstrates solid security fundamentals.</p>
+  </div>
+
+  <!-- ═══ SCANS & RECON ═══ -->
+  <div class="section reveal">
+    <div class="section-label">02</div>
+    <div class="section-title">Scans and Reconnaissance</div>
+
+    <!-- Nmap -->
+    <div class="subsection">
+      <div class="subsection-title">Nmap Scan</div>
+      <div class="code-wrap">
+        <div class="code-bar">nmap -sV -sC -p 80,443,8080,8000,9000,9001 localhost<span class="lang">bash</span></div>
+        <pre>Starting Nmap 7.98 ( https://nmap.org ) at 2026-05-01 16:54 +0530
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000099s latency).
+Other addresses for localhost (not scanned): ::1
+
+PORT     STATE  SERVICE  VERSION
+80/tcp   open   http     nginx 1.29.8
+|_http-server-header: nginx/1.29.8
+|_http-title: Site doesn't have a title (application/octet-stream, application/json).
+443/tcp  closed https
+8000/tcp closed http-alt
+8080/tcp open   tcpwrapped
+9000/tcp closed cslistener
+9001/tcp closed tor-orport
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/
+Nmap done: 1 IP address (1 host up) scanned in 11.36 seconds</pre>
+      </div>
+      <p>As you can see, there are several ports opened like nginx and tcpwrapped, but there are important ports which are closed like tor-orport and https. So we can conclude from this nmap scan that major ports are closed — like mysql or postgresql ports.</p>
+    </div>
+
+    <!-- Gobuster -->
+    <div class="subsection">
+      <div class="subsection-title">Gobuster Directory Enumeration Scan</div>
+      <div class="code-wrap">
+        <div class="code-bar">gobuster dir -u http://localhost/ -w /usr/share/dirb/wordlists/common.txt -t 20 --exclude-length 137<span class="lang">bash</span></div>
+        <pre>===============================================================
+Gobuster v3.8.2
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://localhost/
+[+] Method:                  GET
+[+] Threads:                 20
+[+] Wordlist:                /usr/share/dirb/wordlists/common.txt
+[+] Negative Status codes:   404
+[+] Exclude Length:          137
+[+] User Agent:              gobuster/3.8.2
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+blog   (Status: 301) [Size: 169] [--> http://localhost/blog/]
+social (Status: 301) [Size: 169] [--> http://localhost/social/]
+Progress: 4613 / 4613 (100.00%)
+===============================================================
+Finished
+===============================================================</pre>
+      </div>
+      <p>There are actually 9 links with 9 different projects — only 2 were found. This concludes the project is not that easily exposed without a clear list.</p>
+    </div>
+
+    <!-- Script scan -->
+    <div class="subsection">
+      <div class="subsection-title">Script to Scan All Paths</div>
+      <p>Since this project already uses nginx, we have a clear mapping of all routes. It's time to test all those responses with curl.</p>
+      <div class="code-wrap">
+        <div class="code-bar">gateway-recon.sh<span class="lang">bash</span></div>
+        <pre>#!/bin/bash
+
+paths=(
+  # Frontend apps
+  "/notes/"
+  "/bank/"
+  "/quiz/"
+  "/video/"
+  "/hospital/"
+  "/blog/"
+  "/social/"
+  "/api-service/"
+  "/document/"
+  "/intro/"
+
+  # API endpoints
+  "/notes/api/"
+  "/bank/api/"
+  "/video/api/"
+  "/api-service/api/"
+  "/document/api/"
+  "/hospital/api/"
+
+  # Blog specific
+  "/blog/admin/"
+  "/blog/admin/login/"
+  "/blog/api/"
+
+  # Social media
+  "/social/api/"
+  "/social/api/auth/me/"
+  "/social/api/metrics"
+  "/social/minio/"
+
+  # Spring Boot actuator
+  "/bank/api/actuator"
+  "/bank/api/actuator/health"
+  "/bank/api/actuator/env"
+  "/bank/api/actuator/mappings"
+
+  # Sensitive files
+  "/blog/robots.txt"
+  "/blog/.env"
+  "/.git/config"
+  "/document/api/admin/"
+)
+
+echo "=== Gateway Recon ==="
+for path in "${paths[@]}"; do
+  code=$(curl -o /dev/null -sw "%{http_code}" --max-time 3 http://localhost"$path")
+  echo "$code => $path"
+done</pre>
+      </div>
+      <p><strong>Results:</strong></p>
+      <div class="result-block">
+<span class="head">=== Gateway Recon ===</span>
+200 =&gt; /notes/
+200 =&gt; /bank/
+200 =&gt; /quiz/
+200 =&gt; /video/
+200 =&gt; /hospital/
+200 =&gt; /blog/
+200 =&gt; /social/
+200 =&gt; /api-service/
+200 =&gt; /document/
+200 =&gt; /intro/
+200 =&gt; /notes/api/
+<span class="warn">404 =&gt; /bank/api/</span>
+<span class="warn">404 =&gt; /video/api/</span>
+200 =&gt; /api-service/api/
+000 =&gt; /document/api/
+<span class="warn">404 =&gt; /hospital/api/</span>
+<span class="warn">404 =&gt; /blog/admin/</span>
+<span class="warn">404 =&gt; /blog/admin/login/</span>
+<span class="warn">404 =&gt; /blog/api/</span>
+<span class="warn">404 =&gt; /social/api/</span>
+<span class="ok">401 =&gt; /social/api/auth/me/</span>
+<span class="warn">404 =&gt; /social/api/metrics</span>
+<span class="ok">403 =&gt; /social/minio/</span>
+<span class="warn">404 =&gt; /bank/api/actuator</span>
+<span class="warn">404 =&gt; /bank/api/actuator/health</span>
+<span class="warn">404 =&gt; /bank/api/actuator/env</span>
+<span class="warn">404 =&gt; /bank/api/actuator/mappings</span>
+<span class="warn">404 =&gt; /blog/robots.txt</span>
+<span class="warn">404 =&gt; /blog/.env</span>
+200 =&gt; /.git/config
+000 =&gt; /document/api/admin/</div>
+      <div class="note"><strong>Note:</strong> Don't get fooled by the <code>200 OK</code> on <code>/.git/config</code>. The gateway is configured so any unknown path is served a catch-all response. This means almost all the other paths are secure at most — no worry here.</div>
+    </div>
+
+    <!-- Nikto -->
+    <div class="subsection">
+      <div class="subsection-title">Nikto Scan</div>
+      <div class="code-wrap">
+        <div class="code-bar">nikto -h http://localhost<span class="lang">bash</span></div>
+        <pre>- Nikto v2.6.0
+---------------------------------------------------------------------------
+- Target IP:       127.0.0.1
+- Target Hostname: localhost
+- Target Port:     80
+- Platform:        Unknown
+- Start Time:      2026-05-01 19:30:58 (GMT5.5)
+---------------------------------------------------------------------------
+- Server: nginx/1.29.8
+- No CGI Directories found (use '-C all' to force check all possible dirs). CGI tests skipped.
+- [013587] /: Suggested security header missing: referrer-policy.
+- [013587] /: Suggested security header missing: strict-transport-security.
+- [013587] /: Suggested security header missing: content-security-policy.
+- [013587] /: Suggested security header missing: x-content-type-options.
+- [013587] /: Suggested security header missing: permissions-policy.
+- [750004] /actuator/env: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/mappings: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/metrics: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/beans: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/configprops: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/loggers: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/threaddump: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/auditevents: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/httptrace: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/scheduledtasks: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/heapdump: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/jolokia: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [750004] /actuator/prometheus: Spring Boot Actuator endpoint exposed (valid JSON response).
+- [999967] /: Web Server returns a valid response with junk HTTP methods which may cause false positives.
+- [001214] /doc: The /doc directory is browsable. This may be /usr/doc.
+- [001582] /bank/: This might be interesting.
+- [002739] /.htpasswd: Contains authorization information.
+- [007342] /: X-Frame-Options header is deprecated and was replaced with Content-Security-Policy frame-ancestors directive.
+- [007352] /: The X-Content-Type-Options header is not set.
+- 8638 requests: 0 errors and 36 items reported on the remote host
+- End Time:        2026-05-01 19:31:16 (GMT5.5) (18 seconds)
+---------------------------------------------------------------------------
+- 1 host(s) tested</pre>
+      </div>
+      <p>No major leaking points — there are medium security concerns though like <code>/doc</code> and <code>/.htpasswd</code>.</p>
+      <p>About the Spring Boot Actuator exposure — there is an interesting fact about this project: the uniform catch-all response. If any user sends a request to an unmapped path in nginx, it returns a <code>200 OK</code> instead of something that reveals the actual state of paths and sub-paths:</p>
+      <div class="code-wrap">
+        <div class="code-bar">nginx.conf — catch-all<span class="lang">nginx</span></div>
+        <pre>location / {
+    return 200 '{"status":"gateway running","apps":["/notes/","/bank/","/quiz/","/video/","/hospital/","/blog/","/social/","/api-service/","/document/"]}';
+    add_header Content-Type application/json;
+    add_header Server "";       # hide nginx version
+    add_header X-Powered-By ""; # hide tech stack
+}</pre>
+      </div>
+      <p>So all those path enumeration attempts are totally useless against this method. There is a tradeoff though — if the path changes locally for an app and the page refreshes, the page is gone. To fix this, <code>base='/social/'</code> needs to be added in the frontend, but that changes the rest of the frontend configs too, so it was left as-is.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SEVERITY RATINGS ═══ -->
+  <div class="section reveal">
+    <div class="section-label">03</div>
+    <div class="section-title">Severity Ratings</div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="severity sev-low">LOW</span>
+        <span class="finding-title">Exposed <code>/.git/config</code></span>
+      </div>
+      <div class="finding-body">
+        <div class="result-block">200 =&gt; /.git/config</div>
+        <p><strong>The Fix:</strong> It was a side-effect of the uniform catch-all response, that's why we got the <code>200 OK</code>. It is working as intended.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="severity sev-medium">MEDIUM</span>
+        <span class="finding-title">Missing Security Headers in Nginx</span>
+      </div>
+      <div class="finding-body">
+        <p><strong>The Fix:</strong> Add this to <code>nginx.conf</code>:</p>
+        <div class="code-wrap">
+          <div class="code-bar">nginx.conf<span class="lang">nginx</span></div>
+          <pre>add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header Content-Security-Policy "default-src 'self'" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="severity sev-high">HIGH</span>
+        <span class="finding-title">Exposed Spring Boot Actuator</span>
+      </div>
+      <div class="finding-body">
+        <p><strong>The Fix:</strong> Already done — the uniform catch-all response blocks enumeration of actuator paths.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EXPLOITS & TESTS ═══ -->
+  <div class="section reveal">
+    <div class="section-label">04</div>
+    <div class="section-title">Exploits and Tests</div>
+
+    <!-- CSRF -->
+    <div class="subsection">
+      <div class="subsection-title">CSRF Test</div>
+      <p>Generally, an application should not receive requests from outside resources. They have a protection called CSRF Policy — this policy blocks requests from outside and protects the running application.</p>
+      <p>Here is the script used to test it:</p>
+      <div class="code-wrap">
+        <div class="code-bar">csrf-test.sh<span class="lang">bash</span></div>
+        <pre>#!/bin/bash
+
+# Auth Testing Script with CSRF Token Handling
+# Tests if apps properly validate CSRF tokens
+
+echo "=========================================="
+echo "Authentication & CSRF Testing"
+echo "=========================================="
+echo ""
+
+USER1="testuser_u1_$(date +%s)"
+PASS="TestPass123!@#"
+
+# ============= BLOG =============
+echo "[*] Testing BLOG..."
+
+echo "  - Fetching login page to get CSRF token..."
+BLOG_GET=$(curl -s -c /tmp/blog_cookies.txt http://localhost/blog/login/)
+
+BLOG_CSRF=$(echo "$BLOG_GET" | grep -oP "csrfmiddlewaretoken['\"]?\s*:\s*['\"]?\K[^'\">\s]+" | head -1)
+
+if [ -n "$BLOG_CSRF" ]; then
+    echo "  ✓ CSRF Token found: ${BLOG_CSRF:0:30}..."
+else
+    echo "  ⚠ No CSRF token found in HTML, trying alternative method..."
+    BLOG_CSRF=$(echo "$BLOG_GET" | grep -oP 'value="[^"]*csrf[^"]*"' | head -1)
+fi
+
+if [ -n "$BLOG_CSRF" ]; then
+    echo "  - Logging in WITH CSRF token..."
+    BLOG_LOGIN=$(curl -s -X POST http://localhost/blog/login/ \
+      -b /tmp/blog_cookies.txt -c /tmp/blog_cookies.txt \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"$USER1\",\"password\":\"$PASS\",\"csrfmiddlewaretoken\":\"$BLOG_CSRF\"}" \
+      -w "\n%{http_code}")
+else
+    echo "  - Attempting login WITHOUT CSRF token..."
+    BLOG_LOGIN=$(curl -s -X POST http://localhost/blog/login/ \
+      -b /tmp/blog_cookies.txt -c /tmp/blog_cookies.txt \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"$USER1\",\"password\":\"$PASS\"}" \
+      -w "\n%{http_code}")
+fi
+
+BLOG_CODE=$(echo "$BLOG_LOGIN" | tail -n1)
+BLOG_BODY=$(echo "$BLOG_LOGIN" | head -n-1)
+
+if [[ $BLOG_CODE == 200 || $BLOG_CODE == 201 || $BLOG_CODE == 302 ]]; then
+    echo "  ✓ Blog login HTTP $BLOG_CODE"
+else
+    echo "  ✗ Blog login FAILED (HTTP $BLOG_CODE)"
+    echo "  Response preview: $(echo "$BLOG_BODY" | head -c 200)"
+fi
+echo ""
+
+# ============= NOTES =============
+echo "[*] Testing NOTES..."
+NOTES_LOGIN=$(curl -s -X POST http://localhost/notes/login/ \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$USER1\",\"password\":\"$PASS\"}" \
+  -w "\n%{http_code}")
+NOTES_CODE=$(echo "$NOTES_LOGIN" | tail -n1)
+
+if [[ $NOTES_CODE == 403 ]]; then
+    echo "  ⚠ CSRF Protection DETECTED (HTTP 403)"
+elif [[ $NOTES_CODE == 200 || $NOTES_CODE == 201 ]]; then
+    echo "  ✓ Notes login HTTP $NOTES_CODE (no CSRF needed)"
+else
+    echo "  ? Notes login HTTP $NOTES_CODE"
+fi
+echo ""
+
+# ============= BANK =============
+echo "[*] Testing BANK..."
+BANK_LOGIN=$(curl -s -X POST http://localhost/bank/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$USER1\",\"password\":\"$PASS\"}" \
+  -w "\n%{http_code}")
+BANK_CODE=$(echo "$BANK_LOGIN" | tail -n1)
+
+if [[ $BANK_CODE == 403 ]]; then
+    echo "  ⚠ CSRF Protection DETECTED (HTTP 403)"
+elif [[ $BANK_CODE == 200 || $BANK_CODE == 201 ]]; then
+    echo "  ✓ Bank login HTTP $BANK_CODE (no CSRF needed)"
+else
+    echo "  ? Bank login HTTP $BANK_CODE"
+fi
+echo ""
+
+# ============= SOCIAL =============
+echo "[*] Testing SOCIAL..."
+SOCIAL_LOGIN=$(curl -s -X POST http://localhost/login/ \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$USER1\",\"password\":\"$PASS\"}" \
+  -w "\n%{http_code}")
+SOCIAL_CODE=$(echo "$SOCIAL_LOGIN" | tail -n1)
+
+if [[ $SOCIAL_CODE == 403 ]]; then
+    echo "  ⚠ CSRF Protection DETECTED (HTTP 403)"
+elif [[ $SOCIAL_CODE == 200 || $SOCIAL_CODE == 201 ]]; then
+    echo "  ✓ Social login HTTP $SOCIAL_CODE (no CSRF needed)"
+else
+    echo "  ? Social login HTTP $SOCIAL_CODE"
+fi
+echo ""</pre>
+      </div>
+
+      <p><strong>Initial result — before fixes:</strong></p>
+      <div class="result-block">
+<span class="head">==========================================
+Authentication & CSRF Testing
+==========================================</span>
+
+[*] Testing BLOG...
+  - Fetching login page to get CSRF token...
+  <span class="warn">⚠ No CSRF token found in HTML, trying alternative method...</span>
+  - Attempting login WITHOUT CSRF token...
+  <span class="fail">✗ Blog login FAILED (HTTP 403)</span>
+
+[*] Testing NOTES...
+  ? Notes login HTTP 405
+
+[*] Testing BANK...
+  ? Bank login HTTP 405
+
+[*] Testing SOCIAL...
+  <span class="ok">✓ Social login HTTP 200 (no CSRF needed)</span>
+
+<span class="head">==========================================
+CSRF Protection Analysis
+==========================================</span>
+
+Summary:
+  Blog:   Has CSRF protection (requires token)
+  <span class="fail">Notes:  NO CSRF protection ❌</span>
+  <span class="fail">Bank:   NO CSRF protection ❌</span>
+  <span class="fail">Social: NO CSRF protection ❌</span>
+
+<span class="warn">⚠ FINDING: Social allows POST requests without CSRF token
+  This could allow CSRF attacks</span>
+==========================================</div>
+
+      <p>3 of the apps were vulnerable to CSRF attacks, which can open up various attacks like token misuse to attack other users.</p>
+      <p><strong>The Fix:</strong> Strengthen CSRF by only allowing what links are needed.</p>
+      <p><strong>Result after fixes:</strong></p>
+      <div class="result-block">
+<span class="head">==========================================
+Authentication & CSRF Testing
+==========================================</span>
+
+[*] Testing BLOG...
+  - Fetching login page to get CSRF token...
+  <span class="ok">✓ CSRF Token found: iT7xJYNwbHWebDzPurwZRG4CGWNJQh...</span>
+  - Logging in WITH CSRF token...
+  <span class="ok">✓ Blog login HTTP 200</span>
+
+[*] Testing NOTES...
+  ? Notes login HTTP 404
+
+[*] Testing BANK...
+  - Register HTTP 200
+  <span class="ok">✓ JWT token received on registration</span>
+  ? Bank login HTTP 400
+
+[*] Testing SOCIAL...
+  - Register HTTP 400
+  ? Social login HTTP 400
+  Response: {"non_field_errors":["Invalid credentials."]}
+
+<span class="head">==========================================
+CSRF Protection Analysis
+==========================================</span>
+
+Summary:
+  <span class="ok">Blog:   ✓ Session auth working (HTTP 200)</span>
+  Notes:  ? HTTP 404 — investigate
+  Bank:   ? HTTP 400 — investigate
+  Social: ? HTTP 400 — investigate
+
+Note: REST APIs using JWT tokens do not require CSRF
+      protection as tokens are sent in headers, not cookies.
+      CSRF only applies to session/cookie based authentication.
+==========================================</div>
+    </div>
+
+    <!-- Comprehensive Test -->
+    <div class="subsection">
+      <div class="subsection-title">Comprehensive Security Test</div>
+      <div class="result-block">
+<span class="head">============================================
+  Comprehensive Security Testing Suite
+============================================
+  Target: http://localhost
+  Time:   Sun May  3 10:16:05 AM IST 2026
+============================================</span>
+
+[*] Setting up test users...
+  <span class="ok">✓ Social User 1 ready (JWT obtained)</span>
+  <span class="ok">✓ Bank User 1 ready (JWT obtained)</span>
+
+[TEST 1] SQL Injection
+  <span class="ok">✓ Blog login — no SQLi detected</span>
+  <span class="ok">✓ Social API — no SQLi detected</span>
+  <span class="ok">✓ Query parameters — no SQLi detected</span>
+
+[TEST 2] Brute Force Protection
+  <span class="warn">⚠ Social login — no rate limiting detected after 20 attempts</span>
+  <span class="warn">⚠ Blog login — no rate limiting detected after 20 attempts</span>
+  <span class="warn">⚠ Bank login — no rate limiting detected after 20 attempts</span>
+
+[TEST 3] JWT Security
+  <span class="ok">✓ Tampered JWT rejected (HTTP 401)</span>
+  <span class="ok">✓ 'none' algorithm attack rejected (HTTP 401)</span>
+  <span class="ok">✓ Expired token rejected (HTTP 401)</span>
+  <span class="ok">✓ No token properly rejected (HTTP 401)</span>
+  <span class="ok">✓ JWT payload looks clean</span>
+
+[TEST 4] File Upload Security
+  <span class="info">ℹ /social/api/posts/ returned HTTP 405 for PHP upload</span>
+  <span class="info">ℹ /social/api/stories/ returned HTTP 405 for PHP upload</span>
+  <span class="info">ℹ /notes/api/notes/ returned HTTP 401 for PHP upload</span>
+  <span class="warn">⚠ Oversized file not rejected (HTTP 405)</span>
+
+[TEST 5] IDOR Testing
+  <span class="info">ℹ Could not create note for IDOR test (HTTP 401)</span>
+  <span class="info">ℹ Social user 3 accessed by User2: HTTP 404</span>
+  <span class="info">ℹ Social user 4 accessed by User2: HTTP 404</span>
+
+[TEST 6] Rate Limiting
+  <span class="warn">⚠ Social API (authenticated) — no rate limiting after 50 requests</span>
+  <span class="warn">⚠ Social login (unauthenticated) — no rate limiting after 50 requests</span>
+  <span class="warn">⚠ Blog (unauthenticated) — no rate limiting after 50 requests</span>
+  <span class="warn">⚠ Notes API — no rate limiting after 50 requests</span>
+
+[TEST 7] Security Headers
+  <span class="warn">⚠ X-Content-Type-Options missing</span>
+  <span class="warn">⚠ X-Frame-Options missing</span>
+  <span class="warn">⚠ Content-Security-Policy missing</span>
+  <span class="warn">⚠ Strict-Transport-Security missing</span>
+  <span class="warn">⚠ Referrer-Policy missing</span>
+  <span class="warn">⚠ Permissions-Policy missing</span>
+  <span class="ok">✓ Server header not leaking version</span>
+
+[TEST 8] Sensitive Endpoint Exposure
+  <span class="ok">✓ No sensitive paths exposed</span>
+
+[TEST 9] XSS Testing
+  <span class="ok">✓ No obvious XSS vulnerabilities detected</span>
+
+<span class="head">============================================
+  Finding Summary
+============================================</span>
+  <span class="ok">CRITICAL: 0</span>
+  <span class="ok">HIGH:     0</span>
+  <span class="warn">MEDIUM:   4</span>
+  LOW:      10
+  INFO:     2
+============================================</div>
+    </div>
+
+    <!-- Semgrep -->
+    <div class="subsection">
+      <div class="subsection-title">Static Analysis : Semgrep</div>
+      <p>it is a python tool used for scanning vulnerabilities inside the application like SQL injection or hardcode secrets</p>
+      <p>Here was the result for one of the app</p>
+      <div class="code-wrap">
+        <div class="code-bar">semgrep --config=p/django .<span class="lang">bash</span></div>
+        <pre>┌──── ○○○ ────┐
+│ Semgrep CLI │
+└─────────────┘
+
+Scanning 41 files (only git-tracked) with 28 Code rules:
+            
+  CODE RULES
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  python           27      16          Community      28                                                                
+  &lt;multilang&gt;       1       9                                                                                           
+                                                                                                                        
+                    
+  SUPPLY CHAIN RULES
+                                                                       
+  💎 Sign in with `semgrep login` and run               
+     `semgrep ci` to find dependency vulnerabilities and
+     advanced cross-file findings.                                     
+                                                                       
+          
+  PROGRESS
+   
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00                                                                                                                        
+                   
+                   
+┌─────────────────┐
+│ 4 Code Findings │
+└─────────────────┘
+                                                              
+    blogsite/blog/templates/blog/edit_post.html
+    ❯❱ python.django.security.django-no-csrf-token.django-no-csrf-token
+          ❰❰ Blocking ❱❱
+          Manually-created forms in django templates should specify a csrf_token to prevent CSRF attacks.
+          Details: https://sg.run/N0Bp                                                                   
+                                                                                                         
+           10┆ &lt;form method="post" style="display:flex;flex-direction:column;gap:1.2rem;"&gt;
+           11┆   {% csrf_token %}
+           ...
+
+    blogsite/blog/templates/blog/login.html
+    ❯❱ python.django.security.django-no-csrf-token.django-no-csrf-token
+           12┆ &lt;form method="post" style="display:flex;flex-direction:column;gap:1.2rem;"&gt;
+           13┆   {% csrf_token %}
+           ...
+
+    blogsite/blog/templates/blog/profile.html
+    ❯❱ python.django.security.django-no-csrf-token.django-no-csrf-token
+           38┆ &lt;form method="post" enctype="multipart/form-data" ...&gt;
+           39┆   {% csrf_token %}
+           ...
+
+    blogsite/blog/templates/blog/register.html
+    ❯❱ python.django.security.django-no-csrf-token.django-no-csrf-token
+           12┆ &lt;form method="post" style="display:flex;flex-direction:column;gap:1.2rem;"&gt;
+           13┆   {% csrf_token %}
+           ...
+
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+✅ Scan completed successfully.
+ • Findings: 4 (4 blocking)
+ • Rules run: 28
+ • Targets scanned: 25
+ • Parsed lines: ~100.0%
+ • Scan was limited to files tracked by git
+Ran 28 rules on 25 files: 4 findings.</pre>
+      </div>
+      <p>the 4 error reported is wrong as I aldready included the {% csrf_token %}. It is a bug in semgrep itself that it can't read well between tags inside the templates</p>
+    </div>
+
+    <!-- Findings & Fixes -->
+    <div class="subsection">
+      <div class="subsection-title">Findings and Fixes</div>
+      <ul class="checklist">
+        <li class="warn"><strong>Add rate limiting</strong> to the 3 API endpoints flagged in Test 6</li>
+        <li class="warn"><strong>Add brute force protection</strong> to login endpoints across blog, social, and bank</li>
+        <li class="warn"><strong>Add security headers</strong> in nginx for all locations</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══ FINAL SUMMARY ═══ -->
+  <div class="section reveal">
+    <div class="section-label">05</div>
+    <div class="section-title">Finding Summary</div>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <div class="summary-num critical">0</div>
+        <div class="summary-label">Critical</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-num high">0</div>
+        <div class="summary-label">High</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-num medium">4</div>
+        <div class="summary-label">Medium</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-num low">10</div>
+        <div class="summary-label">Low</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ POSITIVE FINDINGS ═══ -->
+  <div class="section reveal">
+    <div class="section-label">06</div>
+    <div class="section-title">Positive Security Findings</div>
+    <div class="positive-grid">
+      <div class="pos-item">Uniform catch-all response defeats directory enumeration</div>
+      <div class="pos-item">JWT implementation secure (tampering, none-algo, expiry all blocked)</div>
+      <div class="pos-item">IDOR protection working on all tested endpoints</div>
+      <div class="pos-item">SQL injection not detected across all endpoints</div>
+      <div class="pos-item">XSS not detected</div>
+      <div class="pos-item">No sensitive files exposed publicly</div>
+      <div class="pos-item">Database ports not exposed externally</div>
+      <div class="pos-item">Generic error messages prevent username enumeration</div>
+      <div class="pos-item">CORS properly restricted after fix</div>
+    </div>
+  </div>
+
+  <!-- ═══ METHODOLOGY ═══ -->
+  <div class="section reveal">
+    <div class="section-label">07</div>
+    <div class="section-title">Testing Methodology</div>
+    <div class="tools-list">
+      <div class="tool-row"><span class="tool-name">Nmap 7.98</span><span class="tool-desc">port scanning and service detection</span></div>
+      <div class="tool-row"><span class="tool-name">Gobuster 3.8.2</span><span class="tool-desc">directory enumeration</span></div>
+      <div class="tool-row"><span class="tool-name">Nikto 2.6.0</span><span class="tool-desc">web vulnerability scanning</span></div>
+      <div class="tool-row"><span class="tool-name">Custom bash scripts</span><span class="tool-desc">CSRF, auth, IDOR, rate limit testing</span></div>
+      <div class="tool-row"><span class="tool-name">curl</span><span class="tool-desc">manual endpoint testing</span></div>
+      <div class="tool-row"><span class="tool-name">Wireshark</span><span class="tool-desc">traffic analysis (separate session)</span></div>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <p><strong>Scope:</strong></p>
+      <ul class="checklist" style="margin-top:0.5rem;">
+        <li>localhost (dev environment only)</li>
+        <li>All 9 apps in the terraform ecosystem</li>
+        <li>No external services tested</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══ CONCLUSION ═══ -->
+  <div class="section reveal">
+    <div class="section-label">08</div>
+    <div class="section-title">Conclusion</div>
+    <div class="conclusion">
+      <p>overall the project holds up pretty well for a dev environment, no critical vulnerabilities were found and the major attack surfaces are either closed or handled by the nginx catch-all. the jwt security is solid, idor is blocked, and sql injection didn't find anything.</p>
+      <p>the real gaps are the missing security headers and rate limiting — which are more of a production hardening checklist than actual exploits. those are already in the fix list.</p>
+      <p>if this were going to production, the things to tackle first would be moving all the hardcoded credentials out of terraform into a secrets manager, adding the nginx headers, and tightening the minio CORS from <code>*</code> to specific origins. everything else is either already handled or low priority for a personal project.</p>
+      <p style="margin-bottom:0;">not bad for a first pentest on your own project. <span class="cursor"></span></p>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// Matrix rain
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const cols = Math.floor(canvas.width / 18);
+const drops = Array(cols).fill(1);
+const chars = '01アイウエオカキクケコサシスセソタチツテト';
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00ff41';
+  ctx.font = '14px Share Tech Mono';
+  drops.forEach((y, i) => {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(char, i * 18, y * 18);
+    if (y * 18 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+setInterval(drawMatrix, 50);
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.05 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

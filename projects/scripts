@@ -1,0 +1,27 @@
+Security Test Report - Sun May  3 10:16:05 AM IST 2026
+=================================
+--- SQL Injection ---
+--- Brute Force ---
+[MEDIUM] Social login has no brute force protection
+[MEDIUM] Blog login has no brute force protection
+[MEDIUM] Bank login has no brute force protection
+--- JWT Security ---
+[INFO] JWT tampering properly rejected
+[INFO] JWT none algorithm attack blocked
+--- File Upload ---
+[MEDIUM] No file size limit detected
+--- IDOR ---
+--- Rate Limiting ---
+[LOW] Social API (authenticated) has no rate limiting
+[LOW] Social login (unauthenticated) has no rate limiting
+[LOW] Blog (unauthenticated) has no rate limiting
+[LOW] Notes API has no rate limiting
+--- Security Headers ---
+[LOW] Missing security header: X-Content-Type-Options
+[LOW] Missing security header: X-Frame-Options
+[LOW] Missing security header: Content-Security-Policy
+[LOW] Missing security header: Strict-Transport-Security
+[LOW] Missing security header: Referrer-Policy
+[LOW] Missing security header: Permissions-Policy
+--- Sensitive Endpoints ---
+--- XSS ---

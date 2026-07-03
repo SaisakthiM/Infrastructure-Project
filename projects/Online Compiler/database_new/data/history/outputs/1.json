@@ -1,0 +1,27 @@
+{
+  "id": 1,
+  "code": "// Start coding here
+
+#inlcude <iostream>
+
+int main() {
+    std::cout << \"hello world\";
+}
+",
+  "exit_code": "1",
+  "language": "cpp",
+  "output": "Compile error:
+/tmp/code_1804289383.cpp:3:2: error: invalid preprocessing directive #inlcude; did you mean #include?
+    3 | #inlcude <iostream>
+      |  ^~~~~~~
+      |  include
+/tmp/code_1804289383.cpp: In function ‘int main()’:
+/tmp/code_1804289383.cpp:6:10: error: ‘cout’ is not a member of ‘std’
+    6 |     std::cout << \"hello world\";
+      |          ^~~~
+/tmp/code_1804289383.cpp:1:1: note: ‘std::cout’ is defined in header ‘<iostream>’; this is probably fixable by adding ‘#include <iostream>’
+  +++ |+#include <iostream>
+    1 | // Start coding here",
+  "timestamp": "2026-06-12T16:22:09",
+  "username": "saisakthi"
+}

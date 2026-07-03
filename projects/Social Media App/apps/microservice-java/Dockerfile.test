@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.test  –  Java microservice test image
+#
+# Runs all JUnit 5 / Mockito unit tests.
+# Everything is mocked — NO Cassandra, Kafka, or other sidecars needed.
+#
+# Build:
+#   docker build -f Dockerfile.test -t microservice-java-test .
+#
+# Run:
+#   docker run --rm microservice-java-test
+#
+# Run with Surefire XML reports mounted out:
+#   docker run --rm \
+#     -v $(pwd)/results:/app/target/surefire-reports \
+#     microservice-java-test
+#
+# GitHub Actions example:
+#   - name: Run Java tests
+#     run: |
+#       docker build -f Dockerfile.test -t microservice-java-test .
+#       docker run --rm microservice-java-test
+#
+#   - name: Publish test results
+#     uses: EnricoMi/publish-unit-test-result-action@v2
+#     if: always()
+#     with:
+#       files: results/**/*.xml
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM maven:3.9.11-eclipse-temurin-21 AS test
+
+WORKDIR /app
+
+# ── Dependency layer (cached unless pom.xml changes) ─────────────────────────
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
+RUN --mount=type=cache,id=mvn-cache,target=/root/.m2 \
+    chmod +x mvnw && ./mvnw dependency:go-offline -q
+
+# ── Source ───────────────────────────────────────────────────────────────────
+COPY src ./src
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Default command:
+#   compile + test only (no package/jar, no integration tests)
+#   -Dsurefire.failIfNoSpecifiedTests=false  — don't fail if a class is empty
+#   -Dspring.main.allow-bean-definition-overriding=true — safe for mock contexts
+# ─────────────────────────────────────────────────────────────────────────────
+CMD [ \
+  "./mvnw", "test", \
+  "--no-transfer-progress", \
+  "-Dspring.main.allow-bean-definition-overriding=true", \
+  "-Dsurefire.failIfNoSpecifiedTests=false" \
+]

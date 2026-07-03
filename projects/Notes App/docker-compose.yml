@@ -1,0 +1,47 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: notes_postgres
+    environment:
+      POSTGRES_DB: notes_app
+      POSTGRES_USER: saisakthi
+      POSTGRES_PASSWORD: sai2008
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: notes_backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn notes_app.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - static_volume:/static
+      - media_volume:/media
+    environment:
+      DATABASE_NAME: notes_app
+      DATABASE_USER: saisakthi
+      DATABASE_PASSWORD: sai2008
+      DATABASE_HOST: postgres
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+
+  frontend_build:
+    build:
+      context: ./frontend/notes_app_frontend
+      dockerfile: Dockerfile.prod
+    container_name: notes_frontend_build
+    volumes:
+      - notes-build:/dist
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  static_volume:
+  media_volume:
+  notes-build:

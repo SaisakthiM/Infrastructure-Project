@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-java
+  labels:
+    app: microservice-java
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-java
+  template:
+    metadata:
+      labels:
+        app: microservice-java
+    spec:
+      containers:
+        - name: microservice-java
+          image: socialmediaapp-microservice-java:latest 
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_CASSANDRA_CONTACT-POINTS
+              value: cassandra
+            - name: SPRING_CASSANDRA_PORT
+              value: "9042"
+            - name: SPRING_CASSANDRA_LOCAL-DATACENTER
+              value: datacenter1

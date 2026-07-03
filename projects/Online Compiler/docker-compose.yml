@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+
+  # ── Custom C++ Database ──────────────────────────────────────────────────────
+  db:
+    build:
+      context: ./database_new
+      dockerfile: Dockerfile
+    container_name: cpp_db
+    ports:
+      - "8080:8080"         # expose for direct curl testing; remove in prod
+    volumes:
+      - db_data:/app/data   # BTree + JSON files persist across restarts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/search?database_name=x&table_name=y&id=1 || exit 0"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+
+  # ── Auth + Code Execution Server ─────────────────────────────────────────────
+  server:
+    build:
+      context: ./server_new
+      dockerfile: Dockerfile
+    container_name: cpp_server
+    ports:
+      - "9090:9090"         # main API port
+    volumes:
+      - server_data:/app    # SQLite users.db persists here
+    environment:
+      - DB_HOST=db          # talk to the db service by name, not localhost
+      - DB_PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  server_data:
