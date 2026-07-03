@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/SaisakthiM/Infrastruture-Project # e.g. git@github.com:you/your-infra-repo.git
+    repoURL: https://github.com/SaisakthiM/Infrastructure-Project # e.g. git@github.com:you/your-infra-repo.git
     targetRevision: HEAD
     path: gitops/social-media/raw
   destination:

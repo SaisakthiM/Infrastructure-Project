@@ -1,6 +1,6 @@
 BINARY     := social-platform
 WEBUI      := social-platform-webui
-MODULE     := github.com/SaisakthiM/Infrastruture-Project/cli
+MODULE     := github.com/SaisakthiM/Infrastructure-Project/cli
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS    := -s -w -X main.version=$(VERSION)
 BUILD_DIR  := dist

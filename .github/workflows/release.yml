@@ -147,12 +147,12 @@ jobs:
             ```bash
             # CLI
             curl -Lo social-platform \
-              https://github.com/SaisakthiM/Infrastruture-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
             chmod +x social-platform && sudo mv social-platform /usr/local/bin/
 
             # Web UI
             curl -Lo social-platform-webui \
-              https://github.com/SaisakthiM/Infrastruture-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
             chmod +x social-platform-webui
             ```
 

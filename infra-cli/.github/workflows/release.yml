@@ -146,21 +146,21 @@ jobs:
             ### Install CLI (Linux amd64)
             ```bash
             curl -Lo social-platform \
-              https://github.com/SaisakthiM/Infrastruture-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-linux-amd64
             chmod +x social-platform && sudo mv social-platform /usr/local/bin/
             ```
 
             ### Install CLI (macOS Apple Silicon)
             ```bash
             curl -Lo social-platform \
-              https://github.com/SaisakthiM/Infrastruture-Project/releases/download/${{ github.ref_name }}/social-platform-darwin-arm64
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-darwin-arm64
             chmod +x social-platform && sudo mv social-platform /usr/local/bin/
             ```
 
             ### Install Web UI (Linux amd64)
             ```bash
             curl -Lo social-platform-webui \
-              https://github.com/SaisakthiM/Infrastruture-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
+              https://github.com/SaisakthiM/Infrastructure-Project/releases/download/${{ github.ref_name }}/social-platform-webui-linux-amd64
             chmod +x social-platform-webui
             ./social-platform-webui          # opens http://localhost:8080
             ./social-platform-webui --port 9090   # custom port

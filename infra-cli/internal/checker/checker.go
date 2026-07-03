@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 // Tool describes a required CLI tool.

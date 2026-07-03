@@ -1,5 +1,5 @@
 // Package release handles downloading and extracting infra assets from
-// GitHub Releases on SaisakthiM/Infrastruture-Project.
+// GitHub Releases on SaisakthiM/Infrastructure-Project.
 package release
 
 import (
@@ -14,13 +14,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 const (
 	githubAPI  = "https://api.github.com"
 	repoOwner  = "SaisakthiM"
-	repoName   = "Infrastruture-Project"
+	repoName   = "Infrastructure-Project"
 	assetName  = "infra.tar.gz" // the release asset name
 )
 

@@ -11,10 +11,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/checker"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/deploy"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/checker"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/deploy"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
 )
 
 // ─── colour palette ──────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ func buildConfigTabs(cfg *config.Config) []configTab {
 				{key: "domain", label: "Public Domain", value: cfg.ProdInfra.Domain},
 				{key: "main_server_ip", label: "Server LAN IP", value: cfg.ProdInfra.MainServerIP},
 				{key: "atlantis_gh_user", label: "GitHub User (Atlantis)", value: cfg.ProdInfra.AtlantisGHUser},
-				{key: "gitops_repo_url", label: "GitOps Repo SSH URL", value: orDef(cfg.ProdInfra.GitopsRepoURL, "git@github.com:SaisakthiM/Infrastruture-Project.git")},
+				{key: "gitops_repo_url", label: "GitOps Repo SSH URL", value: orDef(cfg.ProdInfra.GitopsRepoURL, "git@github.com:SaisakthiM/Infrastructure-Project.git")},
 				{key: "n8n_port", label: "n8n Port", value: orDef(cfg.ProdInfra.N8NPort, "5678")},
 				{key: "n8n_host", label: "n8n Host Bind", value: orDef(cfg.ProdInfra.N8NHost, "0.0.0.0")},
 				{key: "n8n_protocol", label: "n8n Protocol", value: orDef(cfg.ProdInfra.N8NProtocol, "https")},

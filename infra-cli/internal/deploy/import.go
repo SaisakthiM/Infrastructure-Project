@@ -11,8 +11,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 // ResourceKind classifies a resource type for import.

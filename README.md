@@ -4,8 +4,8 @@
 
 **A production-style personal development cluster — 10 full-stack applications behind a single Nginx gateway, provisioned with Terraform + Terragrunt, orchestrated across Docker and Kubernetes, with GitOps via ArgoCD and PR automation via Atlantis.**
 
-[![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastruture-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastruture-Project/releases/latest)
-[![License](https://img.shields.io/github/license/SaisakthiM/Infrastruture-Project?style=flat-square&color=3fb950)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastructure-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastructure-Project/releases/latest)
+[![License](https://img.shields.io/github/license/SaisakthiM/Infrastructure-Project?style=flat-square&color=3fb950)](LICENSE)
 [![Go](https://img.shields.io/badge/CLI-Go-00ADD8?style=flat-square&logo=go)](infra-cli/)
 [![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?style=flat-square&logo=terraform)](environments/)
 [![ArgoCD](https://img.shields.io/badge/GitOps-ArgoCD-EF7B4D?style=flat-square&logo=argo)](gitops/)
@@ -343,12 +343,12 @@ A single-binary Go CLI that installs prerequisites, configures secrets, download
 ```bash
 # Linux amd64
 curl -Lo social-platform \
-  https://github.com/SaisakthiM/Infrastruture-Project/releases/latest/download/social-platform-linux-amd64
+  https://github.com/SaisakthiM/Infrastructure-Project/releases/latest/download/social-platform-linux-amd64
 chmod +x social-platform && sudo mv social-platform /usr/local/bin/
 
 # Web UI (browser dashboard)
 curl -Lo social-platform-webui \
-  https://github.com/SaisakthiM/Infrastruture-Project/releases/latest/download/social-platform-webui-linux-amd64
+  https://github.com/SaisakthiM/Infrastructure-Project/releases/latest/download/social-platform-webui-linux-amd64
 chmod +x social-platform-webui
 ```
 
@@ -397,7 +397,7 @@ Provides a dark-theme browser dashboard with live SSE-streamed command output, e
 ```bash
 # Install the CLI
 curl -Lo social-platform \
-  https://github.com/SaisakthiM/Infrastruture-Project/releases/latest/download/social-platform-linux-amd64
+  https://github.com/SaisakthiM/Infrastructure-Project/releases/latest/download/social-platform-linux-amd64
 chmod +x social-platform && sudo mv social-platform /usr/local/bin/
 
 # Install prerequisites + download infra
@@ -413,8 +413,8 @@ social-platform deploy
 ### Option B — Manual
 
 ```bash
-git clone https://github.com/SaisakthiM/Infrastruture-Project.git
-cd Infrastruture-Project/environments
+git clone https://github.com/SaisakthiM/Infrastructure-Project.git
+cd Infrastructure-Project/environments
 
 # Before first apply — update gitops_repo_url in:
 #   environments/prod-social/terraform.tfvars
@@ -473,7 +473,7 @@ curl http://localhost/
 ## 📁 Project Structure
 
 ```
-Infrastruture-Project/
+Infrastructure-Project/
 │
 ├── environments/                  # Terragrunt environments
 │   ├── terragrunt.hcl             # root — per-env local backend

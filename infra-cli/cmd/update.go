@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/release"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/release"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 var (
@@ -60,7 +60,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	latest, err := release.LatestRelease()
 	spin.Stop(err == nil)
 	if err != nil {
-		return fmt.Errorf("could not reach GitHub: %w\n  Check your internet connection or visit https://github.com/SaisakthiM/Infrastruture-Project/releases", err)
+		return fmt.Errorf("could not reach GitHub: %w\n  Check your internet connection or visit https://github.com/SaisakthiM/Infrastructure-Project/releases", err)
 	}
 
 	ui.Info("Latest release : %s", latest.TagName)

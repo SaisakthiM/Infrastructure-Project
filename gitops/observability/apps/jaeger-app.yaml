@@ -14,7 +14,7 @@ spec:
       helm:
         valueFiles:
           - $values/gitops/platform/observability/jaeger-config.yml
-    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project
+    - repoURL: https://github.com/SaisakthiM/Infrastructure-Project
       targetRevision: HEAD
       ref: values
   destination:

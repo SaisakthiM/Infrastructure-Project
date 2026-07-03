@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 var (
@@ -92,7 +92,7 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 		repoURL := ui.Prompt(
 			"  GitOps repo SSH URL",
 			orDefault(cfg.ProdInfra.GitopsRepoURL,
-				"git@github.com:SaisakthiM/Infrastruture-Project.git"))
+				"git@github.com:SaisakthiM/Infrastructure-Project.git"))
 		cfg.ProdInfra.GitopsRepoURL = repoURL
 		if cfg.ProdSocial.GitopsRepoURL == "" {
 			cfg.ProdSocial.GitopsRepoURL = repoURL

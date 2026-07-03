@@ -22,7 +22,7 @@ spec:
               resources:
                 requests: { cpu: 200m, memory: 512Mi }
                 limits: { cpu: "1000m", memory: 2Gi }
-    - repoURL: https://github.com/SaisakthiM/Infrastruture-Project # same monorepo as the other sources below
+    - repoURL: https://github.com/SaisakthiM/Infrastructure-Project # same monorepo as the other sources below
       targetRevision: HEAD
       ref: values
   destination:

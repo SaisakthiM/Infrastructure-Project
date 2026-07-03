@@ -1,4 +1,4 @@
-module github.com/SaisakthiM/Infrastruture-Project/cli
+module github.com/SaisakthiM/Infrastructure-Project/cli
 
 go 1.22
 

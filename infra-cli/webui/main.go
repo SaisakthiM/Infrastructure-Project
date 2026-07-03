@@ -22,11 +22,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/checker"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/deploy"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/release"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/secrets"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/checker"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/deploy"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/release"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
 )
 
 //go:embed static

@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/SaisakthiM/Infrastruture-Project
+    repoURL: https://github.com/SaisakthiM/Infrastructure-Project
     targetRevision: HEAD
     path: "gitops/observability/raw"
   destination:

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/config"
-	"github.com/SaisakthiM/Infrastruture-Project/cli/internal/ui"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
 type Environment string
@@ -207,7 +207,7 @@ func runTerragrunt(cfg *config.Config, env Environment, command string, autoAppr
 func workDir(cfg *config.Config, env Environment) string {
 	envPath := filepath.Join(cfg.InfraDir, "environments")
 	if env == EnvAll {
-		return envPath
+		return envPath   // ← only returns the bare path when env == EnvAll
 	}
 	return filepath.Join(envPath, string(env))
 }

@@ -9,7 +9,7 @@ auto-install of prerequisites, and GitHub Releases distribution.
 ```bash
 # 1. Download the binary for your platform from GitHub Releases:
 curl -Lo social-platform \
-  https://github.com/SaisakthiM/Infrastruture-Project/releases/latest/download/social-platform-linux-amd64
+  https://github.com/SaisakthiM/Infrastructure-Project/releases/latest/download/social-platform-linux-amd64
 chmod +x social-platform && sudo mv social-platform /usr/local/bin/
 
 # 2. Install prerequisites + download infra files
