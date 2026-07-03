@@ -2,26 +2,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCore — Hospital Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'tailwind.min.css' %}">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7v4'/><path d='M14 21v-3a2 2 0 0 0-4 0v3'/><path d='M14 9h-4'/><path d='M18 11h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2'/><path d='M18 21V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16'/></svg>">    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Management</title>
-    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230ea5e9'><path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm4 11h-3v3a1 1 0 0 1-2 0v-3H8a1 1 0 0 1 0-2h3V8a1 1 0 0 1 2 0v3h3a1 1 0 0 1 0 2z'/></svg>">
+    <style>
+        *{box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;margin:0}
+        :root{
+            --navy:#0b2545;--navy2:#134074;--sky:#0ea5e9;--teal:#0d9488;
+            --green:#10b981;--surface:#ffffff;--muted:#64748b;
+            --border:#e2e8f0;--bg:#f0f4f8;
+        }
+        /* Layout */
+        .layout{display:flex;min-height:100vh}
+        .sidebar{width:260px;background:linear-gradient(175deg,var(--navy) 0%,var(--navy2) 100%);min-height:100vh;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:40;box-shadow:4px 0 24px rgba(11,37,69,.35)}
+        .main-area{margin-left:260px;flex:1;display:flex;flex-direction:column}
+        /* Sidebar logo */
+        .sb-logo{padding:28px 24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sb-logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--sky),var(--teal));border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(14,165,233,.4)}
+        .sb-logo-name{color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:1.15rem;font-weight:700;line-height:1.1}
+        .sb-logo-sub{color:rgba(255,255,255,.4);font-size:.67rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+        /* Nav */
+        .sb-nav{padding:20px 12px;flex:1}
+        .nav-sec{color:rgba(255,255,255,.3);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:0 12px;margin:16px 0 6px}
+        .nav-link{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;color:rgba(255,255,255,.65);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .18s;margin-bottom:2px}
+        .nav-link:hover{background:rgba(255,255,255,.1);color:#fff}
+        .nav-link.active{background:linear-gradient(90deg,rgba(14,165,233,.25),rgba(14,165,233,.08));color:#fff;border-left:3px solid var(--sky)}
+        .nav-link svg{width:18px;height:18px;flex-shrink:0}
+        /* Sidebar footer */
+        .sb-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+        .sb-footer-inner{display:flex;align-items:center;gap:10px}
+        .avatar{width:36px;height:36px;background:linear-gradient(135deg,var(--sky),var(--teal));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0}
+        .avatar-name{color:#fff;font-size:.8rem;font-weight:600}
+        .avatar-role{color:rgba(255,255,255,.4);font-size:.7rem}
+        /* Topbar */
+        .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+        .topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.1rem;font-weight:700;color:var(--navy)}
+        .topbar-right{display:flex;align-items:center;gap:16px}
+        .status-pill{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px}
+        .pulse-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+        .topbar-time{font-size:.8rem;color:var(--muted)}
+        /* Page content */
+        .page-content{padding:32px;flex:1}
+        /* Page header */
+        .page-header{margin-bottom:28px;display:flex;align-items:flex-end;justify-content:space-between}
+        .page-header-left{}
+        .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.55rem;font-weight:800;color:var(--navy);line-height:1.2}
+        .page-sub{font-size:.85rem;color:var(--muted);margin-top:4px}
+        /* Card */
+        .card{background:var(--surface);border-radius:16px;box-shadow:0 1px 4px rgba(0,0,0,.06),0 4px 24px rgba(0,0,0,.04);border:1px solid var(--border);overflow:hidden}
+        .card-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;font-weight:700;color:var(--navy)}
+        .card-body{padding:24px}
+        /* Buttons */
+        .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-size:.85rem;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:all .18s;line-height:1;font-family:'Inter',sans-serif}
+        .btn-primary{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 12px rgba(14,165,233,.35)}
+        .btn-primary:hover{background:linear-gradient(135deg,#38bdf8,#0ea5e9);box-shadow:0 6px 16px rgba(14,165,233,.45);transform:translateY(-1px)}
+        .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 12px rgba(16,185,129,.3)}
+        .btn-success:hover{background:linear-gradient(135deg,#34d399,#10b981);transform:translateY(-1px)}
+        /* Forms */
+        .form-group{margin-bottom:20px}
+        .form-label{display:block;font-size:.77rem;font-weight:700;color:#475569;margin-bottom:7px;letter-spacing:.04em;text-transform:uppercase}
+        .form-control{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;color:var(--navy);background:#fff;transition:border-color .18s,box-shadow .18s;appearance:none;-webkit-appearance:none}
+        .form-control:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+        .form-control:disabled{background:#f8fafc;color:var(--muted);cursor:not-allowed}
+        select.form-control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+        /* Tables */
+        .data-table{width:100%;border-collapse:separate;border-spacing:0}
+        .data-table thead th{background:#f8fafc;padding:12px 16px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left}
+        .data-table tbody tr{transition:background .12s}
+        .data-table tbody tr:hover{background:#f8fafc}
+        .data-table tbody td{padding:14px 16px;font-size:.875rem;color:#334155;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+        .data-table tbody tr:last-child td{border-bottom:none}
+        .link-edit{color:var(--sky);font-weight:600;font-size:.82rem;text-decoration:none;padding:5px 10px;border-radius:7px;transition:background .15s}
+        .link-edit:hover{background:#f0f9ff}
+        /* Stat cards */
+        .stat-card{border-radius:18px;padding:24px;position:relative;overflow:hidden;color:#fff}
+        .stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1)}
+        .stat-card::after{content:'';position:absolute;bottom:-30px;right:20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.07)}
+        .stat-icon{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+        .stat-icon svg{width:22px;height:22px}
+        .stat-label{font-size:.78rem;font-weight:500;opacity:.8;margin-bottom:6px}
+        .stat-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:2.4rem;font-weight:800;line-height:1}
+        .stat-sub{font-size:.72rem;opacity:.65;margin-top:8px}
+        .stat-doctors{background:linear-gradient(135deg,#0b2545,#134074)}
+        .stat-patients{background:linear-gradient(135deg,#0d9488,#0891b2)}
+        .stat-appts{background:linear-gradient(135deg,#7c3aed,#4f46e5)}
+        /* Grid */
+        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+        .form-card-wrap{max-width:560px;margin:0 auto}
+        /* Locked field */
+        .field-wrap{position:relative}
+        .locked-tag{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:#f1f5f9;border:1px solid var(--border);color:var(--muted);font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
+        /* Empty state */
+        .empty-state{padding:48px 24px;text-align:center;color:var(--muted)}
+        .empty-state svg{width:48px;height:48px;margin:0 auto 12px;opacity:.3;display:block}
+        /* Scrollbar */
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+    </style>
 </head>
-<body class="bg-gray-100">
-    <header class="bg-blue-600 text-white p-4">
-        <div class="container mx-auto flex justify-between">
-            <h1 class="text-xl font-bold">Hospital Management</h1>
-            <nav>
-                <a href="{% url 'dashboard' %}" class="px-4 py-2 hover:bg-blue-500 rounded">Dashboard</a>
-                <a href="{% url 'manage_patients' %}" class="px-4 py-2 hover:bg-blue-500 rounded">Patients</a>
-                <a href="{% url 'manage_doctors' %}" class="px-4 py-2 hover:bg-blue-500 rounded">Doctors</a>
-                <a href="{% url 'manage_appointments' %}" class="px-4 py-2 hover:bg-blue-500 rounded">Appointments</a>
-            </nav>
+<body>
+<div class="layout">
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 7v4"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/>
+          <path d="M14 9h-4"/>
+          <path d="M18 11h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/>
+          <path d="M18 21V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sb-logo-name">MediCore</div>
+        <div class="sb-logo-sub">Hospital System</div>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="nav-sec">Overview</div>
+      <a href="{% url 'dashboard' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <div class="nav-sec">Management</div>
+      <a href="{% url 'manage_patients' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Patients
+      </a>
+      <a href="{% url 'manage_doctors' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <circle cx="12" cy="13" r="2"/>
+          <path d="M12 11v-2"/><path d="M12 15v1"/><path d="M10 13H9"/><path d="M14 13h1"/>
+        </svg>
+        Doctors
+      </a>
+      <a href="{% url 'manage_appointments' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Appointments
+      </a>
+    </nav>
+
+    <div class="sb-footer">
+      <div class="sb-footer-inner">
+        <div class="avatar">A</div>
+        <div>
+          <div class="avatar-name">Admin</div>
+          <div class="avatar-role">System Administrator</div>
         </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ Main ═══ -->
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Hospital Management System</div>
+      <div class="topbar-right">
+        <div class="status-pill"><div class="pulse-dot"></div> System Online</div>
+        <div class="topbar-time" id="live-time"></div>
+      </div>
     </header>
-    <main class="container mx-auto mt-4">
-        {% block content %}
-        {% endblock %}
+
+    <main class="page-content">
+      {% block content %}{% endblock %}
     </main>
+  </div>
+</div>
+
+<script>
+  function updateTime(){var e=document.getElementById('live-time');if(e)e.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+  updateTime();setInterval(updateTime,1000);
+  document.querySelectorAll('.nav-link').forEach(function(l){if(l.href===window.location.href)l.classList.add('active');});
+</script>
 </body>
 </html>

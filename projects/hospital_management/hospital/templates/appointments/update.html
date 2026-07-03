@@ -1,30 +1,76 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="bg-white p-6 rounded shadow max-w-md mx-auto">
-    <h2 class="text-xl font-bold mb-4">Update Appointment</h2>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            <label class="block font-semibold mb-1">Patient</label>
-            <select name="patient" disabled class="w-full border p-2 rounded bg-gray-100 cursor-not-allowed">
-                <option selected>{{ appointment.patient.name }}</option>
-            </select>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Doctor</label>
-            <select name="doctor" disabled class="w-full border p-2 rounded bg-gray-100 cursor-not-allowed">
-                <option selected>{{ appointment.doctor.name }} ({{ appointment.doctor.specialty }})</option>
-            </select>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Date</label>
-            <input type="date" name="date" value="{{ appointment.date }}" class="w-full border p-2 rounded" required>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Time</label>
-            <input type="time" name="time" value="{{ appointment.time }}" class="w-full border p-2 rounded" required>
-        </div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Update</button>
-    </form>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">Update Appointment</div>
+    <div class="page-sub">Modify the date or time for this appointment</div>
+  </div>
+  <a href="{% url 'manage_appointments' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b;font-size:.82rem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Back
+  </a>
 </div>
+
+<div class="form-card-wrap">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:6px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit Appointment
+      </span>
+      <span style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase">Editing</span>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Patient</label>
+          <div class="field-wrap">
+            <select name="patient" disabled class="form-control">
+              <option selected>{{ appointment.patient.name }}</option>
+            </select>
+            <span class="locked-tag">Locked</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Doctor</label>
+          <div class="field-wrap">
+            <select name="doctor" disabled class="form-control">
+              <option selected>{{ appointment.doctor.name }} — {{ appointment.doctor.specialty }}</option>
+            </select>
+            <span class="locked-tag">Locked</span>
+          </div>
+        </div>
+
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:20px;font-size:.82rem;color:#0369a1;display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Patient and doctor cannot be changed. You may only update the date and time.
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" name="date" value="{{ appointment.date }}" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input type="time" name="time" value="{{ appointment.time }}" class="form-control" required>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <a href="{% url 'manage_appointments' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

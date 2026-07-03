@@ -1,36 +1,70 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="bg-white p-6 rounded shadow max-w-md mx-auto">
-    <h2 class="text-xl font-bold mb-4">Book Appointment</h2>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            <label class="block font-semibold mb-1">Patient</label>
-            <select name="patient" class="w-full border p-2 rounded">
-                <option value="" disabled selected>Select a patient</option>
-                {% for patient in patients %}
-                <option value="{{ patient.id }}">{{ patient.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Doctor</label>
-            <select name="doctor" class="w-full border p-2 rounded">
-                <option value="" disabled selected>Select a doctor</option>
-                {% for doctor in doctors %}
-                <option value="{{ doctor.id }}">{{ doctor.name }} ({{ doctor.specialty }})</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Date</label>
-            <input type="date" name="date" class="w-full border p-2 rounded" />
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Time</label>
-            <input type="time" name="time" class="w-full border p-2 rounded" />
-        </div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Book</button>
-    </form>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">Book Appointment</div>
+    <div class="page-sub">Schedule a new patient–doctor appointment</div>
+  </div>
+  <a href="{% url 'manage_appointments' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b;font-size:.82rem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Back
+  </a>
 </div>
+
+<div class="form-card-wrap">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Appointment Details
+      </span>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Patient</label>
+          <select name="patient" class="form-control" required>
+            <option value="" disabled selected>— Select a patient —</option>
+            {% for patient in patients %}
+            <option value="{{ patient.id }}">{{ patient.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Doctor</label>
+          <select name="doctor" class="form-control" required>
+            <option value="" disabled selected>— Select a doctor —</option>
+            {% for doctor in doctors %}
+            <option value="{{ doctor.id }}">{{ doctor.name }} — {{ doctor.specialty }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" name="date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input type="time" name="time" class="form-control" required>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <a href="{% url 'manage_appointments' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Book Appointment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

@@ -1,22 +1,54 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="bg-white p-6 rounded shadow max-w-md mx-auto">
-    <h2 class="text-xl font-bold mb-4">Add Doctor</h2>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            <label class="block font-semibold mb-1">Name</label>
-            <input type="text" name="name" class="w-full border p-2 rounded" required>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Specialty</label>
-            <input type="text" name="specialty" class="w-full border p-2 rounded" required>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Contact</label>
-            <input type="text" name="contact" class="w-full border p-2 rounded" required>
-        </div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Save</button>
-    </form>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">Add Doctor</div>
+    <div class="page-sub">Register a new medical professional</div>
+  </div>
+  <a href="{% url 'manage_doctors' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b;font-size:.82rem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Back
+  </a>
 </div>
+
+<div class="form-card-wrap">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:6px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="2"/></svg>
+        Doctor Information
+      </span>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="name" class="form-control" placeholder="Dr. Jane Smith" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Specialty</label>
+          <input type="text" name="specialty" class="form-control" placeholder="e.g. Cardiology, Neurology…" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contact Number</label>
+          <input type="text" name="contact" class="form-control" placeholder="+1 (555) 000-0000" required>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <a href="{% url 'manage_doctors' %}" class="btn" style="background:#fff;border:1.5px solid #e2e8f0;color:#64748b">Cancel</a>
+          <button type="submit" class="btn btn-success">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Doctor
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

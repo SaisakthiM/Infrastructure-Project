@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Add Patient</h2>
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label class="block font-bold">Name</label>
+            <input type="text" name="name" class="w-full border p-2 rounded">
+        </div>
+        <div>
+            <label class="block font-bold">Age</label>
+            <input type="number" name="age" class="w-full border p-2 rounded">
+        </div>
+        <div>
+            <label class="block font-bold">Contact</label>
+            <input type="text" name="contact" class="w-full border p-2 rounded">
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Save</button>
+    </form>
+</div>
+{% endblock %}

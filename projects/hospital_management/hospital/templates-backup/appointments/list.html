@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Appointments</h2>
+    <a href="{% url 'book_appointment' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Book Appointment</a>
+    <table class="table-auto w-full mt-4">
+        <thead>
+            <tr class="bg-gray-200">
+                <th class="px-4 py-2">Patient</th>
+                <th class="px-4 py-2">Doctor</th>
+                <th class="px-4 py-2">Date</th>
+                <th class="px-4 py-2">Time</th>
+                <th class="px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appointment in appointments %}
+            <tr class="border-b">
+                <td class="px-4 py-2">{{ appointment.patient.name }}</td>
+                <td class="px-4 py-2">{{ appointment.doctor.name }}</td>
+                <td class="px-4 py-2">{{ appointment.date }}</td>
+                <td class="px-4 py-2">{{ appointment.time }}</td>
+                <td class="px-4 py-2">
+                    <a href="{% url 'update_appointment' appointment.id %}" class="text-blue-600">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center p-4">No appointments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
