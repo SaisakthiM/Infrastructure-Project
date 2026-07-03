@@ -422,7 +422,7 @@ resource "docker_container" "whisper_frontend_build" {
     type   = "volume"
   }
   env = [
-    
+    "VITE_API_URL=${var.whisper_domain}"
   ]
 }
 

@@ -272,6 +272,8 @@ whisper_db_test_db     = %q
 whisper_minio_user     = %q
 whisper_minio_password = %q
 whisper_jwt_secret     = %q
+whisper_domain         = %q
+,
 `,
 		projectsDir(cfg),
 		g("docker_host"),
@@ -301,6 +303,7 @@ whisper_jwt_secret     = %q
 		d.WhisperMinioUser,
 		g("whisper_minio_password"),
 		g("whisper_jwt_secret"),
+		fmt.Sprintf("https://%s/whisper", cfg.ProdInfra.Domain), 
 	)
 	return write(filepath.Join(envPath, "prod-docker", "terraform.tfvars"), content)
 }

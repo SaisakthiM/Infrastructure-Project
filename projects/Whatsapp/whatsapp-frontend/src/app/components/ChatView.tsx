@@ -159,7 +159,7 @@ export default function ChatView({ roomId, roomName }: Props) {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span
                 className="inline-block w-1.5 h-1.5 rounded-full"
-                style={{ background: isConnected ? "#00A884" : "#F5A623" }}
+                style={{ background: isConnected ? "#00E676" : "#F5A623" }}
               />
               <p className="text-xs capitalize" style={{ color: "#8696A0" }}>
                 {connStatus}
@@ -237,7 +237,7 @@ export default function ChatView({ roomId, roomName }: Props) {
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         {mine && (
-                          <CheckCheck className="w-3 h-3" style={{ color: "#53BDEB" }} />
+                          <CheckCheck className="w-3 h-3" style={{ color: "#00E676" }} />
                         )}
                       </div>
                     </div>
@@ -255,7 +255,7 @@ export default function ChatView({ roomId, roomName }: Props) {
                 <div className="rounded-full h-1.5 overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <motion.div
                     className="h-full rounded-full"
-                    style={{ background: "#00A884" }}
+                    style={{ background: "linear-gradient(135deg,#00E676,#00C560)" }}
                     animate={{ width: `${uploadProgress}%` }}
                   />
                 </div>

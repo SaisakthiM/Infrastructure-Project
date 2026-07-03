@@ -194,7 +194,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
       </div>
 
       {/* Search */}
-      <div className="px-3 pb-3" style={{ background: "#111B21" }}>
+      <div className="pl-[14px] pr-[12px] pt-[20px] pb-[12px]" style={{ background: "#111B21" }}>
         <div className="relative flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8696A0" }} />
@@ -203,7 +203,8 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
               placeholder="Search or start new chat"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="wa-search-input pl-10"
+              className="wa-search-input"
+              style={{ paddingLeft: "40px", paddingRight: searchTerm ? "36px" : "14px" }}
             />
             {searchTerm && (
               <button

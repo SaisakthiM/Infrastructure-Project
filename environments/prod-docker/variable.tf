@@ -44,3 +44,4 @@ variable "whisper_db_test_db"     {}
 variable "whisper_minio_user"     {}
 variable "whisper_minio_password" { sensitive = true }
 variable "whisper_jwt_secret"     { sensitive = true }
+variable "whisper_domain" { }

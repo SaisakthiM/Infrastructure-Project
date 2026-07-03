@@ -16,6 +16,7 @@ function figmaAssetResolver() {
   }
 }
 
+
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/whisper/' : '/',
   plugins: [

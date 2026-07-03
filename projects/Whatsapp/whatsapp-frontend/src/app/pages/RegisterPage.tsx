@@ -29,6 +29,7 @@ export default function RegisterPage() {
     <div className="wa-auth-bg min-h-screen flex flex-col items-center justify-center p-4">
       <div className="wa-blob wa-blob-1" />
       <div className="wa-blob wa-blob-2" />
+      <div className="wa-blob wa-blob-3" />
 
       <motion.div
         className="w-full max-w-[400px] relative z-10"
@@ -44,7 +45,7 @@ export default function RegisterPage() {
         >
           <motion.div
             className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-full mb-5"
-            style={{ background: "linear-gradient(135deg,#00A884 0%,#025144 100%)", boxShadow: "0 0 48px rgba(0,168,132,0.5)" }}
+            style={{ background: "linear-gradient(135deg,#00E676 0%,#00A855 100%)", boxShadow: "0 0 60px rgba(0,230,118,0.55), 0 0 24px rgba(0,200,100,0.3)" }}
             animate={{ scale: [1, 1.04, 1] }}
             transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
           >
