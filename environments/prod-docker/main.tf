@@ -56,6 +56,8 @@ resource "docker_volume" "whisper_pgdata" { name = "gateway_whisper-pgdata"}
 
 resource "docker_volume" "whisper_minio_data" { name = "whisper_minio_data" }
 
+resource "docker_volume" "compiler_dist" { name = "gateway_compiler-dist"}
+
 resource "docker_image" "bank_backend" {
   name         = "bankmanager-backend:latest"
   keep_locally = true
@@ -296,6 +298,22 @@ resource "docker_image" "whisper_frontend" {
   }
 }
 
+resource "docker_image" "compiler_frontend" {
+  name         = "compiler-frontend:latest"
+  keep_locally = true
+  build {
+    context    = abspath("${var.projects_dir}/Online Compiler/compiler-frontend")
+    dockerfile = "Dockerfile.prod"
+  }
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/Online Compiler/compiler-frontend", "**") :
+      filesha256("${var.projects_dir}/Online Compiler/compiler-frontend/${f}")
+      if !can(regex("(\\.git|node_modules|dist)", f))
+    ]))
+  }
+}
+
 resource "docker_container" "notes_postgres" {
   name                  = "notes-postgres"
   image                 = "postgres:16"
@@ -488,7 +506,7 @@ resource "docker_container" "quiz_frontend_build" {
   }
 }
 
-/*
+
 resource "docker_image" "compiler_db" {
   name         = "online_compiler_db:latest"
   keep_locally = true
@@ -564,7 +582,20 @@ module "compiler_server" {
   depends_on = [docker_container.compiler_db]
 }
 
- */
+resource "docker_container" "compiler_frontend_build" {
+  name                  = "video-frontend-build"
+  image                 = docker_image.compiler_frontend.name
+  destroy_grace_seconds = 30
+  must_run              = true
+  networks_advanced { name = "gateway-net" }
+  mounts {
+    source = docker_volume.compiler_dist.name
+    target = "/dist"
+    type   = "volume"
+  }
+}
+
+
 
 module "video_backend" {
   source        = "../../modules/docker_app"

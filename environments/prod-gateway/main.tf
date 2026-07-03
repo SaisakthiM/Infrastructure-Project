@@ -77,6 +77,8 @@ module "gateway" {
     { volume_name = docker_volume.intro_dist.name, container_path = "/apps/intro", read_only = true },
     { volume_name = docker_volume.record_dist.name, container_path = "/apps/record", read_only = true },
     { volume_name = "gateway_whisper-dist", container_path = "/apps/whisper", read_only = true },
+    { volume_name = "gateway_compiler-dist", container_path = "/apps/compiler", read_only = true },
+
   ]
 }
 
