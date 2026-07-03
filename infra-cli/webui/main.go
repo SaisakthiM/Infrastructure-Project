@@ -291,6 +291,27 @@ func handleJobStream(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// candidateJSON is the wire format for a single import candidate row shown
+// in the web UI's "Import Docker State" table.
+//
+// IMPORTANT: Env must round-trip. The frontend receives this from
+// /api/import/scan and MUST send the same Env value back in the request
+// body when the user clicks "Import" (see importRunRequest below). If Env
+// is dropped anywhere in that round-trip, deploy.RunImport ends up calling
+// deploy.WorkDir with an empty Environment, which — before the defensive
+// check in deploy.go — silently ran terragrunt against the parent
+// "environments" directory instead of the correct env subdirectory,
+// causing "resource address does not exist in the configuration" errors
+// that look like a Terraform config problem but are actually this contract
+// being incomplete.
+type candidateJSON struct {
+	TFAddress  string `json:"tf_address"`
+	Kind       string `json:"kind"`
+	DockerName string `json:"docker_name"`
+	ImportID   string `json:"import_id"`
+	Env        string `json:"env"`
+}
+
 func handleImportScan(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
 	if err != nil || !cfg.InfraExists() {
@@ -302,12 +323,6 @@ func handleImportScan(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	type candidateJSON struct {
-		TFAddress  string `json:"tf_address"`
-		Kind       string `json:"kind"`
-		DockerName string `json:"docker_name"`
-		ImportID   string `json:"import_id"`
-	}
 	var out []candidateJSON
 	for _, c := range candidates {
 		out = append(out, candidateJSON{
@@ -315,6 +330,7 @@ func handleImportScan(w http.ResponseWriter, r *http.Request) {
 			Kind:       string(c.Entry.Kind),
 			DockerName: c.Entry.DockerName,
 			ImportID:   c.ImportID,
+			Env:        string(c.Entry.Env),
 		})
 	}
 	if out == nil {
@@ -323,11 +339,14 @@ func handleImportScan(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
+// importRunRequest is the body the frontend must POST to /api/import/run.
+// Env is required — see the candidateJSON doc comment above for why.
 type importRunRequest struct {
 	TFAddress  string `json:"tf_address"`
 	ImportID   string `json:"import_id"`
 	DockerName string `json:"docker_name"`
 	Kind       string `json:"kind"`
+	Env        string `json:"env"`
 }
 
 func handleImportRun(w http.ResponseWriter, r *http.Request) {
@@ -340,6 +359,10 @@ func handleImportRun(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
+	if req.Env == "" {
+		http.Error(w, "bad request: missing env — the import row is missing its environment; re-scan and try again", http.StatusBadRequest)
+		return
+	}
 	cfg, err := config.Load()
 	if err != nil || !cfg.InfraExists() {
 		http.Error(w, "infra not found", http.StatusPreconditionFailed)
@@ -347,6 +370,7 @@ func handleImportRun(w http.ResponseWriter, r *http.Request) {
 	}
 	candidate := deploy.ImportCandidate{
 		Entry: deploy.ImportEntry{
+			Env:        deploy.Environment(req.Env),
 			TFAddress:  req.TFAddress,
 			Kind:       deploy.ResourceKind(req.Kind),
 			DockerName: req.DockerName,
@@ -824,8 +848,8 @@ func handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
 		installed = cfg.ReleaseTag
 	}
 	writeJSON(w, map[string]interface{}{
-		"installed": installed,
-		"tag":       latest.TagName,
+		"installed":  installed,
+		"tag":        latest.TagName,
 		"up_to_date": installed == latest.TagName,
 	})
 }

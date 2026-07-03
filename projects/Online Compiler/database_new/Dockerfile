@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM gcc:13 AS builder
+FROM gcc:12-bookworm AS builder
 
 WORKDIR /build
 

@@ -204,10 +204,23 @@ func runTerragrunt(cfg *config.Config, env Environment, command string, autoAppr
 	return runInDir(cfg, env, "terragrunt", args, extraOut...)
 }
 
+// workDir resolves the terragrunt working directory for a given environment.
+//
+// IMPORTANT: env must never be the zero value (""). filepath.Join silently
+// drops empty path components, so workDir(cfg, "") would quietly resolve to
+// the parent "environments" directory instead of failing loudly — which is
+// exactly the bug that caused terragrunt import to run in the wrong
+// directory (see web UI import handler history). Any caller that builds an
+// Environment from external input (JSON, form data, CLI flags) MUST
+// validate it against Environments() before calling into this package.
 func workDir(cfg *config.Config, env Environment) string {
+	if env == "" {
+		panic("deploy: workDir called with empty Environment — this indicates a caller bug (e.g. an Env field lost in a JSON round-trip). Refusing to silently fall back to the parent environments directory.")
+	}
+
 	envPath := filepath.Join(cfg.InfraDir, "environments")
 	if env == EnvAll {
-		return envPath   // ← only returns the bare path when env == EnvAll
+		return envPath
 	}
 	return filepath.Join(envPath, string(env))
 }
@@ -285,6 +298,11 @@ func RefreshHelmRepos(extraOut ...io.Writer) {
 	}
 }
 
+// WorkDir is the exported form of workDir, used by import.go and other
+// package-external callers.
+//
+// It carries the same "env must not be empty" contract as workDir above —
+// see that function's doc comment.
 func WorkDir(cfg *config.Config, env Environment) string {
 	return workDir(cfg, env)
 }

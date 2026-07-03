@@ -58,6 +58,8 @@ resource "docker_volume" "whisper_minio_data" { name = "whisper_minio_data" }
 
 resource "docker_volume" "compiler_dist" { name = "gateway_compiler-dist"}
 
+
+
 resource "docker_image" "bank_backend" {
   name         = "bankmanager-backend:latest"
   keep_locally = true
@@ -305,6 +307,7 @@ resource "docker_image" "compiler_frontend" {
     context    = abspath("${var.projects_dir}/Online Compiler/compiler-frontend")
     dockerfile = "Dockerfile.prod"
   }
+  
   triggers = {
     dir_sha = sha256(join("", [
       for f in fileset("${var.projects_dir}/Online Compiler/compiler-frontend", "**") :
@@ -583,11 +586,14 @@ module "compiler_server" {
 }
 
 resource "docker_container" "compiler_frontend_build" {
-  name                  = "video-frontend-build"
+  name                  = "compiler-frontend-build"
   image                 = docker_image.compiler_frontend.name
   destroy_grace_seconds = 30
   must_run              = true
   networks_advanced { name = "gateway-net" }
+  env = [
+    "VITE_API_URL=${var.compiler_domain}"
+  ]
   mounts {
     source = docker_volume.compiler_dist.name
     target = "/dist"

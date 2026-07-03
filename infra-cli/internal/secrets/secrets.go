@@ -93,6 +93,7 @@ var AllSecrets = []SecretDef{
 	{Env: "prod-docker", Key: "whisper_db_password", Label: "Whisper DB password", Internal: true, Default: "saisakthi2008"},
 	{Env: "prod-docker", Key: "whisper_minio_password", Label: "Whisper MinIO password", Internal: true, Default: "minioadmin"},
 	{Env: "prod-docker", Key: "whisper_jwt_secret", Label: "Whisper JWT secret", Internal: true, Default: "saisakthi"},
+	
 
 	// prod-social
 	{Env: "prod-social", Key: "docker_host", Label: "Docker socket path (prod-social)", Internal: true, Default: dockerHostDefault()},
@@ -273,7 +274,9 @@ whisper_minio_user     = %q
 whisper_minio_password = %q
 whisper_jwt_secret     = %q
 whisper_domain         = %q
-,
+
+# ─── ONLINE COMPILER ──────────────────────────────────────────
+compiler_domain = %q
 `,
 		projectsDir(cfg),
 		g("docker_host"),
@@ -303,7 +306,8 @@ whisper_domain         = %q
 		d.WhisperMinioUser,
 		g("whisper_minio_password"),
 		g("whisper_jwt_secret"),
-		fmt.Sprintf("https://%s/whisper", cfg.ProdInfra.Domain), 
+		fmt.Sprintf("https://%s/whisper", cfg.ProdInfra.Domain),
+		fmt.Sprintf("https://%s/compiler/api/", cfg.ProdInfra.Domain),
 	)
 	return write(filepath.Join(envPath, "prod-docker", "terraform.tfvars"), content)
 }

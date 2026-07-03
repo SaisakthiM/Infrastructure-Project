@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
@@ -35,16 +36,68 @@ type GHAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
+// githubToken returns a personal access token to authenticate GitHub API
+// requests with, if one is available. Reuses the Atlantis GitHub PAT already
+// stored in the keychain (secrets.go: prod-infra/atlantis_gh_token) rather
+// than introducing a separate credential just for this -- it only needs
+// public read access here (listing/fetching releases), which that token
+// already has.
+//
+// FIX: previously every request in this file went out via bare http.Get()
+// with no Authorization header at all, so every "Check Prerequisites" /
+// install / update click burned against GitHub's UNAUTHENTICATED rate limit
+// -- 60 requests/hour per IP. That's exactly what produced the "Bad Gateway"
+// shown in the UI: `curl -sI .../releases/latest` came back 403 with
+// x-ratelimit-remaining: 0. An authenticated request gets 5,000/hour instead
+// (an ~83x increase), which comfortably covers repeated dev iteration.
+//
+// Returns "" if no token is configured -- callers fall back to an
+// unauthenticated request rather than failing outright, so this remains
+// usable (just rate-limited) for anyone who hasn't set atlantis_gh_token yet.
+func githubToken() string {
+	return secrets.Get("prod-infra", "atlantis_gh_token")
+}
+
+// newGithubRequest builds a GET request with a User-Agent (GitHub's API
+// rejects requests without one, authenticated or not) and, if a token is
+// configured, an Authorization header.
+func newGithubRequest(url string) (*http.Request, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "social-platform-cli")
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if tok := githubToken(); tok != "" {
+		// "token" scheme, not "Bearer" -- correct for classic GitHub PATs
+		// (what ATLANTIS_GH_TOKEN / atlantis_gh_token is). Fine-grained PATs
+		// also accept this scheme.
+		req.Header.Set("Authorization", "token "+tok)
+	}
+	return req, nil
+}
+
+func doGithubRequest(url string) (*http.Response, error) {
+	req, err := newGithubRequest(url)
+	if err != nil {
+		return nil, err
+	}
+	return http.DefaultClient.Do(req)
+}
+
 // LatestRelease fetches the latest release metadata from the GitHub API.
 func LatestRelease() (*GHRelease, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", githubAPI, repoOwner, repoName)
-	resp, err := http.Get(url) //nolint:gosec
+	resp, err := doGithubRequest(url)
 	if err != nil {
 		return nil, fmt.Errorf("fetching latest release: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 404 {
 		return nil, fmt.Errorf("no releases found at %s/%s — publish a release first", repoOwner, repoName)
+	}
+	if resp.StatusCode == 403 {
+		return nil, rateLimitError(resp)
 	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
@@ -59,16 +112,42 @@ func LatestRelease() (*GHRelease, error) {
 // ListReleases returns the last 10 releases so the user can choose a version.
 func ListReleases() ([]GHRelease, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=10", githubAPI, repoOwner, repoName)
-	resp, err := http.Get(url) //nolint:gosec
+	resp, err := doGithubRequest(url)
 	if err != nil {
 		return nil, fmt.Errorf("listing releases: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == 403 {
+		return nil, rateLimitError(resp)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
+	}
 	var releases []GHRelease
 	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 		return nil, fmt.Errorf("parsing releases JSON: %w", err)
 	}
 	return releases, nil
+}
+
+// rateLimitError builds a clear error message from GitHub's rate-limit
+// headers instead of surfacing a bare "HTTP 403" (which is what the web UI
+// was rendering as an unhelpful generic "Bad Gateway").
+func rateLimitError(resp *http.Response) error {
+	remaining := resp.Header.Get("x-ratelimit-remaining")
+	if remaining != "0" {
+		// A 403 that isn't rate-limiting (e.g. bad/expired token) -- don't
+		// mislabel it.
+		return fmt.Errorf("GitHub API returned HTTP 403 (not rate-limit related — check atlantis_gh_token validity)")
+	}
+	reset := resp.Header.Get("x-ratelimit-reset")
+	limit := resp.Header.Get("x-ratelimit-limit")
+	tokenSet := githubToken() != ""
+	msg := fmt.Sprintf("GitHub API rate limit exceeded (0/%s remaining, resets at unix time %s)", limit, reset)
+	if !tokenSet {
+		msg += " — no atlantis_gh_token configured; set one via 'configure' to raise the limit from 60/hr to 5,000/hr"
+	}
+	return fmt.Errorf(msg)
 }
 
 // DownloadAndExtract downloads the infra asset for a release and extracts it
@@ -217,12 +296,19 @@ func copyTree(src, dst string) error {
 	})
 }
 
+// download fetches url to dst. Uses an authenticated request when a GitHub
+// token is configured -- harmless no-op for public asset/source-tarball
+// URLs, but keeps this working uniformly if this repo (or the release
+// asset's redirect target) ever becomes private.
 func download(url string, dst *os.File) error {
-	resp, err := http.Get(url) //nolint:gosec
+	resp, err := doGithubRequest(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == 403 {
+		return rateLimitError(resp)
+	}
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("download returned HTTP %d for %s", resp.StatusCode, url)
 	}

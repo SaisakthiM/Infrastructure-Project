@@ -1,7 +1,10 @@
 // Package deploy - import.go handles terraform state import for prod-docker,
-// prod-infra, and prod-gateway resources by auto-detecting running Docker
-// containers, volumes, and images, then running "terragrunt import" per
-// environment with a per-resource confirmation step.
+// prod-infra, prod-gateway, and prod-social resources by auto-detecting
+// running Docker containers, volumes, networks, Helm releases, Kubernetes
+// secrets, and (per-entry) kubectl_manifest objects, then running
+// "terragrunt import" per environment with a per-resource confirmation
+// step. docker_image resources are the one deliberate exception — see the
+// note near the bottom of the catalogs below.
 package deploy
 
 import (
@@ -26,6 +29,8 @@ const (
 	// rebuilt by Terraform on the next apply.
 	KindNetwork     ResourceKind = "network"      // prod-gateway
 	KindHelmRelease ResourceKind = "helm_release" // prod-social
+	KindSecret      ResourceKind = "secret"       // prod-social (kubernetes_secret_v1)
+	KindManifest    ResourceKind = "manifest"     // prod-social (kubectl_manifest, gavinbunney provider)
 )
 
 // ImportEntry maps a Terraform resource address to its Docker lookup name,
@@ -146,6 +151,78 @@ var dockerInfraVolumeCatalog = []ImportEntry{
 // terragrunt import misfiring against the wrong container.
 var dockerGatewayContainerCatalog = []ImportEntry{}
 
+// ─── network catalog (all environments) ────────────────────────────────────
+// `docker network ls` on this host shows: bridge, gateway-net, host, kind,
+// none. Only "gateway-net" is a plausible Terraform-managed network — the
+// rest are Docker/kind built-ins that were never created by (and can't be
+// imported into) a docker_network resource:
+//   - bridge / host / none: Docker's built-in networks, not importable.
+//   - kind: created by the `kind` CLI itself when the cluster bootstraps,
+//     not normally a docker_network resource unless one was deliberately
+//     declared for it.
+//
+// UNRESOLVED: this catalog is intentionally left empty. Confirm the real
+// resource address (and which environment it belongs to — prod-gateway is
+// the likely candidate given KindNetwork's existing "// prod-gateway"
+// annotation above) before adding an entry, same discipline as the
+// dockerGatewayContainerCatalog note above. Run:
+//   rg "resource \"docker_network\"" -A 6 ~/.social-platform/infra/environments/*/main.tf
+// Then add entries like:
+//   {EnvGateway, "docker_network.gateway_net", KindNetwork, "gateway-net"},
+var dockerNetworkCatalog = []ImportEntry{}
+
+// ─── helm release catalog (prod-social) ────────────────────────────────────
+// Confirmed: ArgoCD is installed in namespace "argocd" (see `helm list -n
+// argocd` / `kubectl get pods -n argocd` output). Import ID format for the
+// hashicorp/helm provider's helm_release resource is "<namespace>/<name>",
+// confirmed against the provider docs — NOT just the release name, and NOT
+// "name/namespace" (reversed).
+var helmReleaseCatalog = []ImportEntry{
+	{EnvSocial, "helm_release.argocd", KindHelmRelease, "argocd/argocd"},
+}
+
+// ─── kubernetes_secret_v1 catalog (prod-social) ────────────────────────────
+// Confirmed via apply log: kubernetes_secret_v1.gitops_repo_credentials at
+// main.tf line 339 already exists in the cluster as secret name
+// "coding-project-repo" — but the "already exists" error from the
+// Kubernetes API does NOT include the namespace, so it isn't safe to guess
+// here (unlike the helm_release case, where `helm list -n argocd` gave an
+// unambiguous namespace).
+//
+// UNRESOLVED: confirm the namespace before adding an entry. Check the
+// metadata block for this resource:
+//   sed -n '330,350p' ~/.social-platform/infra/environments/prod-social/main.tf
+// Import ID format (hashicorp/kubernetes provider, confirmed against provider
+// docs) is "<namespace>/<name>" — same pattern as helm_release. Once
+// confirmed, add an entry like:
+//   {EnvSocial, "kubernetes_secret_v1.gitops_repo_credentials", KindSecret, "argocd/coding-project-repo"},
+var kubernetesSecretCatalog = []ImportEntry{}
+
+// ─── kubectl_manifest catalog (prod-social) ────────────────────────────────
+// kubectl_manifest (gavinbunney/kubectl provider) resources can be arbitrary
+// Kubernetes objects of any Kind, so — unlike volumes/containers/networks/
+// secrets — there's no single `kubectl get <something> -A` call that lists
+// every possible candidate. Each entry here must be fully known up front:
+// apiVersion, Kind, name, and namespace (if namespaced) all come from the
+// main.tf yaml_body block itself, not from cluster introspection.
+//
+// Import ID format (confirmed against gavinbunney/terraform-provider-kubectl
+// docs and source): a "//"-delimited string —
+//   "<apiVersion>//<Kind>//<name>"              for cluster-scoped objects
+//   "<apiVersion>//<Kind>//<name>//<namespace>"  for namespaced objects
+// DockerName below is (ab)used to carry this pre-built ID string directly,
+// since — unlike every other Kind above — there's no separate "docker lookup
+// name" vs. "import ID" distinction here; they're the same string.
+//
+// UNRESOLVED: intentionally empty. The one kubectl_manifest resource seen so
+// far (app_of_apps_social) already applied successfully in the last run and
+// does not need importing. If a future apply hits a "resource already
+// exists" style error for a different kubectl_manifest resource, find its
+// apiVersion/Kind/name/namespace from the yaml_body in main.tf and add an
+// entry like:
+//   {EnvSocial, "kubectl_manifest.some_resource", KindManifest, "argoproj.io/v1alpha1//Application//social-media-app-of-apps//argocd"},
+var kubectlManifestCatalog = []ImportEntry{}
+
 // docker_image resources are NOT in any catalog — kreuzwerker/docker v3.x
 // does not support import for docker_image. Terraform rebuilds them on apply.
 
@@ -156,9 +233,10 @@ type ImportCandidate struct {
 }
 
 // scannedEnvironments lists every environment DetectImportCandidates scans.
-// prod-social (Kubernetes/Helm) and prod-manage are intentionally excluded —
-// this importer only handles Docker-provider resources.
-var scannedEnvironments = []Environment{EnvDocker, EnvInfra, EnvGateway}
+// prod-social is included for Helm release, Kubernetes secret, and
+// kubectl_manifest detection. prod-manage is intentionally excluded —
+// nothing in this importer targets it.
+var scannedEnvironments = []Environment{EnvDocker, EnvInfra, EnvGateway, EnvSocial}
 
 // catalogForEnv returns every ImportEntry declared for a given environment.
 func catalogForEnv(env Environment) []ImportEntry {
@@ -169,6 +247,10 @@ func catalogForEnv(env Environment) []ImportEntry {
 	all = append(all, dockerInfraContainerCatalog...)
 	all = append(all, dockerInfraVolumeCatalog...)
 	all = append(all, dockerGatewayContainerCatalog...)
+	all = append(all, dockerNetworkCatalog...)
+	all = append(all, helmReleaseCatalog...)
+	all = append(all, kubernetesSecretCatalog...)
+	all = append(all, kubectlManifestCatalog...)
 
 	var filtered []ImportEntry
 	for _, e := range all {
@@ -179,10 +261,10 @@ func catalogForEnv(env Environment) []ImportEntry {
 	return filtered
 }
 
-// DetectImportCandidates queries Docker once, then checks every known
-// resource across all scanned environments (prod-docker, prod-infra,
-// prod-gateway) against each environment's own Terraform state, returning
-// those that exist in Docker but aren't yet tracked.
+// DetectImportCandidates queries Docker and Helm once each, then checks
+// every known resource across all scanned environments (prod-docker,
+// prod-infra, prod-gateway, prod-social) against each environment's own
+// Terraform state, returning those that exist but aren't yet tracked.
 func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		return nil, fmt.Errorf("docker not found in PATH — is Docker installed?")
@@ -197,6 +279,21 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 	if err != nil {
 		ui.Warn("Could not list docker containers: %v", err)
 		existingContainers = map[string]string{}
+	}
+	existingNetworks, err := listDockerNetworks()
+	if err != nil {
+		ui.Warn("Could not list docker networks: %v", err)
+		existingNetworks = map[string]string{}
+	}
+	existingHelmReleases, err := listHelmReleases()
+	if err != nil {
+		ui.Warn("Could not list helm releases: %v", err)
+		existingHelmReleases = map[string]string{}
+	}
+	existingSecrets, err := listKubernetesSecrets()
+	if err != nil {
+		ui.Warn("Could not list kubernetes secrets: %v", err)
+		existingSecrets = map[string]string{}
 	}
 
 	var candidates []ImportCandidate
@@ -220,6 +317,25 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 			case KindContainer:
 				if id, ok := existingContainers[entry.DockerName]; ok {
 					candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
+				}
+			case KindNetwork:
+				if id, ok := existingNetworks[entry.DockerName]; ok {
+					candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
+				}
+			case KindHelmRelease:
+				if id, ok := existingHelmReleases[entry.DockerName]; ok {
+					candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
+				}
+			case KindSecret:
+				if id, ok := existingSecrets[entry.DockerName]; ok {
+					candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: id})
+				}
+			case KindManifest:
+				// No bulk "list every kubectl_manifest candidate" call exists
+				// (see kubectlManifestCatalog doc comment) — each entry is
+				// checked individually against the live cluster instead.
+				if manifestExists(entry.DockerName) {
+					candidates = append(candidates, ImportCandidate{Entry: entry, ImportID: entry.DockerName})
 				}
 			}
 		}
@@ -351,4 +467,154 @@ func fullContainerID(nameOrID string) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// listDockerNetworks returns map[networkName]networkID.
+// kreuzwerker/docker's docker_network resource imports by network ID (the
+// short hex ID shown in `docker network ls`), not by name — unlike volumes,
+// where name and import ID are the same string. Built-in networks (bridge,
+// host, none) are intentionally excluded here since they can never be
+// attached to a docker_network resource; if one somehow ends up in
+// dockerNetworkCatalog by mistake, it just won't be found in this map and
+// will be silently skipped rather than misimported.
+func listDockerNetworks() (map[string]string, error) {
+	out, err := exec.Command("docker", "network", "ls", "--format", "{{json .}}").Output()
+	if err != nil {
+		return nil, err
+	}
+	builtins := map[string]bool{"bridge": true, "host": true, "none": true}
+	result := make(map[string]string)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		var n struct {
+			ID   string `json:"ID"`
+			Name string `json:"Name"`
+		}
+		if err := json.Unmarshal([]byte(line), &n); err != nil {
+			continue
+		}
+		if n.Name == "" || n.ID == "" || builtins[n.Name] {
+			continue
+		}
+		result[n.Name] = n.ID
+	}
+	return result, nil
+}
+
+// listHelmReleases returns map["namespace/name"]"namespace/name" for every
+// Helm release currently deployed across all namespaces. Unlike volumes,
+// containers, and networks — where the Docker lookup name and the import ID
+// are different strings — a helm_release resource's import ID (per the
+// hashicorp/helm provider) IS "<namespace>/<name>", so DockerName in
+// helmReleaseCatalog entries is stored in that same "namespace/name" form
+// and doubles as both the lookup key and the resulting ImportID.
+func listHelmReleases() (map[string]string, error) {
+	if _, err := exec.LookPath("helm"); err != nil {
+		return map[string]string{}, nil // helm not installed — nothing to detect, not a hard error
+	}
+
+	out, err := exec.Command("helm", "list", "-A", "-o", "json").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var releases []struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace"`
+	}
+	if err := json.Unmarshal(out, &releases); err != nil {
+		return nil, fmt.Errorf("parsing helm list output: %w", err)
+	}
+
+	result := make(map[string]string)
+	for _, r := range releases {
+		if r.Name == "" || r.Namespace == "" {
+			continue
+		}
+		key := r.Namespace + "/" + r.Name
+		result[key] = key
+	}
+	return result, nil
+}
+
+// listKubernetesSecrets returns map["namespace/name"]"namespace/name" for
+// every Secret across all namespaces. Same "lookup key == import ID"
+// pattern as listHelmReleases — the hashicorp/kubernetes provider's
+// kubernetes_secret_v1 import ID is "<namespace>/<name>".
+func listKubernetesSecrets() (map[string]string, error) {
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		return map[string]string{}, nil // kubectl not installed — nothing to detect, not a hard error
+	}
+
+	out, err := exec.Command("kubectl", "get", "secrets", "-A", "-o", "json").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var parsed struct {
+		Items []struct {
+			Metadata struct {
+				Name      string `json:"name"`
+				Namespace string `json:"namespace"`
+			} `json:"metadata"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(out, &parsed); err != nil {
+		return nil, fmt.Errorf("parsing kubectl get secrets output: %w", err)
+	}
+
+	result := make(map[string]string)
+	for _, item := range parsed.Items {
+		if item.Metadata.Name == "" || item.Metadata.Namespace == "" {
+			continue
+		}
+		key := item.Metadata.Namespace + "/" + item.Metadata.Name
+		result[key] = key
+	}
+	return result, nil
+}
+
+// parseManifestID splits a kubectl_manifest import ID of the form
+// "<apiVersion>//<Kind>//<name>" or "<apiVersion>//<Kind>//<name>//<namespace>"
+// into its Kind, name, and (optional) namespace parts. apiVersion itself is
+// discarded here — `kubectl get <kind> <name>` doesn't need it, and kubectl's
+// RESTMapper resolves the Kind to the right API group on its own.
+func parseManifestID(id string) (kind, name, namespace string, ok bool) {
+	parts := strings.Split(id, "//")
+	if len(parts) < 3 || parts[1] == "" || parts[2] == "" {
+		return "", "", "", false
+	}
+	kind = parts[1]
+	name = parts[2]
+	if len(parts) >= 4 {
+		namespace = parts[3]
+	}
+	return kind, name, namespace, true
+}
+
+// manifestExists checks whether the live cluster already has the object
+// described by a kubectl_manifest-style import ID (see parseManifestID).
+// Used instead of a bulk listing call, since kubectl_manifest resources can
+// be any Kind — there's no single "list all possible candidates" query.
+func manifestExists(importID string) bool {
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		return false
+	}
+	kind, name, namespace, ok := parseManifestID(importID)
+	if !ok {
+		return false
+	}
+
+	args := []string{"get", kind, name, "--ignore-not-found", "-o", "name"}
+	if namespace != "" {
+		args = append(args, "-n", namespace)
+	}
+
+	out, err := exec.Command("kubectl", args...).Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) != ""
 }

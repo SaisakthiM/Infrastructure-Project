@@ -17,7 +17,7 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/online-compiler/' : '/',
+  base: command === 'build' ? '/compiler/' : '/',
   plugins: [
     figmaAssetResolver(),
     react(),

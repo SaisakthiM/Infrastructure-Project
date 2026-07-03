@@ -45,3 +45,4 @@ variable "whisper_minio_user"     {}
 variable "whisper_minio_password" { sensitive = true }
 variable "whisper_jwt_secret"     { sensitive = true }
 variable "whisper_domain" { }
+variable "compiler_domain" { }
