@@ -2,8 +2,8 @@
 
 # ⬡ Infrastructure-Project
 
-**This is a collection of all of my 10 projects and**
-**1) Containerized using docker - Because I needed to deploy it anywhere**
+**This is a collection of all of my 10 projects and <break>**
+**1) Containerized using docker - Because I needed to deploy it anywhere <break>**
 **2) Used Kubernetes for my social media app and observability**
 
 [![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastructure-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastructure-Project/releases/latest)
