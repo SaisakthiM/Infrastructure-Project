@@ -2,9 +2,7 @@
 
 # ⬡ Infrastructure-Project
 
-**This is a collection of all of my 10 projects and 
-1) Containerized using docker - Because I needed to deploy it anywhere
-2) Used Kubernetes for **
+**A production-style personal development cluster — 10 full-stack applications behind a single Nginx gateway, provisioned with Terraform + Terragrunt, orchestrated across Docker and Kubernetes, with GitOps via ArgoCD and PR automation via Atlantis.**
 
 [![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastructure-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastructure-Project/releases/latest)
 [![License](https://img.shields.io/github/license/SaisakthiM/Infrastructure-Project?style=flat-square&color=3fb950)](LICENSE)
@@ -18,8 +16,10 @@
 
 ## Table of Contents
 
-- [Architecture and Stack](#-architecture)
+- [Overview](#-overview)
+- [Architecture](#-architecture)
 - [Applications](#-applications)
+- [Tech Stack](#-tech-stack)
 - [Infrastructure Layout](#-infrastructure-layout)
 - [CLI Tool](#-cli-tool--social-platform)
 - [Getting Started](#-getting-started)
@@ -28,9 +28,33 @@
 - [FAQ](#-faq)
 - [Lessons Learned](#-lessons-learned)
 
+---
 
+## 🗺 Overview
 
-## 🏗 Architecture and Stack
+A **personal infrastructure project** — a collection of independently built, production-grade full-stack applications unified under a single Nginx reverse proxy. Every app is containerized. Infrastructure is managed as code with Terraform/Terragrunt across five purpose-scoped environments. Kubernetes-side resources are GitOps-reconciled by ArgoCD. The entire cluster is controlled by a single Go CLI binary.
+
+| | |
+|---|---|
+| **Applications** | 10 full-stack projects |
+| **Backend Languages** | Python · Java · Go · Rust · Node.js |
+| **Frontend** | React + Vite |
+| **Databases** | PostgreSQL · MySQL · SQLite · Redis · Cassandra |
+| **Message Broker** | Kafka |
+| **Object Storage** | MinIO (S3-compatible) |
+| **Containers** | Docker |
+| **Orchestration** | Kubernetes via `kind` |
+| **IaC** | Terraform + Terragrunt (5 environments) |
+| **GitOps** | ArgoCD |
+| **PR Automation** | Atlantis |
+| **CI/CD** | Jenkins |
+| **Gateway** | Nginx |
+| **AI / LLM** | Google Gemini API · Ollama |
+| **Live Domain** | [saisakthi.qzz.io](https://saisakthi.qzz.io) via Cloudflare Tunnel |
+
+---
+
+## 🏗 Architecture
 
 ```
                         ┌──────────────────────────────────────┐
@@ -87,123 +111,164 @@ All Docker containers share the `gateway-net` bridge network. The Social Media A
 ### 1 — Notes App
 | | |
 |---|---|
+| **Stack** | Django · React + Vite · PostgreSQL 16 |
 | **URL** | `/notes/` |
 
 ![Notes App](images/image-notes.png)
 
-In this app, You can create , modify and delete your notes in this. I wanted a app which has simple functions not like  paint draw etc etc so I made this
+Create, read, update, and delete notes via a Django REST Framework API backed by PostgreSQL.
 
 ---
 
 ### 2 — Bank Manager
 | | |
 |---|---|
+| **Stack** | Spring Boot (Java) · React + Vite · PostgreSQL 16 Alpine |
 | **URL** | `/bank/` |
 
 ![Bank Manager](images/image-bank.png)
 
-Here you can create Bank account and simulate how a real world bank works, simply there are 4 functions 
-Withdraw, Deposit, Loan, Repay 
-and for loan and repay there is a custom credit system and default score is 700
+Account and transaction management with Spring Data JPA, Spring MVC REST API, and a React frontend.
 
 ---
 
 ### 3 — Quiz App
 | | |
 |---|---|
+| **Stack** | React + Vite (fully static) |
 | **URL** | `/quiz/` |
 
 ![Quiz App](images/image-quiz.png)
 
-I wanted to take a quiz test for a long time, that time I was learning react, there is no backend 
-this is pure frontend Quiz app 
+A client-side CS trivia quiz — no backend, no database. Nginx serves the compiled static bundle directly.
 
 ---
 
 ### 4 — Video Uploader
 | | |
 |---|---|
+| **Stack** | Node.js · React + Vite |
 | **URL** | `/video/` |
 
 ![Video Uploader](images/image-video.png)
 
-Here you can upload videos and files and download 
-a simple cloud storage
+Upload and stream video files via Node.js. The gateway allows up to 1 GB uploads.
 
 ---
 
 ### 5 — Blog Website
 | | |
 |---|---|
+| **Stack** | Django · MySQL 8.0 · MinIO |
 | **URL** | `/blog/` |
 
 ![Blog Website](images/image-blog.png)
 
-Here you can add blogs and post about yourself. There is login features too with JWT 
+Full-featured blog with Django auth, rich post creation, image uploads to MinIO, and an admin panel at `/blog/admin/`.
 
 ---
 
 ### 6 — Hospital Management
 | | |
 |---|---|
+| **Stack** | Django · SQLite |
 | **URL** | `/hospital/` |
 
 ![Hospital Management](images/image-hospital.png)
 
-In this, You can add a patient and doctors, this is a management system 
-and for appointment, you need to have both a doctor and patient
+Patient and appointment tracking with Django admin and template-based views. Lightweight — no separate DB container.
 
 ---
 
 ### 7 — API Service
 | | |
 |---|---|
+| **Stack** | Node.js + Express · React + Vite · OpenWeatherMap API |
 | **URL** | `/api-service/` |
 
 ![API Service](images/image-api.png)
 
-Fetches weather from open-meteo, just a wrapper to it but useful instead of calling it in curl 
+Live weather data fetched via OpenWeatherMap, served through Express routes with an interactive React frontend.
 
 ---
 
 ### 8 — Document Intelligence Platform
 | | |
 |---|---|
+| **Stack** | Django · React + Vite · MySQL 8.0 · MinIO · Gemini API · Ollama |
 | **URL** | `/document/` |
 
 ![Document Intelligence Platform](images/image-document.png)
 
-You can upload documents in this and ask questions, it uses both gemini as primary and phi3 ollama model as fallback
+Upload PDFs to MinIO and run AI-powered Q&A against them via Google Gemini or local Ollama inference. Gateway timeout extended to 120 s for large inference requests.
 
 ---
 
 ### 9 — Whisper (Real-time Chat)
 | | |
 |---|---|
+| **Stack** | Rust (Axum) · React + Vite · PostgreSQL 15 · MinIO · JWT · WebSocket |
 | **URL** | `/whisper/` |
 
 ![Whisper](images/image-whisper.png)
 
-It is a whatsapp clone with minimal functionalities
-here the concept is you have a room and members, 
-you can create a room and chat with others by adding 
+WhatsApp-style real-time chat. Axum handles WebSocket messaging, JWT auth, and media uploads to MinIO. React talks to it over `/whisper/api/` and `/whisper/ws/`.
 
 ---
 
 ### 10 — Social Media App
 | | |
 |---|---|
+| **Stack** | Django · Go MS · Java MS (Kafka + Cassandra) · React · PostgreSQL 15 · Redis · MinIO |
+| **Orchestration** | Kubernetes (`kind`) — fully ArgoCD-managed |
 | **URL** | `/social/` |
 
 ![Social Media App](images/image-social.png)
 
-My most ambitious one yet
-I wanted to replicate how microservices work so I did this 
-simply, you can login and register (handled by JWT)
-then you can post, also add status (like in whatsapp)
-it looks simple but took the most time for me 
+The most complex project — a microservices platform on a Kubernetes cluster. Every Kubernetes object (Postgres, Redis, Kafka, Cassandra, MinIO, the Go/Java microservices, Django/React deployments, ingress-nginx) is plain YAML under `gitops/social-media/`, synced by ArgoCD rather than applied by Terraform. The gateway bridges to the `kind` network so `/social/` traffic proxies into the cluster's NodePort.
 
+> The full observability stack (Prometheus, Grafana, Loki, Tempo, Promtail, Jaeger, OTel Collector) is live and reachable at `/grafana/`, `/jaeger/`, and `/otel/`.
 
+---
+
+## 🛠 Tech Stack
+
+| Language | Used in |
+|----------|---------|
+| Python | Notes, Blog, Hospital, Document, Social (Django) |
+| Java | Bank Manager (Spring Boot), Social (Java microservice) |
+| Go | Social Media (Go microservice), CLI tool |
+| Rust | Whisper (Axum backend) |
+| JavaScript / Node.js | API Service, Video Uploader |
+| TypeScript / React + Vite | All frontends |
+
+| Database | Used by |
+|----------|---------|
+| PostgreSQL 16 | Notes App, Bank Manager |
+| PostgreSQL 15 | Whisper, Social Media (K8s StatefulSet) |
+| MySQL 8.0 | Blog Website, Document Intelligence Platform |
+| SQLite | Hospital Management |
+| Redis 7 | Social Media (caching layer, K8s) |
+| Cassandra 5.0 | Social Media (Java microservice, K8s StatefulSet) |
+| Kafka | Social Media (Java microservice messaging, K8s) |
+
+| Tool | Purpose |
+|------|---------|
+| Docker | Containerization of all services |
+| Terraform | Images, containers, volumes, ArgoCD bootstrap, K8s Secrets |
+| Terragrunt | Five dependency-ordered environments, per-env local backends |
+| Atlantis | PR-based `plan`/`apply` — gated on approved + mergeable |
+| Kubernetes (`kind`) | Local cluster for Social Media App + observability |
+| ArgoCD | GitOps sync of all K8s YAML — replaces `kubectl_manifest`/`helm_release` |
+| Nginx | API Gateway — single entry point for all apps |
+| MinIO | S3-compatible object storage |
+| Jenkins | Self-hosted CI/CD, git-diff-based selective build pipeline |
+| n8n | Self-hosted workflow automation |
+| Gemini API | Document Q&A |
+| Ollama | Local LLM inference |
+| Cloudflare Tunnel | Expose cluster at `saisakthi.qzz.io` without opening ports |
+
+---
 
 ## ⚙ Infrastructure Layout
 
@@ -236,12 +301,42 @@ cd environments/
 terragrunt run --all apply
 ```
 
+### ArgoCD — Kubernetes GitOps
+
+Everything that was `kubectl_manifest` or `helm_release` inside Terraform now lives as plain YAML under `gitops/`, synced by ArgoCD:
+
+- `gitops/social-media/{raw,apps}/` — Postgres, Redis, Kafka, Cassandra, MinIO, Go/Java microservices, Django/React, ingress-nginx.
+- `gitops/observability/{raw,apps}/` — kube-prometheus-stack, Loki, Tempo, Promtail, Jaeger, OTel Collector, observability Redis.
+
+`prod-social` and `prod-infra` each create exactly one Terraform-managed "app-of-apps" `Application` pointing at one of those folders. Terraform's Kubernetes job shrank to: bootstrap the cluster, install ArgoCD, create the Secrets that shouldn't be in git, and create that single pointer object.
+
+### Smart Rebuild Triggers
+
+Docker images only rebuild when source code actually changes, using a directory content hash:
+
+```hcl
+triggers = {
+  dir_sha = sha256(join("", [
+    for f in fileset(path.module, "**") :
+    filesha256("${f}")
+    if !can(regex("(__pycache__|node_modules|dist|target|\\.git)", f))
+  ]))
+}
+```
+
+### Atlantis — PR-gated Applies
+
+Each environment is its own Atlantis project. Changes auto-plan on PR. Apply requires `approved` + `mergeable`. `parallel_apply` is disabled — apply order matters, so Atlantis applies one project at a time in the order above.
+
+### Jenkins — Smart CI/CD
+
+A dockerized Jenkins instance uses `git diff` to detect changed apps and selectively test/build/deploy only what moved, grouped into sequential parallel stages (Django → Node/React → Java/Maven).
 
 ---
 
 ## 💻 CLI Tool — `social-platform`
 
-This is a GO CLI tool which makes deploying easier, it can install, configure and deploy it but not all, you will also have to do some work when needed
+A single-binary Go CLI that installs prerequisites, configures secrets, downloads infrastructure files, and drives Terragrunt — all without needing to touch terraform directly.
 
 ### Install
 
@@ -371,9 +466,76 @@ cd environments && terragrunt run --all destroy
 ```bash
 curl http://localhost/
 # {"status":"gateway running","apps":["/notes/","/bank/","/quiz/","/video/",...]}
-(When you run locally use these links)
 ```
 
+---
+
+## 📁 Project Structure
+
+```
+Infrastructure-Project/
+│
+├── environments/                  # Terragrunt environments
+│   ├── terragrunt.hcl             # root — per-env local backend
+│   ├── prod-gateway/              # gateway-net network + Nginx
+│   │   └── nginx/default.conf     # all routing lives here
+│   ├── prod-docker/               # all non-k8s app containers + volumes
+│   ├── prod-social/               # kind cluster, ArgoCD, social-media images/Secrets
+│   ├── prod-infra/                # n8n, Jenkins, node-exporter, observability app-of-apps
+│   └── prod-manage/               # gateway ↔ kind network glue
+│
+├── modules/
+│   ├── docker_app/                # shared docker_container + network module
+│   └── networking/                # wraps docker_network
+│
+├── gitops/
+│   ├── social-media/
+│   │   ├── raw/                   # extracted K8s manifests (Postgres, Redis, Kafka, …)
+│   │   └── apps/                  # ArgoCD Applications (ingress-nginx, social-workload)
+│   └── observability/
+│       ├── raw/                   # OTel NodePort, Jaeger config, ingresses
+│       └── apps/                  # ArgoCD Applications (prometheus, loki, tempo, jaeger, …)
+│
+├── images/                        # screenshots for README
+│   ├── image-intro.png
+│   ├── image-notes.png
+│   ├── image-bank.png
+│   ├── image-quiz.png
+│   ├── image-video.png
+│   ├── image-blog.png
+│   ├── image-hospital.png
+│   ├── image-api.png
+│   ├── image-document.png
+│   ├── image-social.png
+│   └── image-whisper.png
+│
+├── infra-cli/                     # Go CLI source
+│   ├── cmd/                       # Cobra commands
+│   ├── internal/
+│   │   ├── config/                # Viper config + auto-migration
+│   │   ├── deploy/                # Terragrunt wrapper + Docker state import
+│   │   ├── tui/                   # Bubble Tea TUI
+│   │   ├── secrets/               # OS keychain + tfvars generation
+│   │   └── release/               # GitHub release download + extraction
+│   └── webui/                     # Web UI server + embedded HTML
+│
+├── projects/
+│   ├── Notes App/                 # Django + React
+│   ├── Bank Manager/              # Spring Boot + React
+│   ├── Quiz App/                  # React (static)
+│   ├── Video Uploader/            # Node.js + React
+│   ├── Blog Website/              # Django + MySQL + MinIO
+│   ├── hospital_management/       # Django + SQLite
+│   ├── API Service/               # Express + React
+│   ├── Document Intelligence Platform/ # Django + MySQL + MinIO + Gemini
+│   ├── Social Media App/          # Django + Go MS + Java MS + React (K8s)
+│   └── Whatsapp/                  # Rust/Axum + React (Whisper)
+│
+├── atlantis.yaml                  # PR-based plan/apply config
+└── README.md
+```
+
+---
 
 ## ❓ FAQ
 
@@ -415,9 +577,21 @@ Via Cloudflare Tunnel. No ports opened on the router — the tunnel binary runs 
 
 **Infrastructure is the hardest part to test.** `terraform plan` lies sometimes. ArgoCD shows healthy when the app is actually broken. The only real test is applying to a real environment and watching what happens.
 
+---
+
+## 🔒 Security Notes
+
+- Real credentials (Postgres passwords, MinIO credentials, Redis passwords, API keys) are stored in the OS keychain by the CLI and written to `terraform.tfvars` files which are **never committed to git**.
+- Kubernetes Secrets for the social media app and observability stack are created directly by Terraform, not stored in any git-tracked file.
+- The Atlantis GitHub token and webhook secret are similarly stored in the keychain only.
+- The Terraform backend is `local` and paths default to `/home/saisakthi/`. For a different machine change `infra_dir` in `~/.social-platform/config.yaml` or re-run `social-platform install`.
+
+---
 
 <div align="center">
 
-Built by **Saisakthi M** &nbsp;·&nbsp; Chennai, India &nbsp;·&nbsp;
+Built by **Saisakthi M** &nbsp;·&nbsp; Chennai, India &nbsp;·&nbsp; [saisakthi.qzz.io](https://saisakthi.qzz.io)
+
+*Runs locally and in production via Cloudflare Tunnel*
 
 </div>
