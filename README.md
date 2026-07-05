@@ -75,8 +75,6 @@
           └──────────────────────────────────────────────────────────┘
 ```
 
-All Docker containers share the `gateway-net` bridge network. The Social Media App and observability stack run inside a `kind` Kubernetes cluster, reconciled by ArgoCD. The gateway container is connected to both networks via the `prod-manage` environment, so `/social/` and `/grafana/` traffic proxies seamlessly into the cluster.
-
 ![Cluster intro page](images/image-intro.png)
 
 ---
