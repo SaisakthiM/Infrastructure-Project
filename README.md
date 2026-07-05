@@ -4,7 +4,7 @@
 
 **This is a collection of all of my 10 projects and 
 1) Containerized using docker - Because I needed to deploy it anywhere
-2) Used Kubernetes for **
+2) Used Kubernetes for**
 
 [![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastructure-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastructure-Project/releases/latest)
 [![License](https://img.shields.io/github/license/SaisakthiM/Infrastructure-Project?style=flat-square&color=3fb950)](LICENSE)
