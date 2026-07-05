@@ -281,54 +281,6 @@ social-platform-webui --port 9090
 
 Provides a dark-theme browser dashboard with live SSE-streamed command output, environment selector, and a Docker state import panel.
 
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-| Tool | Version | Install |
-|------|---------|---------|
-| Docker | latest | https://docs.docker.com/desktop/ |
-| Terraform | ≥ 1.6 | https://developer.hashicorp.com/terraform/install |
-| Terragrunt | ≥ 0.59 | https://terragrunt.gruntwork.io/docs/getting-started/install/ |
-| `kind` | ≥ 0.20 | https://kind.sigs.k8s.io/docs/user/quick-start/ |
-| `kubectl` | latest | https://kubernetes.io/docs/tasks/tools/ |
-| ArgoCD CLI | latest | https://argo-cd.readthedocs.io/en/stable/cli_installation/ |
-
-### Option A — Using the CLI (recommended)
-
-```bash
-# Install the CLI
-curl -Lo social-platform \
-  https://github.com/SaisakthiM/Infrastructure-Project/releases/latest/download/social-platform-linux-amd64
-chmod +x social-platform && sudo mv social-platform /usr/local/bin/
-
-# Install prerequisites + download infra
-social-platform install
-
-# Configure secrets (stores in OS keychain, writes terraform.tfvars)
-social-platform configure
-
-# Deploy everything
-social-platform deploy
-```
-
-### Option B — Manual
-
-```bash
-git clone https://github.com/SaisakthiM/Infrastructure-Project.git
-cd Infrastructure-Project/environments
-
-# Before first apply — update gitops_repo_url in:
-#   environments/prod-social/terraform.tfvars
-#   environments/prod-infra/terraform.tfvars
-#   gitops/social-media/apps/social-workload-app.yaml
-#   gitops/observability/apps/*.yaml
-# Replace git@github.com:SaisakthiM/Coding-Project.git with your actual repo URL.
-
-terragrunt run --all apply
-```
 
 All apps will be live at `http://localhost/<app>/` once provisioned.
 
