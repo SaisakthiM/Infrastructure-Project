@@ -2,7 +2,7 @@
 
 # ⬡ Infrastructure-Project
 
-**This is a collection of all of my 10 projects all packaged into a infrastructure**
+**A self-hosted homelab that runs the applications I've built over the last few years.**
 
 
 [![Release](https://img.shields.io/github/v/release/SaisakthiM/Infrastructure-Project?style=flat-square&color=00cfcf)](https://github.com/SaisakthiM/Infrastructure-Project/releases/latest)
