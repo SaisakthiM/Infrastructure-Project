@@ -1,0 +1,2 @@
+[workspace]
+members = ["projects/CLI/Cache Cleaner/cache_cleaner/"]
