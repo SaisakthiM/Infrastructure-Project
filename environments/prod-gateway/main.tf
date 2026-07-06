@@ -46,8 +46,8 @@ module "gateway" {
       read_only      = true
     },
     {
-      host_path      = "/home/saisakthi/letsencrypt/"
-      container_path = "/etc/letsencrypt/"
+      host_path      = "/home/saisakthi/cloudflare/"
+      container_path = "/etc/cloudflare/"
       read_only      = true
     },
   ]
