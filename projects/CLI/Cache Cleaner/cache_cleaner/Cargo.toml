@@ -4,5 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+chrono = "0.4.45"
 clap = { version = "4.5.39", features = ["derive"] }
+crossterm = "0.29.0"
 owo-colors = "4.3.0"
+ratatui = "0.30.2"
+strum = "0.28.0"
+strum_macros = "0.28.0"
+style = "0.1.0"
+tabled = "0.21.0"

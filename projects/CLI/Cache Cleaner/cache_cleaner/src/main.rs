@@ -1,31 +1,24 @@
 
-use std::{fs, path::PathBuf};
+use std::{fs::{self}, path::PathBuf};
 
 use clap::Parser;
 use owo_colors::{OwoColorize};
+use tabled::{Table, settings::{Color, Style as TableStyle, object::{Columns, Rows}},};
+pub mod directory;
 
-#[derive(Debug,Parser)]
-#[command(version, about, long_about="This clean any cache in your directory")]
-struct CLI {
-    path: Option<PathBuf>
-}
 
-fn main() {
-    let cli = CLI::parse();
-    let path = cli.path.unwrap_or(PathBuf::from("."));
-    println!("{:?}", &path);
-    
-    if let Ok(does_exists) = fs::exists(&path) {
-        if does_exists {
-            print!(
-                "{:?}, this path exists", &path
-            )
-        } 
-        else {
-            print!("{:?}", "Path does not exists".red());
+
+use crossterm::event;
+
+fn main() -> std::io::Result<()> {
+    ratatui::run(|mut terminal| {
+        loop {
+            terminal.draw(|frame| frame.render_widget("Hello World!", frame.area()))?;
+            if event::read()?.is_key_press() {
+                break Ok(());
+            }
         }
-    }
-    else {
-        print!("{:?}, Error reading directory", &path);
-    }
+    })
 }
+
+
