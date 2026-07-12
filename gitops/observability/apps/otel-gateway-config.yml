@@ -1,0 +1,198 @@
+# ─────────────────────────────────────────────────────────────
+# otel-gateway-config.yml
+#
+# OpenTelemetry Collector — Docker side (gateway-net)
+#
+# Role: EDGE collector
+#   • Scrapes all Docker app backends via Prometheus receiver
+#   • Receives OTLP from Docker apps that push spans/logs
+#   • Forwards EVERYTHING to the kind-side collector via OTLP
+#     (no direct Tempo/Loki/Prometheus exports here)
+#
+# Image: otel/opentelemetry-collector-contrib
+#   (needs prometheusreceiver + otlp exporter)
+#
+# Deployed as: docker_container.otel_gateway in main.tf
+# Config mounted at: /etc/otelcol-contrib/config.yaml
+#
+# Network: gateway-net only
+#   Scrape targets use Docker container hostnames.
+#   Forwards to kind via the gateway bridge:
+#     kind-collector endpoint = otel-collector.monitoring.svc.cluster.local
+#   BUT Docker containers can't resolve k8s DNS, so we use
+#   the kind NodePort instead:
+#     social-media-control-plane:30317  (OTLP gRPC NodePort)
+# ─────────────────────────────────────────────────────────────
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:1777"
+
+receivers:
+  # ── Accept OTLP from Docker apps that push spans/logs ──────
+  # Django apps use opentelemetry-sdk with OTLP exporter
+  # Spring Boot uses micrometer-tracing-bridge-otel
+  # Go uses go.opentelemetry.io/otel
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+        cors:
+          allowed_origins: ["*"]
+
+  # ── Pull Prometheus metrics from Docker backends ────────────
+  prometheus:
+    config:
+      scrape_configs:
+
+        # nginx stub_status exporter
+        - job_name: gateway-nginx
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["nginx-exporter:9113"]
+          relabel_configs:
+            - target_label: app
+              replacement: gateway
+            - target_label: cluster
+              replacement: docker
+
+        # Django apps (django-prometheus → /metrics)
+        - job_name: notes-backend
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["notes-backend:8000"]
+          relabel_configs:
+            - target_label: app
+              replacement: notes-backend
+            - target_label: cluster
+              replacement: docker
+
+        - job_name: blog-website
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["blog-website:8000"]
+          relabel_configs:
+            - target_label: app
+              replacement: blog-website
+            - target_label: cluster
+              replacement: docker
+
+        - job_name: hospital-management
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["hospital-management:8000"]
+          relabel_configs:
+            - target_label: app
+              replacement: hospital-management
+            - target_label: cluster
+              replacement: docker
+
+        - job_name: api-service-backend
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["api-service-backend:8000"]
+          relabel_configs:
+            - target_label: app
+              replacement: api-service-backend
+            - target_label: cluster
+              replacement: docker
+
+        - job_name: document-backend
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["doc-backend:8000"]
+          relabel_configs:
+            - target_label: app
+              replacement: doc-backend
+            - target_label: cluster
+              replacement: docker
+
+        # Spring Boot Actuator
+        - job_name: bank-backend
+          scrape_interval: 15s
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ["bank-backend:8080"]
+          relabel_configs:
+            - target_label: app
+              replacement: bank-backend
+            - target_label: cluster
+              replacement: docker
+
+
+
+processors:
+  # Drop if this collector is under memory pressure
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+
+  # Batch for network efficiency toward kind
+  batch:
+    send_batch_size: 512
+    timeout: 5s
+    send_batch_max_size: 1024
+
+  # Tag every signal with its origin so the kind collector and
+  # Grafana dashboards can filter by deployment tier
+  resource:
+    attributes:
+      - action: insert
+        key: deployment.environment
+        value: docker
+      - action: insert
+        key: cluster
+        value: docker-gateway
+
+exporters:
+  # ── Forward EVERYTHING to the kind-side collector ──────────
+  # Docker containers cannot resolve cluster DNS, so we use
+  # the NodePort exposed on the kind control-plane container.
+  # NodePort 30317 is mapped in observability.tf.
+  otlp/kind:
+    endpoint: "social-media-control-plane:30317"
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 120s
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 100
+
+  # Local debug (comment out in production)
+  debug:
+    verbosity: basic
+    sampling_initial: 2
+    sampling_thereafter: 100
+
+service:
+  extensions: [health_check, pprof]
+  pipelines:
+    traces:
+      receivers:  [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters:  [otlp/kind]
+
+    metrics:
+      receivers:  [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters:  [otlp/kind]
+
+    logs:
+      receivers:  [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters:  [otlp/kind]
