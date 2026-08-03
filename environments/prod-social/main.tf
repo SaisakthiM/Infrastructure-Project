@@ -277,11 +277,27 @@ resource "helm_release" "argocd" {
   wait             = true
   timeout          = 300
 
-  # FIX: skip reinstall if already deployed (e.g. after a partial apply
-  #      wiped state but left the Helm release in the cluster).
   lifecycle {
     ignore_changes = [metadata]
   }
+
+  # FIX: ignore status.terminatingReplicas on StatefulSets — newer K8s
+  #      versions (1.33+) added this field but ArgoCD v2.13.2's vendored
+  #      schema predates it, causing a ComparisonError. This mirrors the
+  #      kubectl patch already applied live; keeping it here so a future
+  #      `terraform apply` / helm upgrade doesn't silently drop it.
+  values = [
+    yamlencode({
+      configs = {
+        cm = {
+          "resource.customizations.ignoreDifferences.apps_StatefulSet" = <<-EOT
+            jsonPointers:
+            - /status/terminatingReplicas
+          EOT
+        }
+      }
+    })
+  ]
 
   set = [
     {
