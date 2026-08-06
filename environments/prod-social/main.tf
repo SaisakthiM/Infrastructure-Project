@@ -277,9 +277,6 @@ resource "helm_release" "argocd" {
   wait             = true
   timeout          = 300
 
-  lifecycle {
-    ignore_changes = [metadata]
-  }
 
   # FIX: ignore status.terminatingReplicas on StatefulSets — newer K8s
   #      versions (1.33+) added this field but ArgoCD v2.13.2's vendored
