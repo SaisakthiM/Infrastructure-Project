@@ -421,3 +421,67 @@ resource "kubectl_manifest" "app_of_apps_social" {
           selfHeal: true
   YAML
 }
+
+
+resource "helm_release" "consul" {
+  name       = "consul"
+  repository = "https://helm.releases.hashicorp.com"
+  chart      = "consul"
+  version    = "1.6.2"          # pin to whatever's current when you run this
+  namespace  = kubernetes_namespace.consul.metadata[0].name
+
+  values = [
+    yamlencode({
+      global = { name = "consul", datacenter = "dc1" }
+      server = {
+        replicas        = 1
+        bootstrapExpect = 1
+        extraConfig     = jsonencode({
+          ui_config = {
+            enabled      = true
+            content_path = "/consul/"
+          }
+        })
+      }
+      connectInject = { enabled = false }
+      ui            = { enabled = true }
+      client        = { enabled = true }
+      syncCatalog   = {
+        enabled   = true
+        default   = true
+        toConsul  = true
+        toK8S     = false
+        k8sPrefix = ""
+      }
+    })
+  ]
+}
+
+resource "kubectl_manifest" "consul_ingress" {
+  yaml_body = <<-YAML
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: consul-ui
+      namespace: consul
+    spec:
+      ingressClassName: nginx
+      rules:
+        - http:
+            paths:
+              - path: /consul/
+                pathType: Prefix
+                backend:
+                  service:
+                    name: consul-ui
+                    port:
+                      number: 80
+              - path: /v1
+                pathType: Prefix
+                backend:
+                  service:
+                    name: consul-ui
+                    port:
+                      number: 80
+  YAML
+}
