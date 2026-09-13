@@ -1,12 +1,38 @@
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: microservice-java
-spec:
-  selector:
+  labels:
     app: microservice-java
-  ports:
-    - protocol: TCP
-      port: 8080
-      targetPort: 8080
-  type: ClusterIP
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-java
+  template:
+    metadata:
+      labels:
+        app: microservice-java
+    spec:
+      containers:
+        - name: microservice-java
+          image: socialmediaapp-microservice-java:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_CASSANDRA_CONTACT-POINTS
+              value: cassandra
+            - name: SPRING_CASSANDRA_PORT
+              value: "9042"
+            - name: SPRING_CASSANDRA_LOCAL-DATACENTER
+              value: datacenter1
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=75.0"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +29,7 @@ spec:
     spec:
       containers:
         - name: minio
-          image: socialmediaapp-minio:latest 
+          image: socialmediaapp-minio:latest
           imagePullPolicy: Never
           args:
             - server
@@ -28,12 +41,19 @@ spec:
             - containerPort: 9004
           env:
             - name: MINIO_ROOT_USER
-              value: minio+
+              valueFrom:
+                secretKeyRef:
+                  name: social-minio-secret
+                  key: MINIO_ROOT_USER
             - name: MINIO_ROOT_PASSWORD
-              value: minio123
+              valueFrom:
+                secretKeyRef:
+                  name: social-minio-secret
+                  key: MINIO_ROOT_PASSWORD
           volumeMounts:
             - name: minio-data
               mountPath: /data
       volumes:
         - name: minio-data
-          emptyDir: {}  # Change to persistent volume if needed
+          persistentVolumeClaim:
+            claimName: minio-data-pvc
