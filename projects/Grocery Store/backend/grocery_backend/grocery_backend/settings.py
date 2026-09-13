@@ -38,8 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'grocery',
-    'users'
+    'users',
+    'oauth2_provider'
 ]
 
 MIDDLEWARE = [
@@ -50,12 +50,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware'
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
+REST_FRAMEWORK = {             
+    'DEFAULT_FILTER_BACKENDS':    
+        ['django_filters.rest_framework.DjangoFilterBackend'],               
+        'DEFAULT_AUTHENTICATION_CLASSES': (                  
+            'oauth2_provider.contrib.rest_framework.OAuth2Authentication',),         
+}
+OAUTH2_PROVIDER = {             
+    # this is the dictionary of available scopes that will be visible to the user             
+    'SCOPES': {                 
+        'images': 'Create and get images',                 
+        'image': 'Read and delete an image'             
+    }         
 }
 
 ROOT_URLCONF = 'grocery_backend.urls'

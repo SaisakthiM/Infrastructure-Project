@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework_simplejwt import views as jwt_views
+from .views import *
 
 urlpatterns = [
-    path('api/token/',
-         jwt_views.TokenObtainPairView.as_view(),
-         name ='token_obtain_pair'),
-    path('api/token/refresh/',
-         jwt_views.TokenRefreshView.as_view(),
-         name ='token_refresh'),
-    path('', include('app.urls')),
+     path('user/', UserView.as_view(), name="user_view"), 
+     path('buyer/', BuyerView.as_view(), name="buyer_view"), 
+     path('seller/', SellerView.as_view(), name="seller_view"), 
+     path('cart/', CartView.as_view(), name="cart_view"), 
+     path('cart_item/', CartItemView.as_view(), name="cart_item_view"), 
+     path('item_stock/', ItemStockView.as_view(), name="item_stock"), 
+     path('api/register/', RegisterView.as_view(), name="register_view")
 ]

@@ -165,8 +165,8 @@ STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "access_key":        "minio",
-            "secret_key":        "minio123",
+            "access_key": os.environ.get("MINIO_ROOT_USER"),
+            "secret_key": os.environ.get("MINIO_ROOT_PASSWORD"),
             "bucket_name":       "media",
             "endpoint_url":      "http://minio:9000",
             "custom_domain":     "saisakthi.qzz.io/social/minio/media",
