@@ -422,6 +422,12 @@ resource "kubectl_manifest" "app_of_apps_social" {
   YAML
 }
 
+resource "kubernetes_namespace" "consul" {
+  metadata {
+    name = "consul"
+  }
+}
+
 
 resource "helm_release" "consul" {
   name       = "consul"
