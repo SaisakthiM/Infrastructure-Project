@@ -12,3 +12,7 @@ resources:
   - 09-microservice-go-deployment.yaml
   - 10-microservice-java-service.yaml
   - 11-microservice-java-deployment.yaml
+  - 12-kafka-statefulset.yaml
+  - 13-kafka-service.yaml
+  - 18-minio-service.yaml
+  - 19-minio-deployment.yaml
