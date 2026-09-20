@@ -27,10 +27,8 @@ resource "null_resource" "gateway_kind_network" {
     when    = destroy
     command = "docker network disconnect kind gateway || true"
   }
-  provisioner "local-exec" {
-    command = " docker network connect gateway-net gateway_whisper-pgdata || true"
-  }
-  provisioner "local-exec" {
-    command = " docker network connect gateway-net whisper-minio || true"
-  }
+  # The two `docker network connect gateway-net whisper-*` provisioners that
+  # used to live here are gone: whisper's Postgres/MinIO no longer exist as
+  # separate containers -- shared-postgres / shared-minio join gateway-net
+  # directly in prod-docker.
 }
