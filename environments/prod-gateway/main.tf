@@ -2,8 +2,9 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 4.4"   # Upgrade from ~> 3.0 to ~> 4.4
     }
+    # ...
   }
 }
 

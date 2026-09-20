@@ -2,17 +2,26 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 4.4"
     }
     kubectl = {
-      source = "gavinbunney/kubectl"
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.19"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
     }
     helm = {
-      source = "hashicorp/helm"
+      source  = "hashicorp/helm"
+      version = "~> 3.0"  # This allows 3.x, not just 3.0.0
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 }
-
 provider "docker" {
   # Was: unix:///home/saisakthi/.docker/desktop/docker.sock  ← default context, no images here
   host = var.docker_host
@@ -38,41 +47,65 @@ provider "kubernetes" {
 # ---------------------------------------------------------------------------
 # Build images for the social-media workload.
 # ---------------------------------------------------------------------------
-resource "docker_image" "social_django" {
-  name         = "socialmediaapp-django:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Social Media App/apps/backend")
-    dockerfile = "Dockerfile"
-  }
+resource "null_resource" "social_django_image" {
   triggers = {
+    # Rebuild when any file in the backend directory changes.
     dir_sha = sha256(join("", [
       for f in fileset("${var.projects_dir}/Social Media App/apps/backend", "**") :
       filesha256("${var.projects_dir}/Social Media App/apps/backend/${f}")
-      if !can(regex("(__pycache__|.pyc|.git)", f))
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv)/", f))
     ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+
+      IMAGE="socialmediaapp-django:latest"
+      BACKEND_DIR="${var.projects_dir}/Social Media App/apps/backend"
+
+      # Check if image already exists
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Image $IMAGE not found. Building from $BACKEND_DIR ..."
+      cd "$BACKEND_DIR"
+      docker build -t "$IMAGE" .
+      echo "Build complete."
+    EOT
   }
 }
 
-resource "docker_image" "social_frontend" {
-  name         = "socialmediaapp-frontend-prod:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Social Media App/apps/frontend")
-    dockerfile = "Dockerfile"
-  }
+resource "null_resource" "social_frontend_image" {
   triggers = {
     dir_sha = sha256(join("", [
       for f in fileset("${var.projects_dir}/Social Media App/apps/frontend", "**") :
       filesha256("${var.projects_dir}/Social Media App/apps/frontend/${f}")
-      if !can(regex("(node_modules|dist|.git)", f))
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next)/", f))
     ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="socialmediaapp-frontend:latest"
+      FRONTEND_DIR="${var.projects_dir}/Social Media App/apps/frontend"
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+      cd "$FRONTEND_DIR"
+      docker build -t "$IMAGE" .
+    EOT
   }
 }
 
 resource "docker_image" "social_go" {
   name         = "socialmediaapp-microservice-go:latest"
-  keep_locally = true
   build {
     context    = abspath("${var.projects_dir}/Social Media App/apps/microservice-go")
     dockerfile = "Dockerfile"
@@ -213,46 +246,48 @@ resource "null_resource" "kind_load_images" {
   depends_on = [
     null_resource.kind_cluster,
     null_resource.kind_images,
-    docker_image.social_django,
-    docker_image.social_frontend,
+    null_resource.social_django_image,
+    null_resource.social_frontend_image,
     docker_image.social_go,
     docker_image.social_java,
     docker_image.social_minio,
   ]
 
   triggers = {
-    django_id   = docker_image.social_django.image_id
-    frontend_id = docker_image.social_frontend.image_id
-    go_id       = docker_image.social_go.image_id
-    java_id     = docker_image.social_java.image_id
-    minio_id    = docker_image.social_minio.image_id
+    # Hash the image tags + the source hashes of the null_resources so this
+    # reruns when any image is rebuilt. image_id no longer exists for the
+    # null_resource-built images.
+    django_sha   = null_resource.social_django_image.triggers.dir_sha
+    frontend_sha = null_resource.social_frontend_image.triggers.dir_sha
+    go_id        = docker_image.social_go.image_id
+    java_id      = docker_image.social_java.image_id
+    minio_id     = docker_image.social_minio.image_id
   }
 
   provisioner "local-exec" {
-    environment = {
-      DOCKER_HOST = var.docker_host
-    }
+      environment = {
+        DOCKER_HOST = var.docker_host
+      }
 
-    command = <<-EOT
-      set -e
-      # Verify all images are actually present before trying to load them.
-      for img in socialmediaapp-django:latest \
-                 socialmediaapp-frontend-prod:latest \
-                 socialmediaapp-microservice-go:latest \
-                 socialmediaapp-microservice-java:latest \
-                 socialmediaapp-minio:latest; do
-        if ! docker image inspect "$img" > /dev/null 2>&1; then
-          echo "ERROR: $img not found in local Docker daemon — rebuild first"
-          exit 1
-        fi
-      done
-      kind load docker-image socialmediaapp-django:latest            --name social-media
-      kind load docker-image socialmediaapp-frontend-prod:latest     --name social-media
-      kind load docker-image socialmediaapp-microservice-go:latest   --name social-media
-      kind load docker-image socialmediaapp-microservice-java:latest --name social-media
-      kind load docker-image socialmediaapp-minio:latest             --name social-media
-    EOT
-  }
+      command = <<-EOT
+        set -e
+        for img in socialmediaapp-django:latest \
+                  socialmediaapp-frontend:latest \
+                  socialmediaapp-microservice-go:latest \
+                  socialmediaapp-microservice-java:latest \
+                  socialmediaapp-minio:latest; do
+          if ! docker image inspect "$img" > /dev/null 2>&1; then
+            echo "ERROR: $img not found in local Docker daemon — rebuild first"
+            exit 1
+          fi
+        done
+        kind load docker-image socialmediaapp-django:latest            --name social-media
+        kind load docker-image socialmediaapp-frontend:latest          --name social-media
+        kind load docker-image socialmediaapp-microservice-go:latest   --name social-media
+        kind load docker-image socialmediaapp-microservice-java:latest --name social-media
+        kind load docker-image socialmediaapp-minio:latest             --name social-media
+      EOT
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -277,12 +312,6 @@ resource "helm_release" "argocd" {
   wait             = true
   timeout          = 300
 
-
-  # FIX: ignore status.terminatingReplicas on StatefulSets — newer K8s
-  #      versions (1.33+) added this field but ArgoCD v2.13.2's vendored
-  #      schema predates it, causing a ComparisonError. This mirrors the
-  #      kubectl patch already applied live; keeping it here so a future
-  #      `terraform apply` / helm upgrade doesn't silently drop it.
   values = [
     yamlencode({
       configs = {
@@ -316,6 +345,21 @@ resource "helm_release" "argocd" {
   ]
 }
 
+resource "kubectl_manifest" "keda_interceptor_proxy" {
+  yaml_body = <<-YAML
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: keda-interceptor-proxy
+      namespace: argocd
+    spec:
+      type: ExternalName
+      externalName: keda-add-ons-http-interceptor-proxy.keda.svc.cluster.local
+      ports:
+        - port: 8080
+  YAML
+}
+
 resource "kubernetes_ingress_v1" "argocd_server" {
   depends_on = [helm_release.argocd]
 
@@ -337,9 +381,9 @@ resource "kubernetes_ingress_v1" "argocd_server" {
           path_type = "Prefix"
           backend {
             service {
-              name = "argocd-server"
+              name = "keda-interceptor-proxy" # <--- CHANGE THIS
               port {
-                number = 80
+                number = 8080 # <--- AND THIS
               }
             }
           }
@@ -403,7 +447,7 @@ resource "kubectl_manifest" "app_of_apps_social" {
     kind: Application
     metadata:
       name: social-media-app-of-apps
-      namespace: argocd
+      namespace: argocd        # ← ADD THIS
     spec:
       project: default
       source:
@@ -507,7 +551,6 @@ resource "helm_release" "keda" {
   chart            = "keda"
   namespace        = "keda"
   create_namespace = true
-  # Pin a version once you've checked `helm search repo kedacore/keda --versions`.
 
   set = [
     { name = "resources.operator.requests.cpu",      value = "50m" },

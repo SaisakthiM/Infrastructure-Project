@@ -2,7 +2,7 @@ FROM node:24-bookworm-slim
 
 WORKDIR /app
 
-COPY *.json .
+COPY *.json ./
 
 RUN npm install
 RUN npm install axios
