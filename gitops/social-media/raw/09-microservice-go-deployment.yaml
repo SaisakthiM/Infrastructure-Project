@@ -4,6 +4,8 @@ metadata:
   name: microservice-go
   labels:
     app: microservice-go
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
   selector:
