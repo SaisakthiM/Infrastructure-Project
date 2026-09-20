@@ -20,6 +20,13 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "400m"
+              memory: "512Mi"
           env:
             - name: SPRING_CASSANDRA_CONTACT-POINTS
               value: cassandra
