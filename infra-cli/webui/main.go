@@ -482,13 +482,13 @@ func handleInstallRun(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(jw, "Downloading infrastructure files…\n")
 
 		destDir := config.DefaultInfraDir()
-		infraDir, err := release.DownloadAndExtract(chosen, destDir)
+		infraDir, changed, err := release.DownloadAndExtract(chosen, destDir)
 		if err != nil {
 			fmt.Fprintf(jw, "error: %v\n", err)
 			job.finish(err)
 			return
 		}
-		fmt.Fprintf(jw, "Extracted to %s\n", infraDir)
+		fmt.Fprintf(jw, "Synced to %s (%d file(s) written)\n", infraDir, len(changed))
 
 		cfg, loadErr := config.Load()
 		if loadErr != nil {
@@ -906,47 +906,64 @@ func handleUpdateRun(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(jw, "Updating %s → %s\n\n", installed, latest.TagName)
 		}
 
-		// Download + extract.
+		// Download + sync.
 		destDir := config.DefaultInfraDir()
 		if cfg.InfraDir != "" {
 			destDir = cfg.InfraDir
 		}
 		fmt.Fprintf(jw, "Downloading %s…\n", latest.TagName)
-		infraDir, err := release.DownloadAndExtract(latest, destDir)
+		infraDir, changed, err := release.DownloadAndExtract(latest, destDir)
 		if err != nil {
 			fmt.Fprintf(jw, "error downloading: %v\n", err)
 			job.finish(err)
 			return
 		}
-		fmt.Fprintf(jw, "Extracted to %s\n\n", infraDir)
-
-		// Remove stale local state files — keep caches and tfvars.
-		fmt.Fprintf(jw, "Removing stale terraform.tfstate* files (keeping caches + tfvars)…\n")
-		envsDir := infraDir + "/environments"
-		count := 0
-		_ = filepath.Walk(envsDir, func(path string, info os.FileInfo, walkErr error) error {
-			if walkErr != nil || info.IsDir() {
-				return nil
-			}
-			base := filepath.Base(path)
-			isState := base == "terraform.tfstate" ||
-				strings.HasPrefix(base, "terraform.tfstate.") ||
-				strings.HasSuffix(base, ".tfstate") ||
-				strings.HasSuffix(base, ".tfstate.backup")
-			if !isState {
-				return nil
-			}
-			rel, _ := filepath.Rel(envsDir, path)
-			if rmErr := os.Remove(path); rmErr == nil {
-				fmt.Fprintf(jw, "  removed %s\n", rel)
-				count++
-			}
-			return nil
-		})
-		if count == 0 {
-			fmt.Fprintf(jw, "  No local state files found — nothing to remove.\n")
+		if len(changed) == 0 {
+			fmt.Fprintf(jw, "Already in sync — no files changed.\n\n")
 		} else {
-			fmt.Fprintf(jw, "  Removed %d state file(s)\n", count)
+			fmt.Fprintf(jw, "Synced %d file(s):\n", len(changed))
+			for _, f := range changed {
+				fmt.Fprintf(jw, "  • %s\n", f)
+			}
+			fmt.Fprintln(jw)
+		}
+
+		// Remove stale local state files, but only for environments whose
+		// .tf/.hcl actually changed in this sync — keep caches and tfvars.
+		envsDir := infraDir + "/environments"
+		affected := release.AffectedEnvironments(changed)
+		if len(affected) == 0 {
+			fmt.Fprintf(jw, "No Terraform/Terragrunt config changed — existing state left untouched.\n")
+		} else {
+			fmt.Fprintf(jw, "Config changed in: %s\n", strings.Join(affected, ", "))
+			count := 0
+			for _, env := range affected {
+				envDir := filepath.Join(envsDir, env)
+				_ = filepath.Walk(envDir, func(path string, info os.FileInfo, walkErr error) error {
+					if walkErr != nil || info.IsDir() {
+						return nil
+					}
+					base := filepath.Base(path)
+					isState := base == "terraform.tfstate" ||
+						strings.HasPrefix(base, "terraform.tfstate.") ||
+						strings.HasSuffix(base, ".tfstate") ||
+						strings.HasSuffix(base, ".tfstate.backup")
+					if !isState {
+						return nil
+					}
+					rel, _ := filepath.Rel(envsDir, path)
+					if rmErr := os.Remove(path); rmErr == nil {
+						fmt.Fprintf(jw, "  removed %s\n", rel)
+						count++
+					}
+					return nil
+				})
+			}
+			if count == 0 {
+				fmt.Fprintf(jw, "  No local state files found in the affected environment(s) — nothing to remove.\n")
+			} else {
+				fmt.Fprintf(jw, "  Removed %d state file(s)\n", count)
+			}
 		}
 		fmt.Fprintf(jw, "Caches preserved. terraform.tfvars preserved.\n\n")
 		if req.SkipClean {
