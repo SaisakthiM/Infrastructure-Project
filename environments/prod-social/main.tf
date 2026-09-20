@@ -491,3 +491,90 @@ resource "kubectl_manifest" "consul_ingress" {
                       number: 80
   YAML
 }
+# ---------------------------------------------------------------------------
+# KEDA + HTTP add-on.
+#
+# Kept here (not gitops/) because it's cluster infrastructure Terraform
+# already owns directly in this file -- same category as helm_release.argocd
+# and helm_release.consul above, not an application workload. Light resource
+# footprint on purpose, since today's pass is about cutting overhead, not
+# adding more of it.
+# ---------------------------------------------------------------------------
+resource "helm_release" "keda" {
+  depends_on       = [null_resource.kind_cluster]
+  name             = "keda"
+  repository       = "https://kedacore.github.io/charts"
+  chart            = "keda"
+  namespace        = "keda"
+  create_namespace = true
+  # Pin a version once you've checked `helm search repo kedacore/keda --versions`.
+
+  set = [
+    { name = "resources.operator.requests.cpu",      value = "50m" },
+    { name = "resources.operator.requests.memory",   value = "128Mi" },
+    { name = "resources.operator.limits.cpu",        value = "200m" },
+    { name = "resources.operator.limits.memory",     value = "256Mi" },
+    { name = "resources.metricServer.requests.cpu",    value = "50m" },
+    { name = "resources.metricServer.requests.memory", value = "128Mi" },
+    { name = "resources.metricServer.limits.cpu",      value = "200m" },
+    { name = "resources.metricServer.limits.memory",   value = "256Mi" },
+  ]
+}
+
+resource "helm_release" "keda_http_add_on" {
+  depends_on = [helm_release.keda]
+  name       = "http-add-on"
+  repository = "https://kedacore.github.io/charts"
+  chart      = "keda-add-ons-http"
+  namespace  = "keda"
+}
+
+# ---------------------------------------------------------------------------
+# HTTPScaledObject coverage.
+#
+# Everything under gitops/social-media/apps and gitops/observability/apps
+# (app_of_apps_social / app_of_apps_observability above) is ArgoCD-managed --
+# deliberately excluded, since those workloads belong to that sync loop, not
+# to a resource this state should be reaching into individually.
+#
+# That leaves, across every .tf file in this repo, exactly one safe
+# candidate: argocd-server itself (helm_release.argocd + the ingress right
+# above). Everything else that isn't ArgoCD-managed is either:
+#   - a plain Docker container on the host (n8n, jenkins, atlantis, the
+#     docker_app-module backends, etc.) -- HTTPScaledObject is a Kubernetes
+#     CRD, it has nothing to attach to there, or
+#   - Consul, which IS in-cluster, but its UI is served by the "server"
+#     StatefulSet's own Raft-voting pods -- scaling that to/from zero risks
+#     the quorum, so it's left alone on purpose.
+#
+# argocd-server is stateless (state lives in etcd + redis, not in the
+# server pod), so scale-to-zero when nobody's looking at the UI is safe.
+# ---------------------------------------------------------------------------
+resource "kubectl_manifest" "httpscaledobject_argocd_server" {
+  depends_on = [
+    kubernetes_ingress_v1.argocd_server,
+    helm_release.keda_http_add_on,
+  ]
+  yaml_body = <<-YAML
+    apiVersion: http.keda.sh/v1alpha1
+    kind: HTTPScaledObject
+    metadata:
+      name: argocd-server
+      namespace: argocd
+    spec:
+      pathPrefixes:
+        - /argocd
+      scaleTargetRef:
+        name: argocd-server
+        kind: Deployment
+        service: argocd-server
+        port: 80
+      replicas:
+        min: 0
+        max: 2
+      scalingMetric:
+        concurrency:
+          targetValue: 10
+      scaledownPeriod: 600
+  YAML
+}

@@ -42,6 +42,9 @@ resource "docker_image" "otel_gateway" {
 }
 
 resource "docker_container" "otel_gateway" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
   name    = "otel-gateway"
   image   = docker_image.otel_gateway.image_id
   restart = "unless-stopped"
@@ -95,6 +98,13 @@ resource "docker_container" "otel_gateway" {
 }
 
 module "node_exporter" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 64
+  cpus   = "0.1"
   source        = "../../modules/docker_app"
   name          = "node-exporter"
   image         = "prom/node-exporter:latest"
@@ -124,6 +134,9 @@ resource "docker_volume" "n8n_data" {
 }
 
 resource "docker_container" "n8n" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
   name  = "n8n"
   image = "n8nio/n8n:latest"
   # depends_on = [module.gateway] removed -- module.gateway lives in
@@ -155,6 +168,9 @@ resource "docker_image" "jenkins" {
 }
 
 resource "docker_container" "jenkins" {
+  # --- resource optimization pass ---
+  memory = 1536   # MB, hard ceiling
+  cpus   = "1.0"
   name    = "jenkins"
   image   = docker_image.jenkins.image_id
   restart = "unless-stopped"
@@ -193,6 +209,9 @@ resource "docker_image" "jenkins_agent" {
 }
 
 resource "docker_container" "jenkins_agent" {
+  # --- resource optimization pass ---
+  memory = 1024   # MB, hard ceiling
+  cpus   = "1.0"
   name    = "jenkins-agent"
   image   = docker_image.jenkins_agent.image_id
   restart = "unless-stopped"
@@ -297,6 +316,9 @@ resource "null_resource" "atlantis_ssh_key" {
 }
 
 resource "docker_container" "atlantis" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
   name    = "atlantis"
   image   = docker_image.atlantis.image_id
   restart = "unless-stopped"

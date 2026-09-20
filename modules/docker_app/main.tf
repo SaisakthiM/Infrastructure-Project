@@ -37,4 +37,6 @@ resource "docker_container" "app" {
       read_only = mounts.value.read_only
     }
   }
+  memory = var.memory
+  cpus   = var.cpus
 }

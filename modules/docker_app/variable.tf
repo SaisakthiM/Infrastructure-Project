@@ -33,3 +33,15 @@ variable "named_volumes" {
   }))
   default = []
 }
+
+variable "memory" {
+  description = "Hard memory ceiling in MB. Leave unset for no limit."
+  type        = number
+  default     = null
+}
+
+variable "cpus" {
+  description = "CPU cap, e.g. \"0.5\" for half a core. Leave unset for no limit."
+  type        = string
+  default     = null
+}

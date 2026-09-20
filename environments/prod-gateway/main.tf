@@ -32,6 +32,13 @@ resource "docker_volume" "intro_dist" { name = "gateway_intro-dist" }
 resource "docker_volume" "record_dist" { name = "gateway_record-dist" }
 
 module "gateway" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 192
+  cpus   = "0.3"
   source        = "../../modules/docker_app"
   name          = "gateway"
   image         = "nginx:alpine"
@@ -121,6 +128,13 @@ resource "null_resource" "record_page" {
 }
 
 module "nginx_exporter" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 64
+  cpus   = "0.1"
   source        = "../../modules/docker_app"
   name          = "nginx-exporter"
   image         = "nginx/nginx-prometheus-exporter:latest"

@@ -22,6 +22,6 @@ public class HospitalTest {
     WebDriver driver;
     @BeforeEach 
     void setup() {
-
+        
     };
 }
