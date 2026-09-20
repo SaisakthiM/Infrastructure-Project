@@ -55,23 +55,27 @@ variable "shared_pg_admin_password" {
   description = "Superuser ('postgres') password of the shared Postgres. Only the init container / you use it."
   type        = string
   sensitive   = true
+  default = "saipostgres"
 }
 
 variable "shared_mysql_root_password" {
   description = "root password of the shared MySQL. Only the init container / you use it. Must be a NEW value (blog/doc used to connect as root with their own password)."
   type        = string
   sensitive   = true
+  default = "saipostgres"
 }
 
 variable "shared_minio_root_user" {
   description = "MinIO root user of the shared MinIO. Must differ from every app's *_minio_user."
   type        = string
+  default = "minioadmins"
 }
 
 variable "shared_minio_root_password" {
   description = "MinIO root password of the shared MinIO (min 8 chars)."
   type        = string
   sensitive   = true
+  default = "minioadmins"
 }
 
 # MySQL app users. blog/doc used to connect as root; they now get their own
@@ -100,4 +104,5 @@ variable "doc_minio_buckets" {
 variable "whisper_minio_buckets" {
   description = "Buckets the whisper backend uses. No default on purpose -- check with: docker exec whisper-minio ls /data"
   type        = list(string)
+  default = [ "whisper-minio" ]
 }

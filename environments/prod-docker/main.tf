@@ -2,8 +2,9 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 4.4"   # Upgrade from ~> 3.0 to ~> 4.4
     }
+    # ...
   }
 }
 
@@ -85,21 +86,21 @@ resource "docker_image" "bank_backend" {
   }
 }
 
-resource "docker_image" "bank_frontend_build" {
-  name         = "bank-frontend-build:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Bank Manager/frontend")
-    dockerfile = "Dockerfile.prod"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Bank Manager/frontend", "**") :
-      filesha256("${var.projects_dir}/Bank Manager/frontend/${f}")
-      if !can(regex("(\\.git|node_modules|dist)", f))
-    ]))
-  }
-}
+# resource "docker_image" "bank_frontend_build" {
+#   name         = "bank-frontend-build:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Bank Manager/frontend")
+#     dockerfile = "Dockerfile.prod"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Bank Manager/frontend", "**") :
+#       filesha256("${var.projects_dir}/Bank Manager/frontend/${f}")
+#       if !can(regex("(\\.git|node_modules|dist)", f))
+#     ]))
+#   }
+# }
 
 resource "docker_image" "blog_website" {
   name         = "blogsite:latest"
@@ -117,21 +118,21 @@ resource "docker_image" "blog_website" {
   }
 }
 
-resource "docker_image" "hospital_management" {
-  name         = "hospital_management:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/hospital_management")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/hospital_management", "**") :
-      filesha256("${var.projects_dir}/hospital_management/${f}")
-      if !can(regex("(\\.git|__pycache__|\\.pyc|staticfiles|media)", f))
-    ]))
-  }
-}
+# resource "docker_image" "hospital_management" {
+#   name         = "hospital_management:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/hospital_management")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/hospital_management", "**") :
+#       filesha256("${var.projects_dir}/hospital_management/${f}")
+#       if !can(regex("(\\.git|__pycache__|\\.pyc|staticfiles|media)", f))
+#     ]))
+#   }
+# }
 
 resource "docker_image" "quiz_frontend_build" {
   name         = "quiz-frontend-build:latest"
@@ -149,21 +150,21 @@ resource "docker_image" "quiz_frontend_build" {
   }
 }
 
-resource "docker_image" "video_backend" {
-  name         = "video-uploader-backend:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Video Uploader/Main/backend")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Video Uploader/Main/backend", "**") :
-      filesha256("${var.projects_dir}/Video Uploader/Main/backend/${f}")
-      if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
-    ]))
-  }
-}
+# resource "docker_image" "video_backend" {
+#   name         = "video-uploader-backend:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Video Uploader/Main/backend")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Video Uploader/Main/backend", "**") :
+#       filesha256("${var.projects_dir}/Video Uploader/Main/backend/${f}")
+#       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
+#     ]))
+#   }
+# }
 
 resource "docker_image" "video_frontend_build" {
   name         = "video-frontend-build:latest"
@@ -213,21 +214,21 @@ resource "docker_image" "notes_backend" {
   }
 }
 
-resource "docker_image" "api_service_backend" {
-  name         = "api-service-backend:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/API Service/backend")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/API Service/backend", "**") :
-      filesha256("${var.projects_dir}/API Service/backend/${f}")
-      if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
-    ]))
-  }
-}
+# resource "docker_image" "api_service_backend" {
+#   name         = "api-service-backend:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/API Service/backend")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${trimsuffix(var.projects_dir, "/")}/API Service/backend", "**") :
+#       filesha256("${trimsuffix(var.projects_dir, "/")}/API Service/backend/${f}")
+#       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
+#     ]))
+#   }
+# }
 
 resource "docker_image" "api_service_frontend_build" {
   name         = "api-service-frontend:latest"
@@ -293,21 +294,21 @@ resource "docker_image" "whisper_backend" {
   }
 }
 
-resource "docker_image" "whisper_frontend" {
-  name         = "whisper-frontend:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Whatsapp/whatsapp-frontend")
-    dockerfile = "Dockerfile.prod"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Whatsapp/whatsapp-frontend", "**") :
-      filesha256("${var.projects_dir}/Whatsapp/whatsapp-frontend/${f}")
-      if !can(regex("(\\.git|node_modules|dist)", f))
-    ]))
-  }
-}
+# resource "docker_image" "whisper_frontend" {
+#   name         = "whisper-frontend:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Whatsapp/whatsapp-frontend")
+#     dockerfile = "Dockerfile.prod"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Whatsapp/whatsapp-frontend", "**") :
+#       filesha256("${var.projects_dir}/Whatsapp/whatsapp-frontend/${f}")
+#       if !can(regex("(\\.git|node_modules|dist)", f))
+#     ]))
+#   }
+# }
 
 resource "docker_image" "compiler_frontend" {
   name         = "compiler-frontend:latest"
@@ -400,7 +401,8 @@ resource "docker_container" "whisper_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "whisper-frontend-build"
-  image                 = docker_image.whisper_frontend.name
+  image                 = "whisper-frontend:latest"
+  depends_on = [null_resource.whisper_frontend_image]
   destroy_grace_seconds = 30
   must_run              = true
   networks_advanced { name = "gateway-net" }
@@ -444,7 +446,8 @@ resource "docker_container" "bank_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "bank-frontend-build"
-  image                 = docker_image.bank_frontend_build.name
+  image                 = "bank-frontend-build:latest"
+  depends_on = [null_resource.bank_frontend_build_image]
   destroy_grace_seconds = 30
   must_run              = true
   networks_advanced { name = "gateway-net" }
@@ -588,7 +591,8 @@ module "video_backend" {
   cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "video-uploader-backend"
-  image         = docker_image.video_backend.name
+  image         = "video-uploader-backend:latest"
+  depends_on = [null_resource.video_backend_image]
   internal_port = 8080
   external_port = 0
   network       = "gateway-net"
@@ -621,7 +625,7 @@ module "hospital_management" {
   cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "hospital-management"
-  image         = docker_image.hospital_management.name
+  image         = "hospital_management:latest"
   internal_port = 8000
   external_port = 0
   network       = "gateway-net"
@@ -674,7 +678,8 @@ module "api_service_backend" {
   cpus   = "0.3"
   source        = "../../modules/docker_app"
   name          = "api-service-backend"
-  image         = docker_image.api_service_backend.name
+  image         = "api-service-backend:latest"
+  depends_on = [null_resource.api_service_backend_image]
   internal_port = 8000
   external_port = 0
   network       = "gateway-net"
@@ -831,4 +836,164 @@ resource "docker_container" "selenium_java" {
 
   networks_advanced { name = "gateway-net" }
   depends_on = [docker_container.selenium_chrome]
+}
+
+# ---------------------------------------------------------------------------
+# Converted from docker_image.api_service_backend — provider build-context bug workaround.
+# ---------------------------------------------------------------------------
+resource "null_resource" "api_service_backend_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/API Service/backend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/API Service/backend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="api-service-backend:latest"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/API Service/backend"
+
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Building $IMAGE from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE" .
+      echo "Build complete."
+    EOT
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Converted from docker_image.bank_frontend_build — provider build-context bug workaround.
+# ---------------------------------------------------------------------------
+resource "null_resource" "bank_frontend_build_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/Bank Manager/frontend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/Bank Manager/frontend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="bank-frontend-build:latest"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Bank Manager/frontend"
+
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Building $IMAGE from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE" .
+      echo "Build complete."
+    EOT
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Converted from docker_image.video_backend — provider build-context bug workaround.
+# ---------------------------------------------------------------------------
+resource "null_resource" "video_backend_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/Video Uploader/Main/backend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/Video Uploader/Main/backend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="video-uploader-backend:latest"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Video Uploader/Main/backend"
+
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Building $IMAGE from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE" .
+      echo "Build complete."
+    EOT
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Converted from docker_image.whisper_frontend — provider build-context bug workaround.
+# ---------------------------------------------------------------------------
+resource "null_resource" "whisper_frontend_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/Whatsapp/whatsapp-frontend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/Whatsapp/whatsapp-frontend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="whisper-frontend:latest"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Whatsapp/whatsapp-frontend"
+
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Building $IMAGE from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE" -f Dockerfile.prod .
+      echo "Build complete."
+    EOT
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Converted from docker_image.hospital_management.
+# ---------------------------------------------------------------------------
+resource "null_resource" "hospital_management_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/hospital_management", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/hospital_management/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="hospital_management:latest"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/hospital_management"
+
+      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Image $IMAGE already exists, skipping build."
+        exit 0
+      fi
+
+      echo "Building $IMAGE from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE" .
+      echo "Build complete."
+    EOT
+  }
 }

@@ -2,14 +2,26 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 4.4"
     }
     kubectl = {
-      source = "gavinbunney/kubectl"
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.19"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.14"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 }
-
 
 
 provider "docker" {
@@ -20,6 +32,8 @@ provider "kubectl" {
   config_path    = "~/.kube/config"
   config_context = "kind-social-media"
 }
+
+
 
 locals {
   # Still needed for otel-gateway-config.yml's bind mount below. Everything
