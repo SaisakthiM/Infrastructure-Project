@@ -4,15 +4,16 @@ metadata:
   name: social-media-frontend-ingress
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   ingressClassName: nginx
   rules:
-  - http:
-      paths:
-      - path: /social(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-prod
-            port:
-              number: 80
+    - http:
+        paths:
+          - path: /social(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: frontend-prod
+                port:
+                  number: 80

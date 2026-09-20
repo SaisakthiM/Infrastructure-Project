@@ -3,9 +3,11 @@ kind: Service
 metadata:
   name: redis
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   selector:
     app: redis
   ports:
-  - port: 6379
-    targetPort: 6379
+    - port: 6379
+      targetPort: 6379
