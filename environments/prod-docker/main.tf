@@ -318,6 +318,9 @@ resource "docker_image" "compiler_frontend" {
 }
 
 resource "docker_container" "notes_postgres" {
+  # --- resource optimization pass ---
+  memory = 384   # MB, hard ceiling
+  cpus   = "0.4"
   name                  = "notes-postgres"
   image                 = "postgres:16"
   restart               = "always"
@@ -337,6 +340,13 @@ resource "docker_container" "notes_postgres" {
 }
 
 module "notes_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 384
+  cpus   = "0.4"
   source        = "../../modules/docker_app"
   name          = "notes-backend"
   image         = docker_image.notes_backend.name
@@ -352,6 +362,9 @@ module "notes_backend" {
 }
 
 resource "docker_container" "notes_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "notes-frontend-build"
   image                 = docker_image.notes_frontend_build.name
   destroy_grace_seconds = 30
@@ -365,6 +378,9 @@ resource "docker_container" "notes_frontend_build" {
 }
 
 resource "docker_container" "whisper-postgres" {
+  # --- resource optimization pass ---
+  memory = 384   # MB, hard ceiling
+  cpus   = "0.4"
   
   name  = "gateway_whisper-pgdata"
   image = "postgres:15-alpine"
@@ -383,6 +399,9 @@ resource "docker_container" "whisper-postgres" {
 }
 
 resource "docker_container" "whisper_minio" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
   name  = "whisper-minio"
   image = "minio/minio:latest"
   
@@ -401,6 +420,13 @@ resource "docker_container" "whisper_minio" {
 }
 
 module "whisper_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 384
+  cpus   = "0.4"
   source        = "../../modules/docker_app"
   name    =  "whisper_backend"
   image = docker_image.whisper_backend.name
@@ -432,6 +458,9 @@ resource "null_resource" "connect_minio" {
 }
 
 resource "docker_container" "whisper_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "whisper-frontend-build"
   image                 = docker_image.whisper_frontend.name
   destroy_grace_seconds = 30
@@ -448,6 +477,9 @@ resource "docker_container" "whisper_frontend_build" {
 }
 
 resource "docker_container" "bank_postgres" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
   name                  = "bank-postgres"
   image                 = "postgres:16-alpine"
   destroy_grace_seconds = 30
@@ -467,6 +499,13 @@ resource "docker_container" "bank_postgres" {
 }
 
 module "bank_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 1024
+  cpus   = "1.0"
   source        = "../../modules/docker_app"
   name          = "bank-backend"
   image         = docker_image.bank_backend.name
@@ -484,6 +523,9 @@ module "bank_backend" {
 }
 
 resource "docker_container" "bank_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "bank-frontend-build"
   image                 = docker_image.bank_frontend_build.name
   destroy_grace_seconds = 30
@@ -497,6 +539,9 @@ resource "docker_container" "bank_frontend_build" {
 }
 
 resource "docker_container" "quiz_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "quiz-frontend-build"
   image                 = docker_image.quiz_frontend_build.name
   destroy_grace_seconds = 30
@@ -543,6 +588,9 @@ resource "docker_image" "compiler_server" {
 }
 
 resource "docker_container" "compiler_db" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
   name                  = "compiler-db"
   image                 = docker_image.compiler_db.image_id
   restart               = "unless-stopped"
@@ -570,6 +618,13 @@ resource "docker_container" "compiler_db" {
 }
 
 module "compiler_server" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 512
+  cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "compiler-server"
   image         = docker_image.compiler_server.image_id
@@ -586,6 +641,9 @@ module "compiler_server" {
 }
 
 resource "docker_container" "compiler_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "compiler-frontend-build"
   image                 = docker_image.compiler_frontend.name
   destroy_grace_seconds = 30
@@ -604,6 +662,13 @@ resource "docker_container" "compiler_frontend_build" {
 
 
 module "video_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 512
+  cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "video-uploader-backend"
   image         = docker_image.video_backend.name
@@ -614,6 +679,9 @@ module "video_backend" {
 }
 
 resource "docker_container" "video_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "video-frontend-build"
   image                 = docker_image.video_frontend_build.name
   destroy_grace_seconds = 30
@@ -627,6 +695,13 @@ resource "docker_container" "video_frontend_build" {
 }
 
 module "hospital_management" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 512
+  cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "hospital-management"
   image         = docker_image.hospital_management.name
@@ -636,6 +711,9 @@ module "hospital_management" {
 }
 
 resource "docker_container" "blog_db" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
   name    = "blog-db"
   image   = "mysql:8.0"
   restart = "always"
@@ -659,6 +737,9 @@ resource "docker_container" "blog_db" {
 }
 
 resource "docker_container" "blog_minio" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
   name    = "blog-minio"
   image   = "quay.io/minio/minio:latest"
   restart = "always"
@@ -683,6 +764,9 @@ resource "docker_container" "blog_minio" {
 }
 
 resource "docker_container" "blog_minio_init" {
+  # --- resource optimization pass ---
+  memory = 64   # MB, hard ceiling
+  cpus   = "0.1"
   name       = "blog-minio-init"
   image      = "quay.io/minio/mc:latest"
   must_run   = false
@@ -703,6 +787,13 @@ resource "docker_container" "blog_minio_init" {
 }
 
 module "blog_website" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 512
+  cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "blog-website"
   image         = docker_image.blog_website.name
@@ -730,6 +821,13 @@ module "blog_website" {
 }
 
 module "api_service_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 256
+  cpus   = "0.3"
   source        = "../../modules/docker_app"
   name          = "api-service-backend"
   image         = docker_image.api_service_backend.name
@@ -742,6 +840,9 @@ module "api_service_backend" {
 }
 
 resource "docker_container" "api_service_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "api-service-frontend-build"
   image                 = docker_image.api_service_frontend_build.name
   must_run              = false
@@ -756,6 +857,9 @@ resource "docker_container" "api_service_frontend_build" {
 }
 
 resource "docker_container" "doc_mysql" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
   name    = "doc-mysql"
   image   = "mysql:8.0"
   restart = "always"
@@ -779,6 +883,9 @@ resource "docker_container" "doc_mysql" {
 }
 
 resource "docker_container" "doc_minio" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
   name                  = "doc-minio"
   image                 = "quay.io/minio/minio:latest"
   restart               = "always"
@@ -798,6 +905,13 @@ resource "docker_container" "doc_minio" {
 }
 
 module "doc_backend" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 768
+  cpus   = "0.6"
   source        = "../../modules/docker_app"
   name          = "doc-backend"
   image         = docker_image.doc_backend.name
@@ -825,6 +939,9 @@ module "doc_backend" {
 }
 
 resource "docker_container" "doc_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
   name                  = "doc-frontend-build"
   image                 = docker_image.doc_frontend_build.name
   must_run              = false
@@ -839,3 +956,79 @@ resource "docker_container" "doc_frontend_build" {
 }
 
 
+
+
+# ---------------------------------------------------------------------------
+# Selenium (Chrome grid) for local test runs -- built from the compose at
+# ${var.projects_dir}/Selenium (services: "selenium" = selenium/standalone-chrome,
+# "java" = the test runner built from Selenium/java/selenium/Dockerfile).
+#
+# Capped at 8 cores / 12GB combined so your own Chrome + VS Code still have
+# headroom on the host -- see the resource-optimization thread. shm_size
+# mirrors the compose file's `shm_size: 2gb`; Chrome needs real /dev/shm or
+# it crashes mid-session under any real load.
+# ---------------------------------------------------------------------------
+resource "docker_volume" "selenium_chrome_profiles" {
+  # Declared in the source docker-compose.yml (top-level `volumes:
+  # chrome_profiles`) but not actually mounted by either service there --
+  # kept here 1:1 with the compose for now. Add a `volumes { }` block below
+  # if you start mounting it.
+  name = "selenium_chrome-profiles"
+}
+
+resource "docker_image" "selenium_chrome" {
+  name         = "selenium/standalone-chrome:latest"
+  keep_locally = true
+}
+
+resource "docker_container" "selenium_chrome" {
+  name    = "selenium"
+  image   = docker_image.selenium_chrome.image_id
+  restart = "unless-stopped"
+
+  # Chrome/webdriver is the heavy half of the 8-core/12GB budget.
+  memory   = 8192   # MB
+  cpus     = "6"
+  shm_size = 2048   # MB == compose's `shm_size: 2gb`
+
+  ports {
+    internal = 4444
+    external = 4444
+  }
+  ports {
+    internal = 7900   # noVNC -- drop this block if you don't need to watch it run
+    external = 7900
+  }
+
+  networks_advanced { name = "gateway-net" }
+}
+
+resource "docker_image" "selenium_java" {
+  name         = "selenium-java-runner:latest"
+  keep_locally = true
+  build {
+    context    = abspath("${var.projects_dir}/Selenium/java/selenium")
+    dockerfile = "Dockerfile"
+  }
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/Selenium/java/selenium", "**") :
+      filesha256("${var.projects_dir}/Selenium/java/selenium/${f}")
+      if !can(regex("(\\.git|target|__pycache__)", f))
+    ]))
+  }
+}
+
+resource "docker_container" "selenium_java" {
+  name     = "selenium-java-runner"
+  image    = docker_image.selenium_java.image_id
+  must_run = true
+  restart  = "unless-stopped"
+
+  # Remainder of the 8-core/12GB budget -- 6+2=8 cores, 8192+4096=12288 MB.
+  memory = 4096
+  cpus   = "2"
+
+  networks_advanced { name = "gateway-net" }
+  depends_on = [docker_container.selenium_chrome]
+}
