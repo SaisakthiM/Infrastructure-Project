@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: socialmediaapp-frontend-prod:latest
+          image: socialmediaapp-frontend:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 80
