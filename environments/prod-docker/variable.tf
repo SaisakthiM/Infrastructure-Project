@@ -46,3 +46,58 @@ variable "whisper_minio_password" { sensitive = true }
 variable "whisper_jwt_secret"     { sensitive = true }
 variable "whisper_domain" { }
 variable "compiler_domain" { }
+
+# ─── SHARED DATA TIER (see shared-data.tf) ────────────────────
+# Admin credentials for the three shared instances. Apps never use these --
+# each app gets its own least-privilege user built from the per-app
+# variables above (blog_db_password, notes_db_user, ...).
+variable "shared_pg_admin_password" {
+  description = "Superuser ('postgres') password of the shared Postgres. Only the init container / you use it."
+  type        = string
+  sensitive   = true
+}
+
+variable "shared_mysql_root_password" {
+  description = "root password of the shared MySQL. Only the init container / you use it. Must be a NEW value (blog/doc used to connect as root with their own password)."
+  type        = string
+  sensitive   = true
+}
+
+variable "shared_minio_root_user" {
+  description = "MinIO root user of the shared MinIO. Must differ from every app's *_minio_user."
+  type        = string
+}
+
+variable "shared_minio_root_password" {
+  description = "MinIO root password of the shared MinIO (min 8 chars)."
+  type        = string
+  sensitive   = true
+}
+
+# MySQL app users. blog/doc used to connect as root; they now get their own
+# user, with the existing blog_db_password / doc_db_password as its password.
+variable "blog_db_user" {
+  type    = string
+  default = "blog"
+}
+
+variable "doc_db_user" {
+  type    = string
+  default = "doc"
+}
+
+# Buckets each app may touch. The MinIO policy is scoped to exactly these.
+variable "blog_minio_buckets" {
+  type    = list(string)
+  default = ["blog-media"]
+}
+
+variable "doc_minio_buckets" {
+  type    = list(string)
+  default = ["documents"]
+}
+
+variable "whisper_minio_buckets" {
+  description = "Buckets the whisper backend uses. No default on purpose -- check with: docker exec whisper-minio ls /data"
+  type        = list(string)
+}

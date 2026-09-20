@@ -18,6 +18,15 @@ provider "docker" {
 # the network actually exists; nothing in here can express that as a real
 # Terraform dependency, since the resource doesn't exist in this state.
 
+# ---------------------------------------------------------------------------
+# LEGACY data volumes (notes_pgdata, bank_pgdata, whisper_pgdata, blog_mysql,
+# doc_mysql, blog_minio, doc_minio, whisper_minio_data): no container mounts
+# them any more -- the shared-* instances in shared-data.tf replaced them.
+# They are deliberately still declared so `apply` does NOT delete your only
+# copy of the old data. Once you've verified the migration (and taken a
+# backup), remove the blocks and apply to delete them.
+# ---------------------------------------------------------------------------
+
 resource "docker_volume" "notes_dist" { name = "gateway_notes-dist" }
 
 resource "docker_volume" "bank_dist" { name = "gateway_bank-dist" }
@@ -317,28 +326,6 @@ resource "docker_image" "compiler_frontend" {
   }
 }
 
-resource "docker_container" "notes_postgres" {
-  # --- resource optimization pass ---
-  memory = 384   # MB, hard ceiling
-  cpus   = "0.4"
-  name                  = "notes-postgres"
-  image                 = "postgres:16"
-  restart               = "always"
-  destroy_grace_seconds = 30
-  must_run              = true
-  env = [
-    "POSTGRES_DB=${var.notes_db_name}",
-    "POSTGRES_USER=${var.notes_db_user}",
-    "POSTGRES_PASSWORD=${var.notes_db_password}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.notes_pgdata.name
-    target = "/var/lib/postgresql/data"
-    type   = "volume"
-  }
-}
-
 module "notes_backend" {
   # --- resource optimization pass ---
   # NOTE: modules/docker_app must declare `memory` (number, MB) and
@@ -357,8 +344,9 @@ module "notes_backend" {
     "DATABASE_NAME=${var.notes_db_name}",
     "DATABASE_USER=${var.notes_db_user}",
     "DATABASE_PASSWORD=${var.notes_db_password}",
-    "DATABASE_HOST=notes-postgres",
+    "DATABASE_HOST=${local.shared_pg_host}",
   ]
+  depends_on = [docker_container.shared_postgres_init]
 }
 
 resource "docker_container" "notes_frontend_build" {
@@ -374,48 +362,6 @@ resource "docker_container" "notes_frontend_build" {
     source = docker_volume.notes_dist.name
     target = "/dist"
     type   = "volume"
-  }
-}
-
-resource "docker_container" "whisper-postgres" {
-  # --- resource optimization pass ---
-  memory = 384   # MB, hard ceiling
-  cpus   = "0.4"
-  
-  name  = "gateway_whisper-pgdata"
-  image = "postgres:15-alpine"
-  
-  env = [
-    "POSTGRES_USER=${var.whisper_db_user}",
-    "POSTGRES_PASSWORD=${var.whisper_db_password}",
-    "POSTGRES_DB=${var.whisper_db_database}"
-  ]
-
-  # Map the volume here
-  volumes {
-    volume_name    = docker_volume.whisper_pgdata.name
-    container_path = "/var/lib/postgresql/data"
-  }
-}
-
-resource "docker_container" "whisper_minio" {
-  # --- resource optimization pass ---
-  memory = 256   # MB, hard ceiling
-  cpus   = "0.3"
-  name  = "whisper-minio"
-  image = "minio/minio:latest"
-  
-  command = ["server", "/data", "--console-address", ":9001"]
-
-  env = [
-    "MINIO_ROOT_USER=${var.whisper_minio_user}",
-    "MINIO_ROOT_PASSWORD=${var.whisper_minio_password}"
-  ]
-
-  # Map the volume here
-  volumes {
-    volume_name    = docker_volume.whisper_minio_data.name
-    container_path = "/data"
   }
 }
 
@@ -435,26 +381,18 @@ module "whisper_backend" {
   network       = "gateway-net"
 
   env = [
-    "DATABASE_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@gateway_whisper-pgdata:5432/${var.whisper_db_database}",
-    "DATABASE_TEST_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@gateway_whisper-pgdata:5432/${var.whisper_db_test_db}",
+    "DATABASE_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@${local.shared_pg_host}:5432/${var.whisper_db_database}",
+    "DATABASE_TEST_URL=postgresql://${var.whisper_db_user}:${var.whisper_db_password}@${local.shared_pg_host}:5432/${var.whisper_db_test_db}",
     "MINIO_USER=${var.whisper_minio_user}",
     "MINIO_PASSWORD=${var.whisper_minio_password}",
     "JWT_SECRET=${var.whisper_jwt_secret}",
-    "MINIO_URL=http://whisper-minio:9000",
-
+    "MINIO_URL=http://${local.shared_minio_host}:9000",
   ]
-  
-}
 
-resource "null_resource" "connect_minio" {  
-
-  depends_on = [ docker_container.whisper_minio ]
-    provisioner "local-exec" {
-      command = <<-EOT
-        docker network connect gateway-net whisper-minio
-        docker network connect gateway-net gateway_whisper-pgdata 
-      EOT
-    }
+  depends_on = [
+    docker_container.shared_postgres_init,
+    docker_container.shared_minio_init,
+  ]
 }
 
 resource "docker_container" "whisper_frontend_build" {
@@ -476,28 +414,6 @@ resource "docker_container" "whisper_frontend_build" {
   ]
 }
 
-resource "docker_container" "bank_postgres" {
-  # --- resource optimization pass ---
-  memory = 512   # MB, hard ceiling
-  cpus   = "0.5"
-  name                  = "bank-postgres"
-  image                 = "postgres:16-alpine"
-  destroy_grace_seconds = 30
-  must_run              = true
-  restart               = "always"
-  env = [
-    "POSTGRES_USER=${var.bank_db_user}",
-    "POSTGRES_PASSWORD=${var.bank_db_password}",
-    "POSTGRES_DB=${var.bank_db_name}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.bank_pgdata.name
-    target = "/var/lib/postgresql/data"
-    type   = "volume"
-  }
-}
-
 module "bank_backend" {
   # --- resource optimization pass ---
   # NOTE: modules/docker_app must declare `memory` (number, MB) and
@@ -513,13 +429,14 @@ module "bank_backend" {
   external_port = 0
   network       = "gateway-net"
   env = [
-    "SPRING_DATASOURCE_URL=jdbc:postgresql://bank-postgres:5432/${var.bank_db_name}",
+    "SPRING_DATASOURCE_URL=jdbc:postgresql://${local.shared_pg_host}:5432/${var.bank_db_name}",
     "SPRING_DATASOURCE_USERNAME=${var.bank_db_user}",
     "SPRING_DATASOURCE_PASSWORD=${var.bank_db_password}",
-    "DB_HOST=bank-postgres",
+    "DB_HOST=${local.shared_pg_host}",
     "DB_PORT=5432",
     "DB_USER=${var.bank_db_user}",
   ]
+  depends_on = [docker_container.shared_postgres_init]
 }
 
 resource "docker_container" "bank_frontend_build" {
@@ -710,82 +627,6 @@ module "hospital_management" {
   network       = "gateway-net"
 }
 
-resource "docker_container" "blog_db" {
-  # --- resource optimization pass ---
-  memory = 512   # MB, hard ceiling
-  cpus   = "0.5"
-  name    = "blog-db"
-  image   = "mysql:8.0"
-  restart = "always"
-  env = [
-    "MYSQL_ROOT_PASSWORD=${var.blog_db_password}",
-    "MYSQL_DATABASE=${var.blog_db_name}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.blog_mysql.name
-    target = "/var/lib/mysql"
-    type   = "volume"
-  }
-  healthcheck {
-    test         = ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${var.blog_db_password}"]
-    interval     = "10s"
-    timeout      = "5s"
-    retries      = 5
-    start_period = "30s"
-  }
-}
-
-resource "docker_container" "blog_minio" {
-  # --- resource optimization pass ---
-  memory = 256   # MB, hard ceiling
-  cpus   = "0.3"
-  name    = "blog-minio"
-  image   = "quay.io/minio/minio:latest"
-  restart = "always"
-  command = ["server", "/data", "--console-address", ":9091"]
-  env = [
-    "MINIO_ROOT_USER=${var.blog_minio_user}",
-    "MINIO_ROOT_PASSWORD=${var.blog_minio_password}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.blog_minio.name
-    target = "/data"
-    type   = "volume"
-  }
-  healthcheck {
-    test         = ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-    interval     = "10s"
-    timeout      = "5s"
-    retries      = 5
-    start_period = "20s"
-  }
-}
-
-resource "docker_container" "blog_minio_init" {
-  # --- resource optimization pass ---
-  memory = 64   # MB, hard ceiling
-  cpus   = "0.1"
-  name       = "blog-minio-init"
-  image      = "quay.io/minio/mc:latest"
-  must_run   = false
-  restart    = "no"
-  entrypoint = ["/bin/sh", "-c"]
-  command = [
-    <<-EOT
-      until mc alias set blogminio http://blog-minio:9000 ${var.blog_minio_user} ${var.blog_minio_password}; do
-        echo "Waiting for MinIO..."; sleep 2;
-      done
-      mc mb --ignore-existing blogminio/blog-media
-      mc anonymous set download blogminio/blog-media
-      echo "Bucket setup complete!"
-    EOT
-  ]
-  networks_advanced { name = "gateway-net" }
-  depends_on = [docker_container.blog_minio]
-}
-
 module "blog_website" {
   # --- resource optimization pass ---
   # NOTE: modules/docker_app must declare `memory` (number, MB) and
@@ -800,17 +641,20 @@ module "blog_website" {
   internal_port = 8000
   external_port = 0
   network       = "gateway-net"
-  depends_on    = [docker_container.blog_db, docker_container.blog_minio]
+  depends_on = [
+    docker_container.shared_mysql_init,
+    docker_container.shared_minio_init,
+  ]
   env = [
     "DB_NAME=${var.blog_db_name}",
-    "DB_USER=root",
+    "DB_USER=${var.blog_db_user}",
     "DB_PASSWORD=${var.blog_db_password}",
-    "DB_HOST=blog-db",
+    "DB_HOST=${local.shared_mysql_host}",
     "DB_PORT=3306",
     "MINIO_ACCESS_KEY=${var.blog_minio_user}",
     "MINIO_SECRET_KEY=${var.blog_minio_password}",
     "MINIO_BUCKET=blog-media",
-    "MINIO_ENDPOINT=http://blog-minio:9000",
+    "MINIO_ENDPOINT=http://${local.shared_minio_host}:9000",
     "SECRET_KEY=${var.blog_secret_key}",
     "DEBUG=False",
     "ALLOWED_HOSTS=${var.blog_allowed_hosts}",
@@ -856,54 +700,6 @@ resource "docker_container" "api_service_frontend_build" {
   }
 }
 
-resource "docker_container" "doc_mysql" {
-  # --- resource optimization pass ---
-  memory = 512   # MB, hard ceiling
-  cpus   = "0.5"
-  name    = "doc-mysql"
-  image   = "mysql:8.0"
-  restart = "always"
-  env = [
-    "MYSQL_ROOT_PASSWORD=${var.doc_db_password}",
-    "MYSQL_DATABASE=${var.doc_db_name}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.doc_mysql.name
-    target = "/var/lib/mysql"
-    type   = "volume"
-  }
-  healthcheck {
-    test         = ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${var.doc_db_password}"]
-    interval     = "10s"
-    timeout      = "5s"
-    retries      = 5
-    start_period = "30s"
-  }
-}
-
-resource "docker_container" "doc_minio" {
-  # --- resource optimization pass ---
-  memory = 256   # MB, hard ceiling
-  cpus   = "0.3"
-  name                  = "doc-minio"
-  image                 = "quay.io/minio/minio:latest"
-  restart               = "always"
-  destroy_grace_seconds = 30
-  must_run              = true
-  command               = ["server", "/data", "--console-address", ":9001"]
-  env = [
-    "MINIO_ROOT_USER=${var.doc_minio_user}",
-    "MINIO_ROOT_PASSWORD=${var.doc_minio_password}",
-  ]
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.doc_minio.name
-    target = "/data"
-    type   = "volume"
-  }
-}
-
 module "doc_backend" {
   # --- resource optimization pass ---
   # NOTE: modules/docker_app must declare `memory` (number, MB) and
@@ -919,12 +715,12 @@ module "doc_backend" {
   external_port = 0
   network       = "gateway-net"
   env = [
-    "DB_HOST=doc-mysql",
+    "DB_HOST=${local.shared_mysql_host}",
     "DB_PORT=3306",
     "DB_NAME=${var.doc_db_name}",
-    "DB_USER=root",
+    "DB_USER=${var.doc_db_user}",
     "DB_PASSWORD=${var.doc_db_password}",
-    "MINIO_ENDPOINT=doc-minio:9000",
+    "MINIO_ENDPOINT=${local.shared_minio_host}:9000",
     "MINIO_ACCESS_KEY=${var.doc_minio_user}",
     "MINIO_SECRET_KEY=${var.doc_minio_password}",
     "MINIO_BUCKET=documents",
@@ -935,6 +731,10 @@ module "doc_backend" {
     "DJANGO_SECRET_KEY=${var.doc_django_secret_key}",
     "DEBUG=False",
     "ALLOWED_HOSTS=localhost,127.0.0.1,gateway,doc-backend",
+  ]
+  depends_on = [
+    docker_container.shared_mysql_init,
+    docker_container.shared_minio_init,
   ]
 }
 
