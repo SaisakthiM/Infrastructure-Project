@@ -83,12 +83,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	destDir := config.DefaultInfraDir()
 	spin := ui.NewSpinner("Downloading " + chosen.TagName)
-	infraDir, err := release.DownloadAndExtract(chosen, destDir)
+	infraDir, changed, err := release.DownloadAndExtract(chosen, destDir)
 	spin.Stop(err == nil)
 	if err != nil {
 		return fmt.Errorf("download failed: %w", err)
 	}
-	ui.Success("Extracted to %s", infraDir)
+	ui.Success("Synced to %s (%d file(s) written)", infraDir, len(changed))
 
 	// ── Step 4: Persist to config ────────────────────────────────────────────
 	ui.Step(4, "Saving configuration")

@@ -23,9 +23,12 @@ var updateCmd = &cobra.Command{
 	Long: `Compares the currently installed release tag against the latest
 GitHub release. If a newer version is available it:
 
-  1. Downloads and extracts the new release to ~/.social-platform/infra/
-  2. Removes local terraform.tfstate* files so the next deploy doesn't see
-     stale state from the old release (avoids "state changed" errors).
+  1. Syncs changed files from the new release into ~/.social-platform/infra/
+     — only files that actually differ are written; everything else (and
+     anything not tracked by the release at all) is left alone.
+  2. Removes local terraform.tfstate* files, but only for environments whose
+     .tf/.hcl files were part of this sync (avoids "state changed" errors on
+     re-deploy without nuking state for environments that didn't change).
   3. Keeps .terragrunt-cache/ and .terraform/ as-is — providers don't
      re-download, deploys stay fast.
   4. Preserves all terraform.tfvars files — your secrets stay intact.
@@ -93,8 +96,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// ── Step 3: Download & extract new release ─────────────────────────────
-	ui.Step(3, fmt.Sprintf("Downloading %s", latest.TagName))
+	// ── Step 3: Download & sync new release ────────────────────────────────
+	ui.Step(3, fmt.Sprintf("Syncing %s", latest.TagName))
 
 	destDir := config.DefaultInfraDir()
 	if cfg.InfraDir != "" {
@@ -102,27 +105,47 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	dlSpin := ui.NewSpinner(fmt.Sprintf("Downloading %s…", latest.TagName))
-	infraDir, err := release.DownloadAndExtract(latest, destDir)
+	infraDir, changed, err := release.DownloadAndExtract(latest, destDir)
 	dlSpin.Stop(err == nil)
 	if err != nil {
 		return fmt.Errorf("download failed: %w", err)
 	}
-	ui.Success("Extracted to %s", infraDir)
 
-	// ── Step 4: Wipe Terragrunt/Terraform caches ───────────────────────────
-	ui.Step(4, "Removing stale state files (keeping caches + tfvars)")
-	ui.Dim.Println("  Local tfstate files from the old release cause 'state changed' errors")
-	ui.Dim.Println("  on re-deploy. Caches and tfvars are kept as-is.")
+	if len(changed) == 0 {
+		ui.Success("Already in sync — no files changed.")
+	} else {
+		ui.Success("Synced %d file(s):", len(changed))
+		for _, f := range changed {
+			ui.Dim.Printf("  • %s\n", f)
+		}
+	}
+
+	// ── Step 4: Invalidate state only where config actually changed ───────
+	ui.Step(4, "Checking for Terraform/Terragrunt config changes")
+	ui.Dim.Println("  Caches and tfvars are always kept. Local state is only cleared for")
+	ui.Dim.Println("  environments whose .tf/.hcl files actually changed in this sync.")
 	fmt.Println()
 
 	envsDir := filepath.Join(infraDir, "environments")
-	count, freed := wipeStateFiles(envsDir)
+	affected := release.AffectedEnvironments(changed)
 
-	if count == 0 {
-		ui.Info("No local state files found — nothing to remove.")
+	if len(affected) == 0 {
+		ui.Info("No Terraform/Terragrunt config changed — existing state left untouched.")
 	} else {
-		ui.Success("Removed %d state file%s, freed ~%s",
-			count, pluralS(count), humanSize(freed))
+		ui.Info("Config changed in: %s", strings.Join(affected, ", "))
+		var count int
+		var freed int64
+		for _, env := range affected {
+			c, f := wipeStateFiles(filepath.Join(envsDir, env))
+			count += c
+			freed += f
+		}
+		if count == 0 {
+			ui.Info("No local state files found in the affected environment(s) — nothing to remove.")
+		} else {
+			ui.Success("Removed %d state file%s, freed ~%s",
+				count, pluralS(count), humanSize(freed))
+		}
 	}
 	ui.Info("terraform.tfvars files preserved.")
 
@@ -143,7 +166,6 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	ui.Green.Println("  Update complete!")
 	fmt.Println()
-	ui.Info("Caches wiped — Terragrunt will re-download providers on next deploy.")
 	ui.Info("Next step: run 'social-platform deploy' to apply any infra changes.")
 	fmt.Println()
 	return nil

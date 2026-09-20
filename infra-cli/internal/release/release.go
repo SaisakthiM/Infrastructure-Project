@@ -6,12 +6,15 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
@@ -150,11 +153,25 @@ func rateLimitError(resp *http.Response) error {
 	return fmt.Errorf(msg)
 }
 
-// DownloadAndExtract downloads the infra asset for a release and extracts it
-// to destDir. destDir itself becomes the infra root (environments/, modules/,
+// DownloadAndExtract downloads the infra asset for a release and syncs it
+// into destDir. destDir itself is the infra root (environments/, modules/,
 // gitops/, projects/, atlantis.yaml as direct children) -- there is no
 // separate nested "infra/" folder anywhere in this layout.
-func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
+//
+// It extracts into a scratch directory first, then merges into destDir file
+// by file (see mergeExtractedInto) rather than wiping destDir and
+// re-extracting straight into it. The old wipe-and-replace approach deleted
+// everything in destDir on every single call -- including terraform.tfvars,
+// terraform.tfstate*, .terraform/, and .terragrunt-cache/ -- which meant
+// 'install'/'update' destroyed all local secrets, state, and provider
+// caches even for a one-line upstream change. That made it unusable for
+// routine syncing; only a from-scratch reinstall could tolerate it.
+// Returns the infra root and the list of paths (relative to destDir) that
+// were actually added or changed by this call, so callers can decide what,
+// if anything, needs to react to the change (e.g. invalidating state only
+// for environments whose .tf/.hcl actually changed -- see
+// AffectedEnvironments).
+func DownloadAndExtract(rel *GHRelease, destDir string) (string, []string, error) {
 	var downloadURL string
 	usingSourceFallback := false
 	for _, a := range rel.Assets {
@@ -174,30 +191,31 @@ func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
 	ui.Info("Downloading %s (%s)...", assetName, rel.TagName)
 	tmpFile, err := os.CreateTemp("", "infra-*.tar.gz")
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	defer os.Remove(tmpFile.Name())
 
 	if err := download(downloadURL, tmpFile); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	tmpFile.Close()
 
-	// Wipe and recreate destDir -- it IS the infra root now, no nested
-	// "infra" subpath to selectively clear.
-	_ = os.RemoveAll(destDir)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return "", err
+	// Extract into a throwaway scratch dir -- never touch destDir directly
+	// until we know exactly what changed.
+	scratch, err := os.MkdirTemp("", "infra-extract-*")
+	if err != nil {
+		return "", nil, err
 	}
+	defer os.RemoveAll(scratch)
 
-	ui.Info("Extracting to %s...", destDir)
+	ui.Info("Extracting release contents...")
 	if strings.HasSuffix(downloadURL, ".zip") {
-		if err := extractZip(tmpFile.Name(), destDir); err != nil {
-			return "", fmt.Errorf("extracting zip: %w", err)
+		if err := extractZip(tmpFile.Name(), scratch); err != nil {
+			return "", nil, fmt.Errorf("extracting zip: %w", err)
 		}
 	} else {
-		if err := extractTarGz(tmpFile.Name(), destDir); err != nil {
-			return "", fmt.Errorf("extracting tar.gz: %w", err)
+		if err := extractTarGz(tmpFile.Name(), scratch); err != nil {
+			return "", nil, fmt.Errorf("extracting tar.gz: %w", err)
 		}
 	}
 
@@ -206,35 +224,225 @@ func DownloadAndExtract(rel *GHRelease, destDir string) (string, error) {
 		// folder. environments/, modules/, gitops/, projects/, and
 		// atlantis.yaml live directly at the repo root inside that
 		// wrapper (sibling to infra-cli/) -- there's no "infra/" subfolder
-		// to dig out, so hoist the wrapper's contents up into destDir and
+		// to dig out, so hoist the wrapper's contents up into scratch and
 		// drop the CLI's own source (we don't need it here).
-		entries, err := os.ReadDir(destDir)
+		entries, err := os.ReadDir(scratch)
 		if err != nil {
-			return "", fmt.Errorf("reading extracted contents: %w", err)
+			return "", nil, fmt.Errorf("reading extracted contents: %w", err)
 		}
 		var wrapper string
 		for _, e := range entries {
 			if e.IsDir() && strings.HasPrefix(e.Name(), repoName+"-") {
-				wrapper = filepath.Join(destDir, e.Name())
+				wrapper = filepath.Join(scratch, e.Name())
 				break
 			}
 		}
 		if wrapper == "" {
-			return "", fmt.Errorf("expected a '%s-<tag>' folder inside the source tarball, didn't find one", repoName)
+			return "", nil, fmt.Errorf("expected a '%s-<tag>' folder inside the source tarball, didn't find one", repoName)
 		}
-		if err := hoistContents(wrapper, destDir, []string{"infra-cli", "cli", ".git", ".github"}); err != nil {
-			return "", fmt.Errorf("rearranging extracted source tree: %w", err)
+		if err := hoistContents(wrapper, scratch, []string{"infra-cli", "cli", ".git", ".github"}); err != nil {
+			return "", nil, fmt.Errorf("rearranging extracted source tree: %w", err)
 		}
 		_ = os.RemoveAll(wrapper)
 	}
 
-	// Verify we actually ended up with something usable instead of reporting
-	// success unconditionally.
-	if _, err := os.Stat(filepath.Join(destDir, "environments")); err != nil {
-		return "", fmt.Errorf("extraction finished but %s/environments was not found -- repo layout may have changed", destDir)
+	// Verify we actually ended up with something usable before touching
+	// destDir at all.
+	if _, err := os.Stat(filepath.Join(scratch, "environments")); err != nil {
+		return "", nil, fmt.Errorf("extraction finished but environments/ was not found in the release -- repo layout may have changed")
 	}
 
-	return destDir, nil
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", nil, err
+	}
+
+	ui.Info("Syncing changes into %s...", destDir)
+	changed, err := mergeExtractedInto(scratch, destDir)
+	if err != nil {
+		return "", nil, fmt.Errorf("syncing into %s: %w", destDir, err)
+	}
+
+	return destDir, changed, nil
+}
+
+// preservedDirNames are directory names that are always local-only
+// (generated by terraform/terragrunt on this machine) -- their contents are
+// never touched by a sync in either direction: an upstream copy is never
+// used to overwrite what's here, and nothing here is ever deleted for not
+// existing upstream.
+var preservedDirNames = map[string]bool{
+	".terraform":        true,
+	".terragrunt-cache": true,
+}
+
+// isPreservedFile reports whether base (a file's base name) is something
+// generated locally by 'configure'/terraform rather than tracked upstream:
+// tfvars (secrets) and tfstate (deployment state). These must survive a
+// sync no matter what the upstream release contains.
+func isPreservedFile(base string) bool {
+	if base == "terraform.tfvars" || base == "terraform.tfvars.json" {
+		return true
+	}
+	if base == "terraform.tfstate" ||
+		strings.HasPrefix(base, "terraform.tfstate.") ||
+		strings.HasSuffix(base, ".tfstate") ||
+		strings.HasSuffix(base, ".tfstate.backup") {
+		return true
+	}
+	return false
+}
+
+// isPreservedPath reports whether rel (a path relative to the tree root)
+// falls under a preserved directory anywhere along its length.
+func isPreservedPath(rel string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(rel), "/") {
+		if preservedDirNames[part] {
+			return true
+		}
+	}
+	return false
+}
+
+// mergeExtractedInto copies the freshly-extracted infra tree at srcDir into
+// destDir without discarding anything destDir already has that srcDir
+// doesn't know about. Local secrets/tfvars, deployment state, and
+// provider/module caches (see isPreservedFile/preservedDirNames) are left
+// completely alone -- never overwritten, never deleted for "not being in
+// this release". Every other file is written only if it's new or its
+// content actually differs from what's already there, so a routine sync
+// doesn't force Terragrunt to redo caching work it doesn't need to, and the
+// returned list reflects only genuine changes.
+//
+// This intentionally only adds/updates files -- it does not delete
+// destDir-only files that the upstream release no longer has. Safer
+// default for a mixed tree that also holds locally-generated files; a
+// pruning mode can be added later if a release ever needs to remove a
+// tracked file outright.
+func mergeExtractedInto(srcDir, destDir string) ([]string, error) {
+	var changed []string
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, relErr := filepath.Rel(srcDir, path)
+		if relErr != nil {
+			return relErr
+		}
+		if rel == "." {
+			return nil
+		}
+		if isPreservedPath(rel) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		target := filepath.Join(destDir, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		if isPreservedFile(filepath.Base(rel)) {
+			return nil
+		}
+
+		same, err := filesIdentical(path, target)
+		if err != nil {
+			return err
+		}
+		if same {
+			return nil
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		if err := copyFileContents(path, target, info.Mode()); err != nil {
+			return err
+		}
+		changed = append(changed, filepath.ToSlash(rel))
+		return nil
+	})
+	return changed, err
+}
+
+// filesIdentical reports whether a and b have identical content. A missing
+// b is treated as "not identical" (i.e. needs copying), not an error.
+func filesIdentical(a, b string) (bool, error) {
+	bi, statErr := os.Stat(b)
+	if statErr != nil {
+		return false, nil
+	}
+	ai, err := os.Stat(a)
+	if err != nil {
+		return false, err
+	}
+	if ai.Size() != bi.Size() {
+		return false, nil
+	}
+	ah, err := sha256File(a)
+	if err != nil {
+		return false, err
+	}
+	bh, err := sha256File(b)
+	if err != nil {
+		return false, err
+	}
+	return ah == bh, nil
+}
+
+func sha256File(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func copyFileContents(src, dst string, mode os.FileMode) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
+}
+
+// AffectedEnvironments takes the changed-file list returned by
+// DownloadAndExtract and returns the top-level environments/<name>/
+// directories that had an actual Terraform or Terragrunt config file
+// (.tf/.hcl) change, sorted. A doc/comment/script change elsewhere in the
+// tree (or in an environment, but not to a .tf/.hcl file) doesn't count.
+// Callers use this to scope local-state invalidation to only the
+// environments that genuinely need it after a sync, instead of wiping
+// every environment's state on every single update.
+func AffectedEnvironments(changed []string) []string {
+	seen := map[string]bool{}
+	for _, f := range changed {
+		if !strings.HasSuffix(f, ".tf") && !strings.HasSuffix(f, ".hcl") {
+			continue
+		}
+		parts := strings.SplitN(f, "/", 3)
+		if len(parts) >= 2 && parts[0] == "environments" {
+			seen[parts[1]] = true
+		}
+	}
+	envs := make([]string, 0, len(seen))
+	for e := range seen {
+		envs = append(envs, e)
+	}
+	sort.Strings(envs)
+	return envs
 }
 
 // hoistContents moves every entry of src (except names in skip) directly

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
@@ -298,17 +299,30 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 
 	var candidates []ImportCandidate
 
-	for _, env := range scannedEnvironments {
-		inState, err := existingStateAddresses(cfg, env)
-		if err != nil {
-			ui.Warn("Could not read terraform state for %s, assuming it's empty: %v", env, err)
-			inState = map[string]bool{}
-		}
+	// Cache one "terragrunt state list" result per working directory: several
+	// catalog entries can share a directory (the shared environment root),
+	// while module-based app entries each get their own subdirectory (see
+	// dirForEntry), so this is keyed by resolved dir, not by environment.
+	stateCache := map[string]map[string]bool{}
 
+	for _, env := range scannedEnvironments {
 		for _, entry := range catalogForEnv(env) {
-			if inState[entry.TFAddress] {
+			dir, localAddr := dirForEntry(cfg, entry)
+
+			inState, cached := stateCache[dir]
+			if !cached {
+				var err error
+				inState, err = stateAddressesInDir(dir)
+				if err != nil {
+					ui.Warn("Could not read terraform state for %s, assuming it's empty: %v", dir, err)
+					inState = map[string]bool{}
+				}
+				stateCache[dir] = inState
+			}
+			if inState[localAddr] {
 				continue
 			}
+
 			switch entry.Kind {
 			case KindVolume:
 				if id, ok := existingVolumes[entry.DockerName]; ok {
@@ -347,21 +361,73 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 	return candidates, nil
 }
 
-// existingStateAddresses returns the set of resource addresses Terraform
-// already manages in the given environment, via `terragrunt state list`.
-func existingStateAddresses(cfg *config.Config, env Environment) (map[string]bool, error) {
-	dir := WorkDir(cfg, env)
+// dirForEntry returns the terragrunt working directory for entry, together
+// with the resource address to use once inside that directory.
+//
+// Most catalog entries (the "support" containers/volumes declared directly
+// in an environment's shared main.tf — e.g. docker_container.notes_postgres)
+// run from that environment's root dir (environments/<env>/) with their
+// address unchanged.
+//
+// Module-based app entries are different: each app (notes_backend,
+// whisper_backend, node_exporter, ...) is its own separate terragrunt unit
+// living in its own subdirectory under the environment
+// (environments/<env>/<app-name>/, e.g. environments/prod-docker/notes-backend/),
+// with its own terragrunt.hcl pointing straight at modules/docker_app. So
+// from inside that subdirectory the module IS the root module — the
+// resource address must NOT carry the "module.<name>." prefix, since that
+// prefix only makes sense from the parent directory's point of view (which
+// doesn't apply here: the app is its own unit, not a module call nested in
+// the parent's main.tf). The subdirectory name is the module instance name
+// from the catalog address, kebab-cased to match the repo's folder naming
+// (e.g. "notes_backend" -> "notes-backend").
+func dirForEntry(cfg *config.Config, entry ImportEntry) (dir string, localAddress string) {
+	envDir := WorkDir(cfg, entry.Env)
+	if modName, local, ok := splitModuleAddress(entry.TFAddress); ok {
+		return filepath.Join(envDir, kebabCase(modName)), local
+	}
+	return envDir, entry.TFAddress
+}
+
+// splitModuleAddress splits a resource address of the form
+// "module.<name>.<rest>" into the module instance name and the remaining
+// local address (e.g. "module.notes_backend.docker_container.app" ->
+// "notes_backend", "docker_container.app"). ok is false for addresses that
+// aren't module calls (support resources declared directly in main.tf).
+func splitModuleAddress(addr string) (moduleName, local string, ok bool) {
+	if !strings.HasPrefix(addr, "module.") {
+		return "", "", false
+	}
+	rest := strings.TrimPrefix(addr, "module.")
+	idx := strings.Index(rest, ".")
+	if idx < 0 {
+		return "", "", false
+	}
+	return rest[:idx], rest[idx+1:], true
+}
+
+// kebabCase converts a Terraform-identifier-style name (underscores) to the
+// hyphenated folder-naming convention used for per-app terragrunt units.
+func kebabCase(s string) string {
+	return strings.ReplaceAll(s, "_", "-")
+}
+
+// stateAddressesInDir returns the set of resource addresses Terraform
+// already manages in a single terragrunt working directory, via
+// `terragrunt state list`. dir may be a shared environment root or a
+// per-app unit subdirectory — see dirForEntry.
+func stateAddressesInDir(dir string) (map[string]bool, error) {
 	if _, err := os.Stat(dir); err != nil {
-		return nil, fmt.Errorf("%s directory not found: %s", env, dir)
+		return nil, fmt.Errorf("directory not found: %s", dir)
 	}
 
 	cmd := exec.Command("terragrunt", "state", "list")
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
-		// A never-applied environment has no state file yet -- terragrunt
-		// exits non-zero with no output in that case, which just means
-		// "nothing is tracked", not a real failure.
+		// A never-applied unit has no state file yet -- terragrunt exits
+		// non-zero with no output in that case, which just means "nothing
+		// is tracked", not a real failure.
 		if len(strings.TrimSpace(string(out))) == 0 {
 			return map[string]bool{}, nil
 		}
@@ -379,17 +445,20 @@ func existingStateAddresses(cfg *config.Config, env Environment) (map[string]boo
 }
 
 // RunImport runs terragrunt import for a single candidate, in whichever
-// environment's working dir that candidate belongs to.
+// working directory that candidate actually belongs to — the shared
+// environment root for support resources, or the app's own per-module
+// subdirectory for module-based entries (see dirForEntry) — using the
+// resource address as it's addressed from inside that directory.
 func RunImport(cfg *config.Config, candidate ImportCandidate) error {
-	dir := WorkDir(cfg, candidate.Entry.Env)
+	dir, localAddr := dirForEntry(cfg, candidate.Entry)
 	if _, err := os.Stat(dir); err != nil {
 		return fmt.Errorf("%s directory not found: %s", candidate.Entry.Env, dir)
 	}
 
-	ui.Cyan.Printf("\n  $ terragrunt import %s %s\n", candidate.Entry.TFAddress, candidate.ImportID)
+	ui.Cyan.Printf("\n  $ terragrunt import %s %s\n", localAddr, candidate.ImportID)
 	ui.Dim.Printf("  working dir: %s\n\n", dir)
 
-	cmd := exec.Command("terragrunt", "import", candidate.Entry.TFAddress, candidate.ImportID)
+	cmd := exec.Command("terragrunt", "import", localAddr, candidate.ImportID)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
