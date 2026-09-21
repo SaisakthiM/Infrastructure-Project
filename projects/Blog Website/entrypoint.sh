@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "Waiting for MySQL..."
-until python -c "import socket,sys; socket.create_connection(('blog-db',3306),timeout=3)" 2>/dev/null; do
+until python -c "import socket,sys; socket.create_connection(('shared-mysql',3306),timeout=3)" 2>/dev/null; do
   echo "MySQL not ready, retrying in 3s..."
   sleep 3
 done
