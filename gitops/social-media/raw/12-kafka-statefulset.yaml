@@ -21,6 +21,10 @@ spec:
           image: confluentinc/cp-kafka:7.6.0
           imagePullPolicy: IfNotPresent
           env:
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms512m -Xmx512m"
+            - name: KAFKA_JVM_PERFORMANCE_OPTS
+              value: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
             # 1. Enable KRaft and define combined roles
             - name: KAFKA_NODE_ID
               value: "1"

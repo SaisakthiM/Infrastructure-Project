@@ -791,6 +791,11 @@ resource "docker_container" "selenium_chrome" {
   image   = docker_image.selenium_chrome.image_id
   restart = "unless-stopped"
 
+  env = [
+    "SE_NODE_MAX_SESSIONS=2",
+    "SE_NODE_OVERRIDE_MAX_SESSIONS=true",
+  ]
+
   # Chrome/webdriver is the heavy half of the 8-core/12GB budget.
   memory   = 8192   # MB
   cpus     = "6"
@@ -830,9 +835,13 @@ resource "docker_container" "selenium_java" {
   must_run = true
   restart  = "unless-stopped"
 
-  # Remainder of the 8-core/12GB budget -- 6+2=8 cores, 8192+4096=12288 MB.
   memory = 4096
   cpus   = "2"
+
+  env = [
+    "JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+DisableExplicitGC",
+    "SE_JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100",
+  ]
 
   networks_advanced { name = "gateway-net" }
   depends_on = [docker_container.selenium_chrome]
