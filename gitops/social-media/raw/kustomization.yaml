@@ -16,3 +16,6 @@ resources:
   - 13-kafka-service.yaml
   - 18-minio-service.yaml
   - 19-minio-deployment.yaml
+  - 20-ingress-api.yaml
+  - 21-ingress-minio.yaml
+  - 22-ingress-frontend.yaml
