@@ -18,6 +18,9 @@ prometheus:
     externalLabels:
       cluster: kind-social-media
 
+    tsdb:
+      out_of_order_time_window: 30m
+
     enableRemoteWriteReceiver: true
 
     additionalScrapeConfigs:
