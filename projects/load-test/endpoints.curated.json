@@ -1,0 +1,58 @@
+{
+  "public_gets": [
+    "/compiler/api/health",
+    "/api-service/api/",
+    "/api-service/api/metrics",
+    "/api-service/api/users",
+    "/video/api/getFiles",
+    "/video/api/actuator/health",
+    "/document/books/",
+    "/document/books/1/",
+    "/document/books/1/recommendations/",
+    "/blog/",
+    "/blog/login/",
+    "/hospital/",
+    "/bank/api/accounts"
+  ],
+  "post_only": [
+    "/bank/api/auth/login",
+    "/bank/api/auth/register",
+    "/video/api/upload"
+  ],
+  "jwt_apps": {
+    "notes": {
+      "register": "/notes/api/user/register/",
+      "login":    "/notes/api/token/",
+      "user_field": "username",
+      "pass_field": "password",
+      "token_path": "access",
+      "register_extra": {},
+      "authed_gets": ["/notes/api/notes/"],
+      "crud_base": "/notes/api/notes/"
+    },
+    "bank": {
+      "register": "/bank/api/auth/register",
+      "login":    "/bank/api/auth/login",
+      "user_field": "username",
+      "pass_field": "password",
+      "token_path": "data.token",
+      "register_extra": { "email": "lt@example.com" },
+      "authed_gets": ["/bank/api/accounts"],
+      "crud_base": null
+    },
+    "social": {
+      "register": "/social/api/auth/register/",
+      "login":    "/social/api/auth/login/",
+      "user_field": "username",
+      "pass_field": "password",
+      "token_path": "access",
+      "register_extra": { "password2": "x", "profile_name": "LT User" },
+      "authed_gets": [
+        "/social/api/auth/me/",
+        "/social/api/posts/",
+        "/social/api/notifications/unread/"
+      ],
+      "crud_base": null
+    }
+  }
+}

@@ -1,0 +1,327 @@
+{
+  "name": "Stress Test - Open APIs",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Run Every 5 Min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS test_runs (id SERIAL PRIMARY KEY, endpoint VARCHAR(255), status_code INTEGER, latency_ms INTEGER, success BOOLEAN, error_message TEXT, timestamp TIMESTAMPTZ DEFAULT NOW());",
+        "options": {}
+      },
+      "id": "create-table",
+      "name": "Ensure Table Exists",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [420, 300],
+      "credentials": {
+        "postgres": {
+          "id": "shared-postgres-cred",
+          "name": "Shared Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "endpoints",
+              "value": "=[\n  {\"name\":\"compiler-health\",\"method\":\"GET\",\"url\":\"http://gateway/compiler/api/health\"},\n  {\"name\":\"api-service-root\",\"method\":\"GET\",\"url\":\"http://gateway/api-service/api/\"},\n  {\"name\":\"api-service-weather\",\"method\":\"GET\",\"url\":\"http://gateway/api-service/api/api/weather/\"},\n  {\"name\":\"api-service-geo\",\"method\":\"GET\",\"url\":\"http://gateway/api-service/api/api/geo/cod/\"},\n  {\"name\":\"api-service-metrics\",\"method\":\"GET\",\"url\":\"http://gateway/api-service/api/metrics\"},\n  {\"name\":\"video-getFiles\",\"method\":\"GET\",\"url\":\"http://gateway/video/api/getFiles\"},\n  {\"name\":\"video-health\",\"method\":\"GET\",\"url\":\"http://gateway/video/api/actuator/health\"}\n]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-endpoints",
+      "name": "Open API Endpoints",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const endpoints = $input.first().json.endpoints;\n\nconst items = [];\nconst iterations = 10; // 10 requests per endpoint per run\nfor (let i = 0; i < iterations; i++) {\n  for (const ep of endpoints) {\n    items.push({\n      json: {\n        name: ep.name,\n        method: ep.method,\n        url: ep.url,\n        run_id: i + 1\n      }\n    });\n  }\n}\nreturn items;"
+      },
+      "id": "generate-requests",
+      "name": "Generate Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {
+          "interval": 200
+        }
+      },
+      "id": "split-batches",
+      "name": "Split In Batches (5 concurrent)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "http-request",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst startTime = Date.now();\nconst statusCode = item.statusCode || 0;\n\nreturn {\n  endpoint: $('Split In Batches (5 concurrent)').item.json.name,\n  status_code: statusCode,\n  latency_ms: 0,\n  success: statusCode >= 200 && statusCode < 400,\n  error_message: statusCode >= 400 ? JSON.stringify(item.body).substring(0, 500) : null,\n  run_id: $('Split In Batches (5 concurrent)').item.json.run_id\n};"
+      },
+      "id": "process-response",
+      "name": "Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "test_runs",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "endpoint": "={{ $json.endpoint }}",
+            "status_code": "={{ $json.status_code }}",
+            "latency_ms": "={{ $json.latency_ms }}",
+            "success": "={{ $json.success }}",
+            "error_message": "={{ $json.error_message }}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "log-to-postgres",
+      "name": "Log to Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1740, 300],
+      "credentials": {
+        "postgres": {
+          "id": "shared-postgres-cred",
+          "name": "Shared Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results after all batches\nconst items = $input.all();\nconst total = items.length;\nconst failed = items.filter(i => !i.json.success).length;\nconst errorRate = total > 0 ? (failed / total) * 100 : 0;\n\nreturn {\n  total_requests: total,\n  failed_requests: failed,\n  error_rate_percent: parseFloat(errorRate.toFixed(2)),\n  alert_needed: errorRate > 5\n};"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1960, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-alert",
+              "leftValue": "={{ $json.alert_needed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-alert",
+      "name": "Error Rate > 5%?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2180, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@saisakthi.qzz.io",
+        "toEmail": "saisakthicloud@gmail.com",
+        "subject": "🚨 Stress Test Alert - Error Rate {{ $json.error_rate_percent }}%",
+        "emailFormat": "html",
+        "html": "=<h2>Stress Test Failed</h2>\n<p><strong>Error Rate:</strong> {{ $json.error_rate_percent }}%</p>\n<p><strong>Total Requests:</strong> {{ $json.total_requests }}</p>\n<p><strong>Failed Requests:</strong> {{ $json.failed_requests }}</p>\n<p>Check the test_runs table in Postgres for details.</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-email-alert",
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2400, 200],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-cred",
+          "name": "SMTP Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Run Every 5 Min": {
+      "main": [
+        [
+          {
+            "node": "Ensure Table Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Table Exists": {
+      "main": [
+        [
+          {
+            "node": "Open API Endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open API Endpoints": {
+      "main": [
+        [
+          {
+            "node": "Generate Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Requests": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (5 concurrent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches (5 concurrent)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Response": {
+      "main": [
+        [
+          {
+            "node": "Log to Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Postgres": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Error Rate > 5%?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Rate > 5%?": {
+      "main": [
+        [
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

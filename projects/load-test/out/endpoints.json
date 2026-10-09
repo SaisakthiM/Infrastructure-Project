@@ -1,0 +1,2306 @@
+[
+  {
+    "path": "/bank/",
+    "method": "GET",
+    "status": 403,
+    "location": "",
+    "ctype": "text/html",
+    "length": 146,
+    "class": "auth"
+  },
+  {
+    "path": "/blog/login",
+    "method": "GET",
+    "status": 301,
+    "location": "/blog/login/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "auth"
+  },
+  {
+    "path": "/grafana/",
+    "method": "GET",
+    "status": 302,
+    "location": "/grafana/login",
+    "ctype": "text/html",
+    "length": 37,
+    "class": "auth"
+  },
+  {
+    "path": "/jenkins/",
+    "method": "GET",
+    "status": 403,
+    "location": "",
+    "ctype": "text/html",
+    "length": 778,
+    "class": "auth"
+  },
+  {
+    "path": "/login",
+    "method": "GET",
+    "status": 302,
+    "location": "http://saisakthi.qzz.io/social/login/",
+    "ctype": "text/html",
+    "length": 138,
+    "class": "auth"
+  },
+  {
+    "path": "/social/api/auth/login",
+    "method": "GET",
+    "status": 301,
+    "location": "/social/api/auth/login/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "auth"
+  },
+  {
+    "path": "/social/api/auth/register",
+    "method": "GET",
+    "status": 301,
+    "location": "/social/api/auth/register/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "auth"
+  },
+  {
+    "path": "/bank/api/auth/login",
+    "method": "GET",
+    "status": 405,
+    "location": "",
+    "ctype": "application/json",
+    "length": 112,
+    "class": "post-only"
+  },
+  {
+    "path": "/bank/api/auth/register",
+    "method": "GET",
+    "status": 405,
+    "location": "",
+    "ctype": "application/json",
+    "length": 115,
+    "class": "post-only"
+  },
+  {
+    "path": "/video/api/upload",
+    "method": "GET",
+    "status": 405,
+    "location": "",
+    "ctype": "application/json",
+    "length": 104,
+    "class": "post-only"
+  },
+  {
+    "path": "/whisper/api/upload",
+    "method": "GET",
+    "status": 405,
+    "location": "",
+    "ctype": "",
+    "length": 0,
+    "class": "post-only"
+  },
+  {
+    "path": "/whisper/api/users",
+    "method": "GET",
+    "status": 405,
+    "location": "",
+    "ctype": "",
+    "length": 0,
+    "class": "post-only"
+  },
+  {
+    "path": "/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 60286,
+    "class": "public"
+  },
+  {
+    "path": "/api-service/api/users",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 23,
+    "class": "public"
+  },
+  {
+    "path": "/bank/api/accounts",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "application/json",
+    "length": 1635,
+    "class": "public"
+  },
+  {
+    "path": "/blog/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 7189,
+    "class": "public"
+  },
+  {
+    "path": "/hospital/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 16762,
+    "class": "public"
+  },
+  {
+    "path": "/n8n/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 53625,
+    "class": "public"
+  },
+  {
+    "path": "/api-service/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/api-service/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/bank/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/bank/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/blog/logout",
+    "method": "GET",
+    "status": 301,
+    "location": "/blog/logout/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "redirect"
+  },
+  {
+    "path": "/blog/register",
+    "method": "GET",
+    "status": 301,
+    "location": "/blog/register/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "redirect"
+  },
+  {
+    "path": "/document/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/document/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/hospital/admin",
+    "method": "GET",
+    "status": 301,
+    "location": "/hospital/admin/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "redirect"
+  },
+  {
+    "path": "/notes/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/notes/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/register",
+    "method": "GET",
+    "status": 302,
+    "location": "http://saisakthi.qzz.io/social/register/",
+    "ctype": "text/html",
+    "length": 138,
+    "class": "redirect"
+  },
+  {
+    "path": "/social/admin",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/social/admin/",
+    "ctype": "text/html",
+    "length": 169,
+    "class": "redirect"
+  },
+  {
+    "path": "/social/api/posts",
+    "method": "GET",
+    "status": 301,
+    "location": "/social/api/posts/",
+    "ctype": "text/html",
+    "length": 0,
+    "class": "redirect"
+  },
+  {
+    "path": "/social/graphql",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/social/graphql/",
+    "ctype": "text/html",
+    "length": 169,
+    "class": "redirect"
+  },
+  {
+    "path": "/video/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/video/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/whisper/api",
+    "method": "GET",
+    "status": 301,
+    "location": "http://saisakthi.qzz.io/whisper/api/",
+    "ctype": "text/html",
+    "length": 162,
+    "class": "redirect"
+  },
+  {
+    "path": "/bank/.env",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/.git/HEAD",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/actuator",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/actuator/health",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/admin",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/docs",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/graphql",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/health",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/healthz",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/login",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/logout",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/media/",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/metrics",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/openapi.json",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/register",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/robots.txt",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/signin",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/signup",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/sitemap.xml",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/static/",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/bank/swagger-ui/index.html",
+    "method": "GET",
+    "status": 500,
+    "location": "",
+    "ctype": "text/html",
+    "length": 170,
+    "class": "server-error"
+  },
+  {
+    "path": "/api-service/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/api-service/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 497,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/document/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 507,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/notes/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 790,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/accounts",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/auth/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/auth/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/doctors",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/files",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/me",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/notes",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/patients",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/posts",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/token",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/token/refresh",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/upload",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/users",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/api/weather",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/quiz/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 820,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/accounts",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/auth/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/auth/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/doctors",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/files",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/me",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/notes",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/patients",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/posts",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/token",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/token/refresh",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/upload",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/users",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/api/weather",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/record/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 46610,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/social/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 484,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/video/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 479,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/.env",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/.git/HEAD",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/actuator",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/actuator/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/admin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/docs",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/graphql",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/health",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/healthz",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/login",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/logout",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/media/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/metrics",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/openapi.json",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/register",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/robots.txt",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/signin",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/signup",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/sitemap.xml",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/static/",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  },
+  {
+    "path": "/whisper/swagger-ui/index.html",
+    "method": "GET",
+    "status": 200,
+    "location": "",
+    "ctype": "text/html",
+    "length": 816,
+    "class": "spa-fallback"
+  }
+]
