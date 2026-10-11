@@ -15,7 +15,7 @@ spec:
         valueFiles:
           - $values/gitops/platform/observability/promtail-config.yml
     - repoURL: https://github.com/SaisakthiM/Infrastructure-Project
-      targetRevision: HEAD
+      targetRevision: deploy
       ref: values
   destination:
     server: https://kubernetes.default.svc

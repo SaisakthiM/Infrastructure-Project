@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/SaisakthiM/Infrastructure-Project # e.g. git@github.com:you/your-infra-repo.git
-    targetRevision: HEAD
+    targetRevision: deploy
     path: gitops/social-media/raw
   destination:
     server: https://kubernetes.default.svc

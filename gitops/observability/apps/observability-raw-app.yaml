@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/SaisakthiM/Infrastructure-Project
-    targetRevision: HEAD
+    targetRevision: deploy
     path: "gitops/observability/raw"
   destination:
     server: https://kubernetes.default.svc

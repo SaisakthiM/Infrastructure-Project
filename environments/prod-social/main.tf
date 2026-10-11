@@ -479,7 +479,7 @@ resource "kubectl_manifest" "app_of_apps_social" {
       project: default
       source:
         repoURL: ${var.gitops_repo_url}
-        targetRevision: HEAD
+        targetRevision: deploy
         path: gitops/social-media/apps
         directory:
           recurse: false
