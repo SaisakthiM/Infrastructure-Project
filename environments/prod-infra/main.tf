@@ -426,7 +426,7 @@ resource "kubectl_manifest" "app_of_apps_observability" {
       project: default
       source:
         repoURL: ${var.gitops_repo_url}
-        targetRevision: HEAD
+        targetRevision: deploy
         path: gitops/observability/apps
         directory:
           recurse: false

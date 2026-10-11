@@ -28,7 +28,7 @@ spec:
                 requests: { cpu: 200m, memory: 512Mi }
                 limits: { cpu: "1000m", memory: 2Gi }
     - repoURL: https://github.com/SaisakthiM/Infrastructure-Project # same monorepo as the other sources below
-      targetRevision: HEAD
+      targetRevision: deploy
       ref: values
   destination:
     server: https://kubernetes.default.svc
