@@ -28,6 +28,8 @@ COPY --from=builder /build/server .
 
 VOLUME ["/app/data"]
 
+
+
 EXPOSE 9090
 
 CMD ["./server"]

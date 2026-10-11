@@ -341,6 +341,33 @@ resource "helm_release" "argocd" {
     {
       name  = "configs.params.server\\.basehref"
       value = "/argocd"
+    },
+    {
+      name  = "repoServer.livenessProbe.timeoutSeconds"
+      value = "10"
+    },
+    {
+      name  = "repoServer.livenessProbe.failureThreshold"
+      value = "6"
+    },
+    {
+      name  = "repoServer.readinessProbe.timeoutSeconds"
+      value = "10"
+    },
+    {
+      name  = "configs.cm.timeout\\.reconciliation"
+      value = "900s"
+    },
+    {
+      name  = "configs.params.reposerver\\.parallelism\\.limit"
+      value = "1"
+    },{
+      name  = "configs.params.controller\\.status\\.processors"
+      value = "2"
+    },
+    {
+      name  = "configs.params.controller\\.operation\\.processors"
+      value = "1"
     }
   ]
 }

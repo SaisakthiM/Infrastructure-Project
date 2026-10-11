@@ -5,6 +5,11 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+    # ArgoCD 2.13's bundled K8s schema predates newer Deployment/ReplicaSet
+    # status fields (e.g. terminatingReplicas on k8s 1.35+), which breaks the
+    # structured-merge diff used with ServerSideApply. Computing the diff
+    # server-side avoids the stale schema. Remove after upgrading ArgoCD.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   sources:
@@ -28,15 +33,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
-  ignoreDifferences:
-    # ArgoCD's bundled K8s schema doesn't yet know this StatefulSet status
-    # field (added in newer K8s than ArgoCD's vendored OpenAPI schema covers)
-    # — causes a ComparisonError during diff calc, not a real problem.
-    # See: github.com/argoproj/argo-cd/issues/18778, /17358
-    - group: apps
-      kind: StatefulSet
-      jsonPointers:
-        - /status/terminatingReplicas
   syncPolicy:
     automated:
       prune: true

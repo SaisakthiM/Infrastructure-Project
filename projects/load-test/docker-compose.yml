@@ -1,9 +1,9 @@
-# Usage (from this directory):
+# Run from this directory:
 #   docker compose run --rm enum
-#   docker compose run --rm k6-public
-#   docker compose run --rm k6-auth
-# Test locally instead of through Cloudflare:
-#   BASE_URL=http://host.docker.internal docker compose run --rm enum
+#   PEAK_VUS=5 docker compose run --rm k6-public
+#   APP=notes PEAK_VUS=3 docker compose run --rm k6-apps
+#   APP=notes WRITES=1 WRITE_CAP=20 docker compose run --rm k6-apps
+# APP = notes | bank | whisper | hospital | video | social
 x-env: &env
   BASE_URL: ${BASE_URL:-https://saisakthi.qzz.io}
 
@@ -15,7 +15,7 @@ services:
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *env
-      RATE: ${RATE:-5}            # requests per second, global
+      RATE: ${RATE:-5}
     command: sh -c "pip install -q requests && python enumeration.py"
 
   k6-public:
@@ -25,23 +25,18 @@ services:
     environment:
       <<: *env
       MODE: public
-      PEAK_VUS: ${PEAK_VUS:-20}
+      PEAK_VUS: ${PEAK_VUS:-5}
     command: ["run", "/work/loadtest.js"]
 
-  k6-auth:
+  k6-apps:
     image: grafana/k6:latest
     volumes: ["./:/work"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
       <<: *env
-      MODE: auth
-      PEAK_VUS: ${PEAK_VUS:-10}
-      REGISTER_URL: ${REGISTER_URL:-}      # e.g. /notes/api/register/
-      LOGIN_URL: ${LOGIN_URL:-}            # e.g. /notes/api/login/
-      USER_FIELD: ${USER_FIELD:-username}
-      PASS_FIELD: ${PASS_FIELD:-password}
-      EXTRA_REGISTER_JSON: ${EXTRA_REGISTER_JSON:-{}}   # e.g. {"email":"lt@example.com"}
-      TOKEN_FIELD: ${TOKEN_FIELD:-access}  # JSON key holding the JWT in the login response
-      AUTH_SCHEME: ${AUTH_SCHEME:-Bearer}
-      AUTHED_PATHS: ${AUTHED_PATHS:-}      # comma-separated GET paths, e.g. /notes/api/notes/
-    command: ["run", "/work/loadtest.js"]
+      APP: ${APP:-notes}
+      PEAK_VUS: ${PEAK_VUS:-3}
+      WRITES: ${WRITES:-0}
+      WRITE_CAP: ${WRITE_CAP:-20}
+      NOTE_JSON: ${NOTE_JSON:-}
+    command: ["run", "/work/loadtest-apps.js"]
