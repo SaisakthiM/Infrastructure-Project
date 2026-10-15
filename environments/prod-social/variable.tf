@@ -31,3 +31,13 @@ variable "gitops_repo_ssh_key" {
   type      = string
   sensitive = true
 }
+
+variable "smtp_user" {
+  type = string
+}
+
+variable "smtp_password" {
+  type      = string
+  sensitive = true
+}
+

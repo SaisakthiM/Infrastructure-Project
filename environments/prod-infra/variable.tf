@@ -56,3 +56,12 @@ variable "atlantis_gh_webhook_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "smtp_user" {
+  type = string
+}
+
+variable "smtp_password" {
+  type      = string
+  sensitive = true
+}
