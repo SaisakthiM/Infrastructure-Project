@@ -43,6 +43,22 @@ locals {
   obs_path = "${var.projects_dir}/platform/observability"
 }
 
+
+resource "kubernetes_secret_v1" "grafana_smtp" {
+  metadata {
+    name      = "grafana-smtp"
+    namespace = "monitoring"
+  }
+
+  type = "Opaque"
+
+  # Plain strings here: the provider base64-encodes `data` for you
+  data = {
+    user     = var.smtp_user
+    password = var.smtp_password
+  }
+}
+
 # ---------------------------------------------------------------------------
 # Docker-side OTEL bridge: forwards from gateway-net into the kind cluster's
 # NodePort collector. Both networks are joined by literal name -- "gateway-net"

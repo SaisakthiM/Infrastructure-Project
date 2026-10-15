@@ -146,7 +146,9 @@ function whisperSetup() {
 }
 function whisperRead(ctx) {
   const h = bearer(ctx.token);
-  req('GET', '/whisper/api/rooms/discover', { headers: h, name: 'whisper discover', ok: [200] });
+  // user_id must be the UUID returned by login (ctx.id), not the username
+  req('GET', `/whisper/api/rooms?user_id=${ctx.id}`, { headers: h, name: 'whisper my rooms', ok: [200] });
+  req('GET', `/whisper/api/rooms/discover?user_id=${ctx.id}`, { headers: h, name: 'whisper discover', ok: [200] });
   req('GET', `/whisper/api/users/${ctx.id}`, { headers: h, name: 'whisper get user {id}', ok: [200] });
 }
 function whisperWrite(ctx) {
