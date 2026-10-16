@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mini City</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,sans-serif;color:#fff}
+canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+#bal{position:absolute;top:14px;right:18px;background:#000a;padding:8px 14px;border-radius:10px}
+#hint{position:absolute;top:14px;left:18px;font-size:13px;opacity:.85}
+#cross{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff9}
+#prompt{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);background:#000b;padding:10px 18px;border-radius:10px;display:none}
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0f2055;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#panel{position:relative;width:min(1000px,92vw);height:84vh;background:#fff;border-radius:14px;overflow:hidden;color:#111}
+#frame{width:100%;height:100%;border:0}
+#msg{display:none;padding:48px;font-size:18px}
+#x{position:absolute;top:8px;right:10px;z-index:2;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;background:#111;color:#fff}
+#x:focus-visible{outline:3px solid #6aa7ff}
+</style></head>
+<body>
+<div id="hud"><div id="hint">Click to look around. WASD move, Shift run, E enter, Esc pause</div><div id="bal">Balance: --</div><div id="cross"></div><div id="prompt"></div></div>
+<div id="ov"><div id="panel"><button id="x" aria-label="Close panel">Close</button><iframe id="frame" title="Service"></iframe><div id="msg"></div></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
+
+const cfg = await (await fetch('districts.json')).json();
+const debug = new URLSearchParams(location.search).has('debug');
+const status = {};                      // statusKey -> 'up' | 'down' (missing = up)
+const $ = id => document.getElementById(id);
+const ov = $('ov'), frame = $('frame'), msg = $('msg'), prompt_ = $('prompt');
+let ovOpen = false, near = null, frames = 0;
+
+// ---- scene ----
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87b5e0);
+scene.fog = new THREE.Fog(0x87b5e0, 40, 140);
+const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, .1, 300);
+cam.position.set(cfg.spawn[0], 1.7, cfg.spawn[1]);
+const r = new THREE.WebGLRenderer({antialias: true});
+r.setSize(innerWidth, innerHeight);
+r.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.prepend(r.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(30, 50, 20); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({color: 0x4d7a52}));
+ground.rotation.x = -Math.PI / 2; scene.add(ground);
+
+function label(t) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000a'; g.fillRect(0, 0, 512, 128);
+  g.fillStyle = '#fff'; g.font = 'bold 48px sans-serif'; g.textAlign = 'center'; g.fillText(t, 256, 82);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c)}));
+  s.scale.set(8, 2, 1); return s;
+}
+
+const B = cfg.districts.map(d => {
+  const [w, h, dp] = d.size;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, dp), new THREE.MeshStandardMaterial({color: d.color}));
+  m.position.set(d.pos[0], h / 2, d.pos[1]); scene.add(m);
+  const l = label(d.name); l.position.set(d.pos[0], h + 1.5, d.pos[1]); scene.add(l);
+  return {d, m, hw: w / 2, hd: dp / 2};
+});
+
+function paint() {
+  for (const b of B) b.m.material.color.set(status[b.d.statusKey] === 'down' ? 0x222222 : b.d.color);
+}
+async function poll() {
+  if (cfg.statusUrl) {
+    try { Object.assign(status, await (await fetch(cfg.statusUrl, {credentials: 'include'})).json()); } catch {}
+  }
+  paint();
+}
+poll(); setInterval(poll, 5000);
+
+// ---- controls + collision ----
+const controls = new PointerLockControls(cam, r.domElement);
+r.domElement.addEventListener('click', () => { if (!ovOpen) controls.lock(); });
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.code] = 1;
+  if (e.code === 'KeyE' && near && !ovOpen) openPanel(near);
+  if (e.code === 'Escape' && ovOpen) closePanel();
+  if (debug && e.code === 'KeyK') { status.bank = status.bank === 'down' ? 'up' : 'down'; paint(); }
+});
+addEventListener('keyup', e => { keys[e.code] = 0; });
+
+function nearest(p) {                    // distance from player to each building footprint
+  let best = null, bd = 3.5;
+  for (const b of B) {
+    const x = b.d.pos[0], z = b.d.pos[1];
+    const cx = Math.max(x - b.hw, Math.min(p.x, x + b.hw)), cz = Math.max(z - b.hd, Math.min(p.z, z + b.hd));
+    const dx = p.x - cx, dz = p.z - cz, dist = Math.hypot(dx, dz);
+    if (dist < .5) { if (dist > 1e-4) { p.x += dx / dist * (.5 - dist); p.z += dz / dist * (.5 - dist); } else p.x += .5; }
+    if (dist < bd) { bd = dist; best = b; }
+  }
+  return best;
+}
+
+// ---- overlay ----
+function openPanel(b) {
+  const d = b.d; controls.unlock(); ovOpen = true; ov.style.display = 'flex'; prompt_.style.display = 'none';
+  if (status[d.statusKey] === 'down') {
+    frame.style.display = 'none'; msg.style.display = 'block';
+    msg.textContent = d.name + ' is offline. The city is in safe mode.';
+  } else {
+    msg.style.display = 'none'; frame.style.display = 'block';
+    if (frame.dataset.id !== d.id) { frame.src = d.url; frame.dataset.id = d.id; }
+  }
+  if (location.hash !== '#/' + d.id) history.pushState(null, '', '#/' + d.id);
+}
+function closePanel() {
+  ovOpen = false; ov.style.display = 'none';
+  if (location.hash) history.pushState(null, '', location.pathname + location.search);
+}
+$('x').onclick = closePanel;
+addEventListener('popstate', () => {
+  const b = B.find(b => '#/' + b.d.id === location.hash);
+  b ? openPanel(b) : (ovOpen && closePanel());
+});
+{ const b = B.find(b => '#/' + b.d.id === location.hash); if (b) openPanel(b); }
+
+// Panels talk to the city with postMessage. Only origins listed in districts.json are trusted.
+const trusted = new Set(cfg.districts.map(d => new URL(d.url, location.href).origin));
+addEventListener('message', e => {
+  if (!trusted.has(e.origin)) return;
+  const m = e.data || {};
+  if (m.type === 'city:close') closePanel();
+  if (m.type === 'city:balance' && Number.isFinite(m.balance)) $('bal').textContent = 'Balance: ' + m.balance.toLocaleString();
+});
+
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); r.setSize(innerWidth, innerHeight); });
+
+// ---- loop (throttled while a panel is open) ----
+let last = performance.now();
+r.setAnimationLoop(t => {
+  const dt = Math.min((t - last) / 1000, .1); last = t;
+  if (ovOpen && ++frames % 4) return;
+  if (controls.isLocked) {
+    const s = (keys.ShiftLeft ? 9 : 5) * dt;
+    controls.moveForward(((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0)) * s);
+    controls.moveRight(((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0)) * s);
+  }
+  near = nearest(cam.position);
+  prompt_.style.display = near && !ovOpen ? 'block' : 'none';
+  if (near) prompt_.textContent = 'Press E: ' + near.d.name;
+  r.render(scene, cam);
+});
+</script>
+</body></html>
