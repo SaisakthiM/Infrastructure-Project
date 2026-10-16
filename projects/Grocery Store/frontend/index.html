@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini City — Grocery Market</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #151f32;
+      --border: #1e293b;
+      --accent: #22c55e;
+      --accent-glow: rgba(34, 197, 94, 0.15);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .title-group { display: flex; align-items: center; gap: 12px; }
+    .icon {
+      font-size: 28px;
+      background: var(--accent-glow);
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--accent);
+    }
+    .wallet-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+    .wallet-val { color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+    .shift-banner {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(6, 182, 212, 0.1));
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn {
+      background: var(--accent);
+      color: #0b1120;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-buy {
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .product-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 18px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .product-emoji { font-size: 36px; text-align: center; margin: 10px 0; }
+    .product-title { font-weight: 600; font-size: 0.95rem; }
+    .product-desc { font-size: 0.8rem; color: var(--muted); }
+    .product-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .price { font-weight: 700; color: #38bdf8; }
+    #status-msg {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <div class="icon">🛒</div>
+      <div>
+        <h1 style="font-size: 1.3rem;">Mini City Supermarket</h1>
+        <p style="font-size: 0.8rem; color: var(--muted);">Essential Groceries & Citizen Employment District</p>
+      </div>
+    </div>
+    <div class="wallet-card">
+      Balance: <span class="wallet-val" id="balDisplay">₹1,000</span>
+    </div>
+  </div>
+
+  <!-- Employment Shift -->
+  <div class="shift-banner">
+    <div>
+      <h3 style="font-size: 1rem; margin-bottom: 4px;">Earn as a Grocery Worker / Barista</h3>
+      <p style="font-size: 0.8rem; color: var(--muted);">Clock in for a shift restocking provisions and serving citizens to earn city credits.</p>
+    </div>
+    <button class="btn" id="workBtn">Clock In (+₹80)</button>
+  </div>
+
+  <!-- Goods Catalog -->
+  <h2 style="font-size: 1.1rem; margin-bottom: 14px;">Provisions & Essentials</h2>
+  <div class="grid" id="productGrid"></div>
+  <div id="status-msg"></div>
+
+  <script>
+    let balance = 1000;
+    try {
+      const cached = localStorage.getItem('mini_city_cached_balance');
+      if (cached) balance = parseFloat(cached);
+    } catch (e) {}
+
+    function updateBal(newBal) {
+      balance = newBal;
+      document.getElementById('balDisplay').textContent = '₹' + balance.toLocaleString();
+      try {
+        localStorage.setItem('mini_city_cached_balance', balance.toString());
+      } catch (e) {}
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'city:balance', balance: balance }, '*');
+      }
+    }
+    updateBal(balance);
+
+    const products = [
+      { id: 1, name: 'Daily Nutrition Pack', emoji: '🥗', price: 25, desc: 'Fresh local farm greens & vitamins.' },
+      { id: 2, name: 'Cyber Espresso Roast', emoji: '☕', price: 15, desc: 'High-energy barista roasted coffee.' },
+      { id: 3, name: 'Purified Water Canteen', emoji: '💧', price: 10, desc: 'Essential mineral hydration flask.' },
+      { id: 4, name: 'Artisan Sourdough Loaf', emoji: '🍞', price: 20, desc: 'Baked daily with city grains.' }
+    ];
+
+    const grid = document.getElementById('productGrid');
+    const msg = document.getElementById('status-msg');
+
+    products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <div class="product-emoji">${p.emoji}</div>
+        <div class="product-title">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="product-foot">
+          <span class="price">₹${p.price}</span>
+          <button class="btn btn-buy" onclick="buyItem(${p.price}, '${p.name}')">Purchase</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    window.buyItem = function(price, name) {
+      if (balance < price) {
+        msg.textContent = '❌ Insufficient credits to purchase ' + name;
+        msg.style.color = '#ef4444';
+        return;
+      }
+      updateBal(balance - price);
+      msg.textContent = `✅ Purchased ${name} for ₹${price}. Balance updated.`;
+      msg.style.color = '#22c55e';
+    };
+
+    document.getElementById('workBtn').onclick = function() {
+      updateBal(balance + 80);
+      msg.textContent = '🎉 Completed shift at the grocery market! +₹80 credited to your wallet.';
+      msg.style.color = '#22c55e';
+    };
+  </script>
+</body>
+</html>

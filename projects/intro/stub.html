@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Service Stub</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 40px;
+      background: #0f172a;
+      color: #f8fafc;
+      line-height: 1.6;
+    }
+    .card {
+      background: #1e293b;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      border: 1px solid #334155;
+    }
+    h1 { margin-top: 0; color: #38bdf8; }
+    button {
+      padding: 10px 18px;
+      margin-top: 16px;
+      margin-right: 8px;
+      border-radius: 8px;
+      border: 0;
+      background: #38bdf8;
+      color: #0f172a;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.sec {
+      background: #475569;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="title">Service</h1>
+    <p>This is a local simulation panel for this district.</p>
+    <button id="closeBtn">Return to City</button>
+    <button id="earnBtn" class="sec">+100 Credits</button>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const d = params.get('d') || 'Service';
+    document.getElementById('title').textContent = d;
+    
+    let bal = 1000;
+    document.getElementById('closeBtn').onclick = () => {
+      window.parent.postMessage({ type: 'city:close' }, '*');
+    };
+    document.getElementById('earnBtn').onclick = () => {
+      bal += 100;
+      window.parent.postMessage({ type: 'city:balance', balance: bal }, '*');
+    };
+  </script>
+</body>
+</html>

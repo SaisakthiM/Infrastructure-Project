@@ -61,6 +61,7 @@ def manage_appointments(request):
     return render(request, "appointments/list.html", {"appointments": appointments})
 
 def book_appointment(request):
+    from .metrics_logger import log_hospital_financial_event
     if request.method == "POST":
         patient_id = request.POST['patient']
         doctor_id = request.POST['doctor']
@@ -68,13 +69,34 @@ def book_appointment(request):
         time = request.POST['time']
         patient = get_object_or_404(Patient, id=patient_id)
         doctor = get_object_or_404(Doctor, id=doctor_id)
-        Appointment.objects.create(patient=patient, doctor=doctor, date=date, time=time)
+        fee = getattr(doctor, 'consultation_fee', 150)
+        payout = getattr(doctor, 'doctor_earnings', 100)
+        
+        appointment = Appointment.objects.create(
+            patient=patient,
+            doctor=doctor,
+            date=date,
+            time=time,
+            fee=fee,
+            doctor_payout=payout
+        )
+
+        # Log financial analytics event for MinIO
+        log_hospital_financial_event('appointment_booked', {
+            'appointment_id': appointment.id,
+            'patient': patient.name,
+            'doctor': doctor.name,
+            'patient_spent': fee,
+            'doctor_earned': payout
+        })
+
         return redirect('manage_appointments')
     context = {
         "patients": Patient.objects.all(),
         "doctors": Doctor.objects.all()
     }
     return render(request, "appointments/book.html", context)
+
 
 def update_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)

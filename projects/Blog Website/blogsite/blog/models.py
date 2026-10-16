@@ -32,6 +32,14 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
+    views_count = models.PositiveIntegerField(default=0)
+    likes_count = models.PositiveIntegerField(default=0)
+    earnings = models.FloatField(default=0.0) # Calculated city influencer credits
+
+    def calculate_earnings(self):
+        # 1 credit per 10 views + 2 credits per like
+        self.earnings = round((self.views_count * 0.1) + (self.likes_count * 2.0), 2)
+        return self.earnings
 
     def save(self, *args, **kwargs):
         if self.image and hasattr(self.image, 'file'):
@@ -39,10 +47,12 @@ class Post(models.Model):
             # keep original filename but force .jpg extension
             original_name = self.image.name.rsplit('.', 1)[0] + '.jpg'
             self.image.save(original_name, ContentFile(buffer.read()), save=False)
+        self.calculate_earnings()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title
+        return f"{self.title} (Views: {self.views_count}, Earned: ₹{self.earnings})"
+
 
 
 class Profile(models.Model):

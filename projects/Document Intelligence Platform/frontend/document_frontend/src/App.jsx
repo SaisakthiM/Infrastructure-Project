@@ -4,6 +4,7 @@ import { Home } from './components/Home'
 import { Upload } from './components/Upload'
 import { Ask } from './components/Ask'
 import { Library } from './components/Library'
+import { TherapistSupport } from './components/TherapistSupport'
 
 function App() {
     return (
@@ -13,9 +14,11 @@ function App() {
 				<Route path='/upload' element={<Upload></Upload>}></Route>
 				<Route path='/ask' element={<Ask></Ask>}></Route>
 				<Route path='/library' element={<Library />} />
+				<Route path='/therapist' element={<TherapistSupport />} />
 			</Routes>
 		</BrowserRouter>
 	)
 }
 
 export default App
+
