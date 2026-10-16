@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini City — Citizen Housing & Financial Analytics</title>
+  <style>
+    :root {
+      --bg: #030712;
+      --card: #0f172a;
+      --border: #1e293b;
+      --cyan: #00f0ff;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 28px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--cyan);
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,240,255,0.15);
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #030712;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-val { font-size: 1.8rem; font-weight: 800; }
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      border-radius: 14px;
+    }
+    .chart-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .bar-label { width: 140px; font-size: 0.85rem; color: var(--muted); }
+    .bar-track { flex: 1; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+    .bar-amount { width: 60px; text-align: right; font-size: 0.85rem; font-weight: 700; }
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.85rem;
+    }
+    .ledger-table th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .ledger-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #131d31;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-earn { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e; }
+    .badge-spend { background: rgba(236, 72, 153, 0.15); color: #ec4899; border: 1px solid #ec4899; }
+    .btn-action {
+      background: #0284c7;
+      color: #fff;
+      border: 0;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 style="font-size: 1.4rem; font-weight: 800; color: #00f0ff;">CITIZEN RESIDENCE & ANALYTICS</h1>
+      <p style="font-size: 0.8rem; color: var(--muted);">Centralized City Identity & Financial Ledger Overview</p>
+    </div>
+    <div class="user-badge">
+      <div class="avatar" id="userAvatar">S</div>
+      <div>
+        <div style="font-weight: 700; font-size: 0.9rem;" id="userName">saisakthi</div>
+        <div style="font-size: 0.75rem; color: #22c55e;" id="authStatus">● Central Auth Verified</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Wallet Balance</div>
+      <div class="stat-val" style="color: #00f0ff;" id="balDisplay">₹1,000</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total City Earnings</div>
+      <div class="stat-val" style="color: #22c55e;" id="totalEarned">₹380</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total City Spending</div>
+      <div class="stat-val" style="color: #ec4899;" id="totalSpent">₹185</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Economic Health</div>
+      <div class="stat-val" style="color: #facc15;">98.4%</div>
+    </div>
+  </div>
+
+  <!-- Realtime Analytics Grid -->
+  <div class="analytics-grid">
+    <!-- Spending Breakdown -->
+    <div class="chart-card">
+      <div class="chart-title">
+        <span>Expense Distribution (Spend)</span>
+        <span style="font-size: 0.8rem; color: #ec4899;">Breakdown</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">🏥 Healthcare Visits</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 65%; background: #0ea5e9;"></div></div>
+        <span class="bar-amount">₹150</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">🛒 Supermarket Groceries</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 25%; background: #22c55e;"></div></div>
+        <span class="bar-amount">₹25</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">☕ Cyber Espresso</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 10%; background: #facc15;"></div></div>
+        <span class="bar-amount">₹10</span>
+      </div>
+    </div>
+
+    <!-- Earning Breakdown -->
+    <div class="chart-card">
+      <div class="chart-title">
+        <span>Revenue Streams (Earn)</span>
+        <span style="font-size: 0.8rem; color: #22c55e;">Breakdown</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">🎬 Influencer Media Hub</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 50%; background: #ec4899;"></div></div>
+        <span class="bar-amount">₹200</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">🩺 Doctor Consultations</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 30%; background: #38bdf8;"></div></div>
+        <span class="bar-amount">₹100</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">🏪 Grocery Shift Work</span>
+        <div class="bar-track"><div class="bar-fill" style="width: 20%; background: #22c55e;"></div></div>
+        <span class="bar-amount">₹80</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified City Ledger -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <span>Recent City Transactions Ledger</span>
+      <button class="btn-action" onclick="refreshLedger()">Refresh Analytics</button>
+    </div>
+    <table class="ledger-table">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>District Service</th>
+          <th>Type</th>
+          <th>Details</th>
+          <th>Amount</th>
+          <th>Sync Status</th>
+        </tr>
+      </thead>
+      <tbody id="ledgerBody">
+        <tr>
+          <td><code>tx_77319</code></td>
+          <td>Video Stream Hub</td>
+          <td><span class="badge badge-earn">+ EARN</span></td>
+          <td>Influencer Creator Payout (2K Views)</td>
+          <td style="color: #22c55e; font-weight: 700;">+₹200</td>
+          <td>✅ Bank Reconciled</td>
+        </tr>
+        <tr>
+          <td><code>tx_77318</code></td>
+          <td>Hospital Management</td>
+          <td><span class="badge badge-spend">- SPEND</span></td>
+          <td>Specialist Consultation Appointment</td>
+          <td style="color: #ec4899; font-weight: 700;">-₹150</td>
+          <td>✅ Bank Reconciled</td>
+        </tr>
+        <tr>
+          <td><code>tx_77317</code></td>
+          <td>Grocery Store</td>
+          <td><span class="badge badge-earn">+ EARN</span></td>
+          <td>Barista & Provisions Restock Shift</td>
+          <td style="color: #22c55e; font-weight: 700;">+₹80</td>
+          <td>✅ Bank Reconciled</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // Read Centralized City Auth and Balance
+    let balance = 1000;
+    try {
+      const cached = localStorage.getItem('mini_city_cached_balance');
+      if (cached) balance = parseFloat(cached);
+
+      const authUser = localStorage.getItem('mini_city_auth_user');
+      if (authUser) {
+        const u = JSON.parse(authUser);
+        document.getElementById('userName').textContent = u.username || 'Citizen';
+        document.getElementById('userAvatar').textContent = (u.username || 'C')[0].toUpperCase();
+      }
+    } catch (e) {}
+
+    document.getElementById('balDisplay').textContent = '₹' + balance.toLocaleString();
+
+    function refreshLedger() {
+      try {
+        const ledger = JSON.parse(localStorage.getItem('mini_city_safe_mode_ledger') || '[]');
+        const tbody = document.getElementById('ledgerBody');
+        ledger.forEach(entry => {
+          const tr = document.createElement('tr');
+          const isEarn = entry.type === 'earn';
+          tr.innerHTML = `
+            <td><code>${entry.eventId.slice(0, 8)}</code></td>
+            <td>${entry.service}</td>
+            <td><span class="badge ${isEarn ? 'badge-earn' : 'badge-spend'}">${isEarn ? '+ EARN' : '- SPEND'}</span></td>
+            <td>${entry.description}</td>
+            <td style="color: ${isEarn ? '#22c55e' : '#ec4899'}; font-weight: 700;">${isEarn ? '+' : '-'}₹${entry.amount}</td>
+            <td>${entry.synced ? '✅ Bank Reconciled' : '⏳ Safe Mode Queued'}</td>
+          `;
+          tbody.prepend(tr);
+        });
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

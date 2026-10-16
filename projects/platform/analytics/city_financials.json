@@ -1,0 +1,10 @@
+[
+  {
+    "service": "hospital",
+    "event_id": "hosp_1",
+    "amount": 150.0,
+    "type": "spend",
+    "description": "Appointment on 2025-06-21 18:40:00",
+    "timestamp": 1792148312
+  }
+]

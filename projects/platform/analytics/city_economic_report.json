@@ -1,0 +1,12 @@
+{
+  "status": "HEALTHY",
+  "generated_at": "2026-10-16T10:58:32Z",
+  "total_events": 1,
+  "metrics": {
+    "total_city_earned": 0,
+    "total_city_spent": 150.0,
+    "net_economic_growth": -150.0,
+    "reserve_currency": "INR"
+  },
+  "minio_sync_target": "shared-minio:9000/city-analytics/duckdb/"
+}

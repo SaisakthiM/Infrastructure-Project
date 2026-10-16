@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service Unavailable — Safe Mode</title>
+  <style>
+    body {
+      background: #060913;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+    }
+    .card {
+      background: #0f172a;
+      border: 1px solid #ef4444;
+      border-radius: 16px;
+      padding: 36px 40px;
+      max-width: 520px;
+      text-align: center;
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.25);
+    }
+    .icon {
+      font-size: 52px;
+      margin-bottom: 16px;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.8; }
+    }
+    h1 {
+      margin: 0 0 12px;
+      color: #ef4444;
+      font-size: 1.6rem;
+      font-weight: 800;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background: #ef4444;
+      color: #fff;
+      border: 0;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚠️</div>
+    <h1 id="districtTitle">District Offline</h1>
+    <p id="districtDesc">This service is temporarily unavailable or restarting. The Mini City has switched to Safe Mode to ensure data and balance integrity.</p>
+    <button class="btn" onclick="window.parent.postMessage({type: 'city:close'}, '*')">Return to 3D City</button>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const name = params.get('name') || 'District Service';
+    document.getElementById('districtTitle').textContent = `${name} Offline`;
+  </script>
+</body>
+</html>

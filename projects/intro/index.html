@@ -1,79 +1,746 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mini City</title>
+<title>Mini City — Saisakthi M Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,sans-serif;color:#fff}
+html,body{margin:0;height:100%;overflow:hidden;background:#030712;font-family:'JetBrains Mono',monospace;color:#fff}
 canvas{display:block}
-#hud{position:fixed;inset:0;pointer-events:none}
-#bal{position:absolute;top:14px;right:18px;background:#000a;padding:8px 14px;border-radius:10px}
-#hint{position:absolute;top:14px;left:18px;font-size:13px;opacity:.85}
-#cross{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff9}
-#prompt{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);background:#000b;padding:10px 18px;border-radius:10px;display:none}
-#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0f2055;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-#panel{position:relative;width:min(1000px,92vw);height:84vh;background:#fff;border-radius:14px;overflow:hidden;color:#111}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:50}
+
+/* Modern Glassmorphic Top Nav */
+#top-nav {
+  position: absolute;
+  top: 16px; left: 20px; right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+.nav-group-left, .nav-group-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+.nav-badge-brand {
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(0, 240, 255, 0.08);
+}
+.brand-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 10px #00d4aa;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+@keyframes pulseDot { 0%, 100% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.2); } }
+.brand-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: #f1f5f9;
+}
+.brand-sub {
+  font-size: 11px;
+  color: #00f0ff;
+  font-weight: 600;
+}
+
+.hud-btn {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(77, 171, 247, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 13px;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.hud-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.35);
+  transform: translateY(-1px);
+}
+.hud-btn:active {
+  transform: translateY(0);
+}
+#bal {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(0, 212, 170, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #00d4aa;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 10px rgba(0, 212, 170, 0.1);
+  pointer-events: auto;
+}
+
+#hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  color: #94a3b8;
+}
+#cross {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px; height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+}
+#prompt {
+  position: absolute;
+  bottom: 14%; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid #00f0ff;
+  padding: 12px 28px;
+  border-radius: 12px;
+  display: none;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+}
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0f2077;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:900}
+#panel{position:relative;width:min(1100px,94vw);height:86vh;background:#0f172a;border-radius:16px;overflow:hidden;color:#fff;border:1px solid #334155;box-shadow:0 20px 50px rgba(0,0,0,0.8)}
 #frame{width:100%;height:100%;border:0}
-#msg{display:none;padding:48px;font-size:18px}
-#x{position:absolute;top:8px;right:10px;z-index:2;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;background:#111;color:#fff}
+#msg{display:none;padding:48px;font-size:18px;text-align:center}
+#x{position:absolute;top:12px;right:14px;z-index:2;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#ef4444;color:#fff;font-weight:700}
 #x:focus-visible{outline:3px solid #6aa7ff}
+
+/* Auth Modal */
+#auth-modal{position:fixed;inset:0;background:rgba(3,7,18,0.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;z-index:9000}
+.auth-box{background:#0f172a;border:1px solid #00f0ff;padding:32px 36px;border-radius:16px;width:360px;box-shadow:0 0 30px rgba(0,240,255,0.25)}
+.auth-input{width:100%;padding:12px;margin:8px 0 16px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff;outline:none;box-sizing:border-box}
+
+#loader-overlay{position:fixed;inset:0;background:#030712;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.6s ease}
+.loader-spinner{width:54px;height:54px;border:4px solid #1e293b;border-top-color:#00f0ff;border-radius:50%;animation:spin 1s linear infinite;box-shadow:0 0 20px rgba(0,240,255,0.3)}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style></head>
 <body>
-<div id="hud"><div id="hint">Click to look around. WASD move, Shift run, E enter, Esc pause</div><div id="bal">Balance: --</div><div id="cross"></div><div id="prompt"></div></div>
-<div id="ov"><div id="panel"><button id="x" aria-label="Close panel">Close</button><iframe id="frame" title="Service"></iframe><div id="msg"></div></div></div>
+<div id="loader-overlay">
+  <div class="loader-spinner"></div>
+  <h2 style="color:#00f0ff;margin-top:20px;font-size:1.3rem;letter-spacing:0.08em;font-family:'Syne',sans-serif;">INITIALIZING MINI CITY</h2>
+  <p id="loading-txt" style="color:#94a3b8;font-size:0.85rem;margin-top:6px;">Aligning Neo City Architectural Districts...</p>
+</div>
+
+<div id="auth-modal">
+  <div class="auth-box">
+    <h2 style="margin:0 0 8px;color:#00f0ff;font-family:'Syne',sans-serif;">Citizen Profile</h2>
+    <p style="margin:0 0 16px;color:#94a3b8;font-size:0.85rem;">Central city authentication credentials</p>
+    <label style="font-size:0.8rem;color:#94a3b8;">Citizen Handle</label>
+    <input class="auth-input" id="auth-user" placeholder="e.g. saisakthi" value="saisakthi" />
+    <label style="font-size:0.8rem;color:#94a3b8;">Access Key</label>
+    <input class="auth-input" id="auth-pass" type="password" placeholder="••••••••" value="citypass" />
+    <button class="hud-btn" style="width:100%;margin-top:8px;justify-content:center;" id="login-submit-btn">Authorize Session</button>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="top-nav">
+    <div class="nav-group-left">
+      <div class="nav-badge-brand">
+        <div class="brand-dot"></div>
+        <span class="brand-title">SAISAKTHI.QZZ.IO</span>
+        <span class="brand-sub">NEO CITY</span>
+      </div>
+      <button class="hud-btn" id="portfolio-btn">📋 Developer Portfolio</button>
+    </div>
+    <div class="nav-group-right">
+      <button class="hud-btn" id="theme-btn">🌙 Night</button>
+      <button class="hud-btn" id="auth-btn">Citizen: saisakthi</button>
+      <div id="bal">₹1,000</div>
+    </div>
+  </div>
+  <div id="hint">Click viewport to navigate | WASD move · Shift sprint · E interact · Esc pause</div>
+  <div id="cross"></div>
+  <div id="prompt"></div>
+</div>
+
+<div id="ov"><div id="panel"><button id="x" aria-label="Close panel">Close [Esc]</button><iframe id="frame" title="Service"></iframe><div id="msg"></div></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {MTLLoader} from 'three/addons/loaders/MTLLoader.js';
 
 const cfg = await (await fetch('districts.json')).json();
 const debug = new URLSearchParams(location.search).has('debug');
-const status = {};                      // statusKey -> 'up' | 'down' (missing = up)
+const status = {}; // statusKey -> 'up' | 'down'
 const $ = id => document.getElementById(id);
 const ov = $('ov'), frame = $('frame'), msg = $('msg'), prompt_ = $('prompt');
 let ovOpen = false, near = null, frames = 0;
 
-// ---- scene ----
+// Centralized City Authentication
+let currentUser = JSON.parse(localStorage.getItem('mini_city_auth_user') || '{"username":"saisakthi","token":"city_token_7739"}');
+$('auth-btn').textContent = 'Citizen: ' + currentUser.username;
+$('auth-btn').onclick = () => { $('auth-modal').style.display = 'flex'; controls.unlock(); };
+$('login-submit-btn').onclick = () => {
+  const u = $('auth-user').value.trim() || 'Citizen';
+  currentUser = { username: u, token: 'city_token_' + Date.now() };
+  localStorage.setItem('mini_city_auth_user', JSON.stringify(currentUser));
+  $('auth-btn').textContent = 'Citizen: ' + currentUser.username;
+  $('auth-modal').style.display = 'none';
+};
+
+// ---- scene & atmosphere ----
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87b5e0);
-scene.fog = new THREE.Fog(0x87b5e0, 40, 140);
-const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, .1, 300);
-cam.position.set(cfg.spawn[0], 1.7, cfg.spawn[1]);
+scene.background = new THREE.Color(0x040814);
+scene.fog = new THREE.FogExp2(0x040814, 0.008);
+
+const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, .1, 500);
+cam.position.set(cfg.spawn[0], 2.2, cfg.spawn[1]);
+
 const r = new THREE.WebGLRenderer({antialias: true});
 r.setSize(innerWidth, innerHeight);
 r.setPixelRatio(Math.min(devicePixelRatio, 2));
+r.toneMapping = THREE.ACESFilmicToneMapping;
+r.toneMappingExposure = 1.35;
 document.body.prepend(r.domElement);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1));
-const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(30, 50, 20); scene.add(sun);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({color: 0x4d7a52}));
-ground.rotation.x = -Math.PI / 2; scene.add(ground);
 
-// Task 2: simple road: a dark grey plane strip along z from 30 to -60, width 6
-const roadGeo = new THREE.PlaneGeometry(6, 90);
-const roadMat = new THREE.MeshStandardMaterial({color: 0x2b2d30, roughness: 0.9});
+// Lighting: Night (default), Day, and Alert Red
+const hemiLight = new THREE.HemisphereLight(0x00f0ff, 0x0f172a, 0.8);
+scene.add(hemiLight);
+const dirLight = new THREE.DirectionalLight(0xa5b4fc, 1.5);
+dirLight.position.set(40, 90, 30);
+scene.add(dirLight);
+
+// Theme Switcher: Night ⇄ Day
+let currentTheme = 'night';
+function applyTheme(theme) {
+  currentTheme = theme;
+  if (theme === 'day') {
+    scene.background.set(0x87b5e0);
+    scene.fog.color.set(0x87b5e0);
+    hemiLight.color.set(0xffffff);
+    hemiLight.groundColor.set(0x445566);
+    hemiLight.intensity = 1.2;
+    dirLight.color.set(0xfffaed);
+    dirLight.intensity = 1.6;
+    $('theme-btn').textContent = '☀️ Day';
+  } else {
+    scene.background.set(0x040814);
+    scene.fog.color.set(0x040814);
+    hemiLight.color.set(0x00f0ff);
+    hemiLight.groundColor.set(0x0f172a);
+    hemiLight.intensity = 0.8;
+    dirLight.color.set(0xa5b4fc);
+    dirLight.intensity = 1.5;
+    $('theme-btn').textContent = '🌙 Night';
+  }
+}
+$('theme-btn').onclick = () => applyTheme(currentTheme === 'night' ? 'day' : 'night');
+
+// ---- TEXTURE LOADER FOR KITBASH3D NEO CITY ASSETS ----
+const texLoader = new THREE.TextureLoader();
+
+const streetColor = texLoader.load('assets/textures/web/KB3D_NEC_StreetTiles_basecolor.jpg');
+streetColor.wrapS = streetColor.wrapT = THREE.RepeatWrapping;
+streetColor.repeat.set(2, 24);
+
+const streetRoughness = texLoader.load('assets/textures/web/KB3D_NEC_StreetTiles_roughness.jpg');
+streetRoughness.wrapS = streetRoughness.wrapT = THREE.RepeatWrapping;
+streetRoughness.repeat.set(2, 24);
+
+const streetNormal = texLoader.load('assets/textures/web/KB3D_NEC_StreetTiles_normal.jpg');
+streetNormal.wrapS = streetNormal.wrapT = THREE.RepeatWrapping;
+streetNormal.repeat.set(2, 24);
+
+const screenEmissive = texLoader.load('assets/textures/web/KB3D_NEC_Screens_emissive.jpg');
+const bannerColor = texLoader.load('assets/textures/web/KB3D_NEC_BannerA_basecolor.jpg');
+
+// ---- GROUND & STREETS ----
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(500, 500),
+  new THREE.MeshStandardMaterial({color: 0x050a16, roughness: 0.9, metalness: 0.1})
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// Main Boulevard
+const roadGeo = new THREE.PlaneGeometry(12, 125);
+const roadMat = new THREE.MeshStandardMaterial({
+  map: streetColor,
+  roughnessMap: streetRoughness,
+  normalMap: streetNormal,
+  roughness: 0.7,
+  metalness: 0.2
+});
 const road = new THREE.Mesh(roadGeo, roadMat);
 road.rotation.x = -Math.PI / 2;
-road.position.set(0, 0.02, -15); // centered between z=30 and z=-60
+road.position.set(0, 0.03, -27.5);
 scene.add(road);
+
+// Neon Curbs
+const curbMat = new THREE.MeshStandardMaterial({color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8});
+const curbL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 125), curbMat);
+curbL.position.set(-6, 0.12, -27.5);
+scene.add(curbL);
+const curbR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 125), curbMat);
+curbR.position.set(6, 0.12, -27.5);
+scene.add(curbR);
+
+// Yellow Markings
+for (let z = 32; z > -85; z -= 5) {
+  const stripe = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.35, 2.5),
+    new THREE.MeshBasicMaterial({color: 0xfacc15})
+  );
+  stripe.rotation.x = -Math.PI / 2;
+  stripe.position.set(0, 0.04, z);
+  scene.add(stripe);
+}
+
+// Crossroads
+[-6, -30, -50, -62].forEach(zPos => {
+  const crossRoad = new THREE.Mesh(new THREE.PlaneGeometry(80, 8), roadMat);
+  crossRoad.rotation.x = -Math.PI / 2;
+  crossRoad.position.set(0, 0.025, zPos);
+  scene.add(crossRoad);
+});
+
+// Street Lamps
+function createStreetLamp(x, z) {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 5), new THREE.MeshStandardMaterial({color: 0x334155}));
+  pole.position.y = 2.5;
+  g.add(pole);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.3), new THREE.MeshBasicMaterial({color: 0x00f0ff}));
+  head.position.set(0, 5, 0);
+  g.add(head);
+
+  const light = new THREE.PointLight(0x00f0ff, 2.5, 18);
+  light.position.set(0, 4.8, 0);
+  g.add(light);
+
+  g.position.set(x, 0, z);
+  scene.add(g);
+}
+[-5.5, 5.5].forEach(x => {
+  [25, 10, -5, -20, -35, -50, -65].forEach(z => createStreetLamp(x, z));
+});
+
+// Billboards
+function createBillboard(x, z, angle, map) {
+  const g = new THREE.Group();
+  const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(6.6, 3.6, 0.3), new THREE.MeshStandardMaterial({color: 0x0f172a}));
+  frameMesh.position.y = 5.5;
+  g.add(frameMesh);
+
+  const screenMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.2, 3.2),
+    new THREE.MeshStandardMaterial({
+      map: map,
+      emissiveMap: map,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.95
+    })
+  );
+  screenMesh.position.set(0, 5.5, 0.16);
+  g.add(screenMesh);
+
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3.8), new THREE.MeshStandardMaterial({color: 0x475569}));
+  pole.position.y = 1.9;
+  g.add(pole);
+
+  g.position.set(x, 0, z);
+  g.rotation.y = angle;
+  scene.add(g);
+}
+// ---- DEVELOPER PORTFOLIO BILLBOARD AT SPAWN ----
+function createPortfolioBillboard(x, z, angle) {
+  const g = new THREE.Group();
+  
+  // Outer Cyber Frame
+  const frameGeo = new THREE.BoxGeometry(14, 8.5, 0.5);
+  const frameMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    roughness: 0.4,
+    metalness: 0.8,
+    emissive: 0x00f0ff,
+    emissiveIntensity: 0.15
+  });
+  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+  frameMesh.position.y = 8.5;
+  g.add(frameMesh);
+
+  // Outer Neon Bezel
+  const bezelMat = new THREE.MeshBasicMaterial({color: 0x00f0ff});
+  const bezelTop = new THREE.Mesh(new THREE.BoxGeometry(14.2, 0.08, 0.55), bezelMat);
+  bezelTop.position.set(0, 12.75, 0);
+  g.add(bezelTop);
+  const bezelBottom = new THREE.Mesh(new THREE.BoxGeometry(14.2, 0.08, 0.55), bezelMat);
+  bezelBottom.position.set(0, 4.25, 0);
+  g.add(bezelBottom);
+
+  // Hi-Res Portfolio Canvas
+  const cv = document.createElement('canvas');
+  cv.width = 1400;
+  cv.height = 850;
+  const ctx = cv.getContext('2d');
+
+  // Background
+  const grad = ctx.createLinearGradient(0, 0, 1400, 850);
+  grad.addColorStop(0, '#0a0f18');
+  grad.addColorStop(0.5, '#0d131f');
+  grad.addColorStop(1, '#080c12');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1400, 850);
+
+  // Background Grid Lines
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx < 1400; gx += 40) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, 850); ctx.stroke();
+  }
+  for (let gy = 0; gy < 850; gy += 40) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(1400, gy); ctx.stroke();
+  }
+
+  // Header Tag
+  ctx.fillStyle = '#00d4aa';
+  ctx.font = 'bold 24px monospace';
+  ctx.fillText('// DEVELOPER DOSSIER · INFRASTRUCTURE ARCHITECT', 70, 75);
+
+  // Name & Title
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 56px sans-serif';
+  ctx.fillText('SAISAKTHI M', 70, 145);
+
+  ctx.fillStyle = '#4dabf7';
+  ctx.font = '600 30px monospace';
+  ctx.fillText('Backend & Distributed Systems Engineer', 70, 192);
+
+  // Bio Quote
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '24px monospace';
+  ctx.fillText('Building resilient microservices, distributed pipelines & cloud infra.', 70, 240);
+
+  // Key Stats Badges
+  const stats = [
+    { label: 'FULL-STACK APPS', val: '10+' },
+    { label: 'POLYGLOT STACK', val: '5+ LANGS' },
+    { label: 'CRITICAL CVEs', val: '0 ZERO' },
+    { label: 'DSA PROBLEMS', val: '100+ SOLVED' }
+  ];
+  stats.forEach((s, idx) => {
+    const bx = 70 + idx * 315;
+    const by = 280;
+    ctx.fillStyle = 'rgba(20, 28, 36, 0.9)';
+    ctx.strokeStyle = '#1e2d3d';
+    ctx.lineWidth = 2;
+    ctx.fillRect(bx, by, 290, 110);
+    ctx.strokeRect(bx, by, 290, 110);
+
+    ctx.fillStyle = '#00f0ff';
+    ctx.font = 'bold 36px monospace';
+    ctx.fillText(s.val, bx + 20, by + 50);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(s.label, bx + 20, by + 88);
+  });
+
+  // Core Tech Skills / Badges
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('CORE COMPETENCIES', 70, 445);
+
+  const skills = [
+    { name: 'Django / Python', col: '#00d4aa' },
+    { name: 'Spring Boot / Java', col: '#ffd43b' },
+    { name: 'Axum / Rust', col: '#ff6b6b' },
+    { name: 'Kubernetes / K8s', col: '#4dabf7' },
+    { name: 'Docker / Compose', col: '#22d3ee' },
+    { name: 'Terraform / IaC', col: '#c084fc' },
+    { name: 'DuckDB / MinIO', col: '#fb923c' },
+    { name: 'PostgreSQL / Redis', col: '#a3e635' }
+  ];
+
+  skills.forEach((sk, idx) => {
+    const colIdx = idx % 4;
+    const rowIdx = Math.floor(idx / 4);
+    const sx = 70 + colIdx * 315;
+    const sy = 475 + rowIdx * 65;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = sk.col;
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(sx, sy, 290, 48);
+    ctx.strokeRect(sx, sy, 290, 48);
+
+    // Indicator Dot
+    ctx.fillStyle = sk.col;
+    ctx.beginPath();
+    ctx.arc(sx + 22, sy + 24, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText(sk.name, sx + 40, sy + 31);
+  });
+
+  // Footer / Status
+  ctx.fillStyle = 'rgba(0, 212, 170, 0.15)';
+  ctx.fillRect(70, 640, 1260, 80);
+  ctx.strokeStyle = '#00d4aa';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(70, 640, 1260, 80);
+
+  ctx.fillStyle = '#00d4aa';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('● LOCATION: CHENNAI, INDIA   |   STATUS: OPEN TO HIGH-IMPACT BACKEND ROLES', 100, 688);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '16px monospace';
+  ctx.fillText('[ Press E or click Developer Portfolio in top nav to view full interactive dossier ]', 70, 770);
+
+  const canvasTexture = new THREE.CanvasTexture(cv);
+  canvasTexture.colorSpace = THREE.SRGBColorSpace;
+
+  const screenMat = new THREE.MeshStandardMaterial({
+    map: canvasTexture,
+    emissiveMap: canvasTexture,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.85,
+    roughness: 0.3
+  });
+
+  const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(13.6, 8.1), screenMat);
+  screenMesh.position.set(0, 8.5, 0.28);
+  g.add(screenMesh);
+
+  // Twin Industrial Support Pillars
+  const pillarMat = new THREE.MeshStandardMaterial({color: 0x334155, metalness: 0.6, roughness: 0.4});
+  const pillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5), pillarMat);
+  pillarL.position.set(-4.5, 2.5, 0);
+  g.add(pillarL);
+
+  const pillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5), pillarMat);
+  pillarR.position.set(4.5, 2.5, 0);
+  g.add(pillarR);
+
+  // Ground Base Pods
+  const baseMat = new THREE.MeshStandardMaterial({color: 0x1e293b, metalness: 0.8});
+  const baseL = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 1.6), baseMat);
+  baseL.position.set(-4.5, 0.25, 0);
+  g.add(baseL);
+
+  const baseR = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 1.6), baseMat);
+  baseR.position.set(4.5, 0.25, 0);
+  g.add(baseR);
+
+  g.position.set(x, 0, z);
+  g.rotation.y = angle;
+  scene.add(g);
+  return g;
+}
+
+// Position Billboard near entrance plaza facing incoming player
+createPortfolioBillboard(-14, 18, Math.PI / 6);
 
 function label(t) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const g = c.getContext('2d');
-  g.fillStyle = '#000a'; g.fillRect(0, 0, 512, 128);
-  g.fillStyle = '#fff'; g.font = 'bold 48px sans-serif'; g.textAlign = 'center'; g.fillText(t, 256, 82);
+  g.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  g.roundRect ? g.roundRect(0, 0, 512, 128, 16) : g.fillRect(0, 0, 512, 128);
+  g.fill();
+  g.strokeStyle = '#00f0ff'; g.lineWidth = 4; g.stroke();
+  g.fillStyle = '#f8fafc'; g.font = 'bold 44px sans-serif'; g.textAlign = 'center'; g.fillText(t, 256, 80);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c)}));
-  s.scale.set(8, 2, 1); return s;
+  s.scale.set(11, 2.75, 1); return s;
 }
 
+const districtMap = new Map();
 const B = cfg.districts.map(d => {
   const [w, h, dp] = d.size;
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, dp), new THREE.MeshStandardMaterial({color: d.color}));
-  m.position.set(d.pos[0], h / 2, d.pos[1]); scene.add(m);
-  const l = label(d.name); l.position.set(d.pos[0], h + 1.5, d.pos[1]); scene.add(l);
-  return {d, m, hw: w / 2, hd: dp / 2};
+  const group = new THREE.Group();
+  group.position.set(d.pos[0], 0, d.pos[1]);
+  scene.add(group);
+
+  const entry = {
+    d,
+    group,
+    model: null,
+    hw: w / 2,
+    hd: dp / 2
+  };
+  districtMap.set(d.id, entry);
+  return entry;
 });
 
+const buildingConfigs = {
+  police:   { file: 'city_hall.obj',          scale: 0.16, rotY: Math.PI / 2,  labelY: 30, hw: 7,  hd: 7 },
+  bank:     { file: 'business_block.obj',     scale: 0.55, rotY: Math.PI / 2,  labelY: 20, hw: 9,  hd: 7 },
+  housing:  { file: 'apartment_highrise.obj', scale: 0.35, rotY: 0,            labelY: 30, hw: 13, hd: 10 },
+  media:    { file: 'broadcast_center.obj',   scale: 0.16, rotY: -Math.PI / 2, labelY: 36, hw: 8,  hd: 8 },
+  storage:  { file: 'business_block.obj',     scale: 0.70, rotY: -Math.PI / 2, labelY: 22, hw: 10, hd: 8 },
+  hospital: { file: 'cyberpunk_pharmacy.obj', scale: 2.2,  rotY: Math.PI / 2,  labelY: 12, hw: 8,  hd: 7 },
+  grocery:  { file: 'cyberpunk_pharmacy.obj', scale: 1.9,  rotY: -Math.PI / 2, labelY: 10, hw: 7,  hd: 6 },
+  whisper:  { file: 'broadcast_center.obj',   scale: 0.12, rotY: 0,            labelY: 28, hw: 7,  hd: 7 }
+};
+
+const mtlLoader = new MTLLoader();
+const objLoader = new OBJLoader();
+let loadedCount = 0;
+const totalToLoad = Object.keys(buildingConfigs).length;
+
+mtlLoader.setPath('assets/models/neocity/');
+mtlLoader.load('kb3d_neocity-native.mtl', materials => {
+  materials.preload();
+  objLoader.setMaterials(materials);
+  objLoader.setPath('assets/models/neocity/');
+
+  for (const [id, cfgItem] of Object.entries(buildingConfigs)) {
+    const entry = districtMap.get(id);
+    if (!entry) continue;
+
+    objLoader.load(cfgItem.file, obj => {
+      obj.scale.set(cfgItem.scale, cfgItem.scale, cfgItem.scale);
+      obj.rotation.y = cfgItem.rotY;
+
+      // Fix pitch black buildings: apply district aesthetic and ambient reflection
+      const districtAccent = new THREE.Color(entry.d.color || '#00f0ff');
+      obj.traverse(child => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          child.material = mats.map(m => {
+            const matName = m.name || '';
+            const isLightOrScreen = /Light|Screen|Banner|Sign|Neon/i.test(matName);
+            const isGlass = /Glass/i.test(matName);
+            const isConcrete = /Concrete|Wall|Decor/i.test(matName);
+            const isMetal = /Metal|Steel|Galvanized|Brass/i.test(matName);
+
+            // Create vibrant, well-lit Standard Material
+            const std = new THREE.MeshStandardMaterial({
+              roughness: isMetal ? 0.35 : (isConcrete ? 0.75 : 0.5),
+              metalness: isMetal ? 0.7 : 0.15,
+            });
+
+            if (m.map) {
+              std.map = m.map;
+            }
+
+            if (isLightOrScreen) {
+              std.color = districtAccent.clone().multiplyScalar(1.2);
+              std.emissive = districtAccent;
+              std.emissiveIntensity = 0.95;
+            } else if (isGlass) {
+              std.color = new THREE.Color(0x38bdf8);
+              std.emissive = new THREE.Color(0x0284c7);
+              std.emissiveIntensity = 0.25;
+              std.roughness = 0.2;
+              std.metalness = 0.8;
+            } else if (isConcrete) {
+              // Warm architectural stone tinted subtly with district tone
+              const base = new THREE.Color(0x475569).lerp(districtAccent, 0.18);
+              std.color = base;
+              std.emissive = districtAccent;
+              std.emissiveIntensity = 0.05;
+            } else if (isMetal) {
+              // Sleek dark cyberpunk titanium with subtle sheen
+              std.color = new THREE.Color(0x334155).lerp(districtAccent, 0.15);
+              std.emissive = districtAccent;
+              std.emissiveIntensity = 0.04;
+            } else {
+              // Default visible architectural tone
+              std.color = new THREE.Color(0x64748b).lerp(districtAccent, 0.2);
+              std.emissive = districtAccent;
+              std.emissiveIntensity = 0.05;
+            }
+            return std;
+          });
+          if (!Array.isArray(child.material)) child.material = child.material[0];
+        }
+      });
+
+      entry.group.add(obj);
+      entry.model = obj;
+      entry.hw = cfgItem.hw;
+      entry.hd = cfgItem.hd;
+
+      const l = label(entry.d.name);
+      l.position.set(0, cfgItem.labelY, 0);
+      entry.group.add(l);
+
+      loadedCount++;
+      $('loading-txt').textContent = `Aligned ${loadedCount}/${totalToLoad} Neo City Districts...`;
+
+      if (loadedCount >= totalToLoad) {
+        const overlay = $('loader-overlay');
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 600);
+      }
+    });
+  }
+});
+
+// Load Cyber Vehicle
+const gltfLoader = new GLTFLoader();
+gltfLoader.load('assets/models/car.glb', gltf => {
+  const car = gltf.scene;
+  car.scale.set(1.5, 1.5, 1.5);
+  car.position.set(2.5, 0, 10);
+  car.rotation.y = Math.PI;
+  scene.add(car);
+});
+
+// Safe Mode: Glows building red if service is down
 function paint() {
-  for (const b of B) b.m.material.color.set(status[b.d.statusKey] === 'down' ? 0x222222 : b.d.color);
+  for (const b of B) {
+    const isDown = status[b.d.statusKey] === 'down';
+    if (b.model) {
+      b.model.traverse(child => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => {
+            if (mat.emissive) {
+              mat.emissive.set(isDown ? 0xff0033 : 0x000000);
+              mat.emissiveIntensity = isDown ? 1.4 : 0.0;
+            }
+          });
+        }
+      });
+    }
+  }
 }
 async function poll() {
   if (cfg.statusUrl) {
@@ -83,7 +750,7 @@ async function poll() {
 }
 poll(); setInterval(poll, 5000);
 
-// ---- controls + collision ----
+// ---- controls & collisions ----
 const controls = new PointerLockControls(cam, r.domElement);
 r.domElement.addEventListener('click', () => { if (!ovOpen) controls.lock(); });
 const keys = {};
@@ -95,30 +762,83 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { keys[e.code] = 0; });
 
-function nearest(p) {                    // distance from player to each building footprint
-  let best = null, bd = 3.5;
+// Billboard proximity target
+const portfolioTarget = {
+  d: { id: 'portfolio', name: 'Developer Portfolio (Saisakthi M)', url: 'portfolio.html' },
+  hw: 7,
+  hd: 3,
+  pos: [-14, 18]
+};
+
+$('portfolio-btn').onclick = () => {
+  openPanel({ d: portfolioTarget.d });
+};
+
+function nearest(p) {
+  let best = null, bd = 6.0;
+
+  // Check Portfolio billboard proximity
+  const px = portfolioTarget.pos[0], pz = portfolioTarget.pos[1];
+  const pcx = Math.max(px - portfolioTarget.hw, Math.min(p.x, px + portfolioTarget.hw));
+  const pcz = Math.max(pz - portfolioTarget.hd, Math.min(p.z, pz + portfolioTarget.hd));
+  const pdx = p.x - pcx, pdz = p.z - pcz, pdist = Math.hypot(pdx, pdz);
+  if (pdist < 8.0) {
+    bd = pdist;
+    best = portfolioTarget;
+  }
+
   for (const b of B) {
     const x = b.d.pos[0], z = b.d.pos[1];
-    const cx = Math.max(x - b.hw, Math.min(p.x, x + b.hw)), cz = Math.max(z - b.hd, Math.min(p.z, z + b.hd));
+    const cx = Math.max(x - b.hw, Math.min(p.x, x + b.hw));
+    const cz = Math.max(z - b.hd, Math.min(p.z, z + b.hd));
     const dx = p.x - cx, dz = p.z - cz, dist = Math.hypot(dx, dz);
-    if (dist < .5) { if (dist > 1e-4) { p.x += dx / dist * (.5 - dist); p.z += dz / dist * (.5 - dist); } else p.x += .5; }
+    if (dist < .7) {
+      if (dist > 1e-4) { p.x += dx / dist * (.7 - dist); p.z += dz / dist * (.7 - dist); }
+      else p.x += .7;
+    }
     if (dist < bd) { bd = dist; best = b; }
   }
   return best;
 }
 
-// ---- overlay ----
-function openPanel(b) {
+// Fallback checking helper: tests if service is reachable before displaying iframe
+async function testServiceReachable(url) {
+  if (url.startsWith('stub.html') || url.startsWith('portfolio.html') || url.startsWith('/housing/')) return true;
+  try {
+    const res = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+// ---- District Overlays ----
+async function openPanel(b) {
   const d = b.d; controls.unlock(); ovOpen = true; ov.style.display = 'flex'; prompt_.style.display = 'none';
+
   if (status[d.statusKey] === 'down') {
-    frame.style.display = 'none'; msg.style.display = 'block';
-    msg.textContent = d.name + ' is offline. The city is in safe mode.';
+    frame.src = 'fallback.html?name=' + encodeURIComponent(d.name);
   } else {
-    msg.style.display = 'none'; frame.style.display = 'block';
-    if (frame.dataset.id !== d.id) { frame.src = d.url; frame.dataset.id = d.id; }
+    // Check if target is running; load fallback if offline
+    let targetUrl = d.url;
+    if (targetUrl === '/housing/') targetUrl = '../housing/index.html';
+    if (targetUrl === '/grocery/') targetUrl = '../Grocery Store/frontend/index.html';
+
+    const ok = await testServiceReachable(targetUrl);
+    if (ok) {
+      if (frame.dataset.id !== d.id) {
+        frame.src = targetUrl;
+        frame.dataset.id = d.id;
+      }
+    } else {
+      frame.src = 'fallback.html?name=' + encodeURIComponent(d.name);
+      status[d.statusKey] = 'down';
+      paint();
+    }
   }
   if (location.hash !== '#/' + d.id) history.pushState(null, '', '#/' + d.id);
 }
+
 function closePanel() {
   ovOpen = false; ov.style.display = 'none';
   if (location.hash) history.pushState(null, '', location.pathname + location.search);
@@ -130,30 +850,35 @@ addEventListener('popstate', () => {
 });
 { const b = B.find(b => '#/' + b.d.id === location.hash); if (b) openPanel(b); }
 
-// Panels talk to the city with postMessage. Only origins listed in districts.json are trusted.
-const trusted = new Set(cfg.districts.map(d => new URL(d.url, location.href).origin));
+// Sync live city wallet updates
 addEventListener('message', e => {
-  if (!trusted.has(e.origin)) return;
   const m = e.data || {};
   if (m.type === 'city:close') closePanel();
-  if (m.type === 'city:balance' && Number.isFinite(m.balance)) $('bal').textContent = 'Balance: ' + m.balance.toLocaleString();
+  if (m.type === 'city:balance' && Number.isFinite(m.balance)) {
+    $('bal').textContent = 'Balance: ₹' + m.balance.toLocaleString();
+    try { localStorage.setItem('mini_city_cached_balance', m.balance.toString()); } catch {}
+  }
 });
 
-addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); r.setSize(innerWidth, innerHeight); });
+addEventListener('resize', () => {
+  cam.aspect = innerWidth / innerHeight;
+  cam.updateProjectionMatrix();
+  r.setSize(innerWidth, innerHeight);
+});
 
-// ---- loop (throttled while a panel is open) ----
+// ---- render loop ----
 let last = performance.now();
 r.setAnimationLoop(t => {
   const dt = Math.min((t - last) / 1000, .1); last = t;
   if (ovOpen && ++frames % 4) return;
   if (controls.isLocked) {
-    const s = (keys.ShiftLeft ? 9 : 5) * dt;
+    const s = (keys.ShiftLeft ? 14 : 7) * dt;
     controls.moveForward(((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0)) * s);
     controls.moveRight(((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0)) * s);
   }
   near = nearest(cam.position);
   prompt_.style.display = near && !ovOpen ? 'block' : 'none';
-  if (near) prompt_.textContent = 'Press E: ' + near.d.name;
+  if (near) prompt_.textContent = 'Press E to Enter: ' + near.d.name;
   r.render(scene, cam);
 });
 </script>
