@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CheckCircle, XCircle, Trophy, Zap, Code2, Brain, ChevronRight, RotateCcw, Star } from "lucide-react";
+import { Quiz3DBackground } from "./Quiz3DBackground";
 
 type Difficulty = "easy" | "medium" | "hard";
 
@@ -499,12 +500,13 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="min-h-screen w-full relative"
       style={{
         background: "radial-gradient(ellipse at 20% 10%, rgba(124,58,237,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 90%, rgba(6,182,212,0.1) 0%, transparent 50%), #0a0a1a",
         fontFamily: "'Outfit', sans-serif",
       }}
     >
+      <Quiz3DBackground />
       <AnimatePresence mode="wait">
         {screen === "welcome" && (
           <WelcomeScreen key="welcome" onStart={handleStart} />

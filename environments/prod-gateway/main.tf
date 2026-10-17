@@ -31,6 +31,8 @@ module "network" {
 # ---------------------------------------------------------------------------
 resource "docker_volume" "intro_dist" { name = "gateway_intro-dist" }
 resource "docker_volume" "record_dist" { name = "gateway_record-dist" }
+resource "docker_volume" "grocery_dist" { name = "gateway_grocery-dist" }
+resource "docker_volume" "housing_dist" { name = "gateway_housing-dist" }
 
 module "gateway" {
   # --- resource optimization pass ---
@@ -84,6 +86,8 @@ module "gateway" {
     { volume_name = "gateway_doc-dist", container_path = "/apps/document", read_only = true },
     { volume_name = docker_volume.intro_dist.name, container_path = "/apps/intro", read_only = true },
     { volume_name = docker_volume.record_dist.name, container_path = "/apps/record", read_only = true },
+    { volume_name = docker_volume.grocery_dist.name, container_path = "/apps/grocery", read_only = true },
+    { volume_name = docker_volume.housing_dist.name, container_path = "/apps/housing", read_only = true },
     { volume_name = "gateway_whisper-dist", container_path = "/apps/whisper", read_only = true },
     { volume_name = "gateway_compiler-dist", container_path = "/apps/compiler", read_only = true },
 
@@ -96,7 +100,7 @@ resource "null_resource" "intro_page" {
   depends_on = [module.gateway]
 
   triggers = {
-    file_sha   = filesha256("${var.projects_dir}/intro/index.html")
+    file_sha   = filesha256("${var.projects_dir}/intro/v3/dist/index.html")
     always_run = timestamp()
   }
   provisioner "local-exec" {
@@ -104,7 +108,43 @@ resource "null_resource" "intro_page" {
       docker pull alpine && \
       docker run --rm \
         -v gateway_intro-dist:/dest \
-        -v "${abspath("${var.projects_dir}/intro")}:/src:ro" \
+        -v "${abspath("${var.projects_dir}/intro/v3/dist")}:/src:ro" \
+        alpine sh -c "cp -r /src/. /dest/"
+    EOT
+  }
+}
+
+resource "null_resource" "grocery_page" {
+  depends_on = [module.gateway]
+
+  triggers = {
+    file_sha   = filesha256("${var.projects_dir}/Grocery Store/frontend/index.html")
+    always_run = timestamp()
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      docker pull alpine && \
+      docker run --rm \
+        -v gateway_grocery-dist:/dest \
+        -v "${abspath("${var.projects_dir}/Grocery Store/frontend")}:/src:ro" \
+        alpine sh -c "cp -r /src/. /dest/"
+    EOT
+  }
+}
+
+resource "null_resource" "housing_page" {
+  depends_on = [module.gateway]
+
+  triggers = {
+    file_sha   = filesha256("${var.projects_dir}/housing/index.html")
+    always_run = timestamp()
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      docker pull alpine && \
+      docker run --rm \
+        -v gateway_housing-dist:/dest \
+        -v "${abspath("${var.projects_dir}/housing")}:/src:ro" \
         alpine sh -c "cp -r /src/. /dest/"
     EOT
   }

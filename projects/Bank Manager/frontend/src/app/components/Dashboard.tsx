@@ -18,6 +18,7 @@ import {
   Info,
 } from "lucide-react";
 import { ActionModal } from "./ActionModal";
+import { Vault3DBackground } from "./Vault3DBackground";
 import bankService from "../services/bankService";
 
 export interface BankUser {
@@ -185,15 +186,10 @@ export function Dashboard({ user, onLogout, onUpdateUser }: DashboardProps) {
   };
 
   return (
-    <div className="relative size-full overflow-auto">
-      {/* Background */}
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url("https://images.unsplash.com/photo-1778429557352-ea4213f69e91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxncmFuZCUyMGNsYXNzaWNhbCUyMGJhbmslMjBidWlsZGluZyUyMGFyY2hpdGVjdHVyZSUyMGZhY2FkZXxlbnwxfHx8fDE3ODI5Nzc3NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080")`,
-        }}
-      />
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-amber-900/60" />
+    <div className="relative size-full overflow-auto bg-[#060913]">
+      {/* 3D Cyber Vault Background */}
+      <Vault3DBackground />
+      <div className="fixed inset-0 bg-gradient-to-t from-[#060913] via-transparent to-[#060913]/70 pointer-events-none" />
 
       <div className="relative z-10 min-h-full p-4 md:p-6">
         {/* Header */}

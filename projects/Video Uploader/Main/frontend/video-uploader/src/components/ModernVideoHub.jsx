@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import Media3DBackground from './Media3DBackground';
 
 export default function ModernVideoHub() {
   const [videos, setVideos] = useState([
@@ -10,12 +11,15 @@ export default function ModernVideoHub() {
 
   return (
     <div style={{
-      background: '#090d16',
+      background: '#060913',
       minHeight: '100vh',
       color: '#e2e8f0',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      padding: '24px 32px'
+      fontFamily: "'JetBrains Mono', 'DM Mono', monospace",
+      padding: '24px 32px',
+      position: 'relative'
     }}>
+      <Media3DBackground />
+      <div style={{ position: 'relative', zIndex: 1 }}>
       {/* Header */}
       <header style={{
         display: 'flex',
@@ -136,6 +140,7 @@ export default function ModernVideoHub() {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

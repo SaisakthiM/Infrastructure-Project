@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, useRef } from "react";
 
 // Set page title and SVG favicon
 (function applyBranding() {
@@ -122,31 +122,100 @@ function ErrorBox({ msg }: { msg: string }) {
 // ─── Background ───────────────────────────────────────────────────────────────
 
 function LibraryBg() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let animId: number;
+    let renderer: any;
+
+    const init3D = (THREE: any) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x060913, 0.025);
+      const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 3, 16);
+
+      const grid = new THREE.GridHelper(50, 25, 0xc8922a, 0x1f160a);
+      grid.position.y = -4;
+      grid.material.opacity = 0.3;
+      grid.material.transparent = true;
+      scene.add(grid);
+
+      // Rotating 3D Amber Knowledge Prism
+      const group = new THREE.Group();
+      group.position.set(10, 2, -2);
+      scene.add(group);
+
+      const prism = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.6, 0),
+        new THREE.MeshBasicMaterial({ color: 0xc8922a, wireframe: true })
+      );
+      group.add(prism);
+
+      const core = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.0, 0),
+        new THREE.MeshBasicMaterial({ color: 0xe5a93c })
+      );
+      group.add(core);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(2.5, 0.05, 8, 48),
+        new THREE.MeshBasicMaterial({ color: 0xc8922a })
+      );
+      ring.rotation.x = Math.PI / 2;
+      group.add(ring);
+
+      const clock = new THREE.Clock();
+      const loop = () => {
+        animId = requestAnimationFrame(loop);
+        const t = clock.getElapsedTime();
+        group.rotation.y = t * 0.4;
+        ring.rotation.z = t * 0.6;
+        renderer.render(scene, camera);
+      };
+      loop();
+    };
+
+    if ((window as any).THREE) {
+      init3D((window as any).THREE);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";
+      script.onload = () => init3D((window as any).THREE);
+      document.head.appendChild(script);
+    }
+
+    const onResize = () => {
+      if (renderer) renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 -z-10">
-      <div className="absolute inset-0 bg-background" />
-      {/* Lantern glow from top */}
+    <div className="fixed inset-0 -z-10 bg-[#060913] overflow-hidden">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 50% -5%, rgba(200,146,42,0.13) 0%, transparent 70%)",
+            "radial-gradient(ellipse 70% 50% at 50% -5%, rgba(200,146,42,0.15) 0%, transparent 70%)",
         }}
       />
-      {/* Warm vignette */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 120% 120% at 50% 50%, transparent 35%, rgba(10,6,3,0.65) 100%)",
-        }}
-      />
-      {/* Faint ruled-paper lines */}
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, #c8922a 0px, #c8922a 1px, transparent 1px, transparent 32px)",
+            "radial-gradient(ellipse 120% 120% at 50% 50%, transparent 35%, rgba(6,9,19,0.7) 100%)",
         }}
       />
     </div>

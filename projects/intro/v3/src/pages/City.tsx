@@ -365,18 +365,19 @@ function CityScene({
     });
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(180, 180),
+      new THREE.PlaneGeometry(240, 280),
       new THREE.MeshStandardMaterial({ color: 0x18231f, roughness: 1 }),
     );
+    ground.position.set(0, 0, -30);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    addBox(scene, [18, 0.12, 160], [0, 0.06, 0], asphalt, false);
+    addBox(scene, [18, 0.12, 240], [0, 0.06, -30], asphalt, false);
     addBox(scene, [160, 0.12, 18], [0, 0.061, 0], asphalt, false);
     addBox(scene, [25, 0.16, 25], [0, 0.09, 0], plazaMaterial, false);
 
-    [-6, -30, -50, -68].forEach((z) => {
+    [-6, -30, -50, -70, -90, -110].forEach((z) => {
       addBox(scene, [82, 0.125, 9], [0, 0.066, z], asphalt, false);
       addBox(scene, [82, 0.22, 3.2], [0, 0.115, z - 6.1], concrete, false);
       addBox(scene, [82, 0.22, 3.2], [0, 0.116, z + 6.1], concrete, false);
@@ -386,20 +387,20 @@ function CityScene({
     });
 
     [-11.5, 11.5].forEach((x) => {
-      addBox(scene, [5, 0.22, 160], [x, 0.11, 0], concrete, false);
+      addBox(scene, [5, 0.22, 240], [x, 0.11, -30], concrete, false);
     });
     [-11.5, 11.5].forEach((z) => {
       addBox(scene, [160, 0.22, 5], [0, 0.115, z], concrete, false);
     });
 
-    for (let z = -72; z <= 72; z += 9) {
+    for (let z = -140; z <= 72; z += 9) {
       addBox(scene, [0.16, 0.016, 4.6], [0, 0.135, z], lineMaterial, false);
     }
     for (let x = -72; x <= 72; x += 9) {
       addBox(scene, [4.6, 0.016, 0.16], [x, 0.136, 0], lineMaterial, false);
     }
     [-8.45, 8.45].forEach((x) =>
-      addBox(scene, [0.12, 0.018, 160], [x, 0.14, 0], lineMaterial, false),
+      addBox(scene, [0.12, 0.018, 240], [x, 0.14, -30], lineMaterial, false),
     );
     [-8.45, 8.45].forEach((z) =>
       addBox(scene, [160, 0.018, 0.12], [0, 0.141, z], lineMaterial, false),
@@ -600,7 +601,7 @@ function CityScene({
         controls.moveForward(-velocity.z * delta);
         camera.position.y = 1.72;
         camera.position.x = THREE.MathUtils.clamp(camera.position.x, -78, 78);
-        camera.position.z = THREE.MathUtils.clamp(camera.position.z, -78, 78);
+        camera.position.z = THREE.MathUtils.clamp(camera.position.z, -135, 78);
 
         const blocked = projects.some(
           (project) =>

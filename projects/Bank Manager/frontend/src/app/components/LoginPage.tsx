@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Building2, Lock, User } from "lucide-react";
 import bankService from "../services/bankService";
+import { Vault3DBackground } from "./Vault3DBackground";
 import type { BankUser } from "./Dashboard";
 
 interface LoginPageProps {
@@ -49,16 +50,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="relative size-full flex items-center justify-center overflow-hidden">
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url("https://images.unsplash.com/photo-1778429557352-ea4213f69e91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxncmFuZCUyMGNsYXNzaWNhbCUyMGJhbmslMjBidWlsZGluZyUyMGFyY2hpdGVjdHVyZSUyMGZhY2FkZXxlbnwxfHx8fDE3ODI5Nzc3NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080")`,
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/75 via-slate-800/60 to-amber-900/50" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative size-full flex items-center justify-center overflow-hidden bg-[#060913]">
+      {/* 3D Cyber Vault Background */}
+      <Vault3DBackground />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#060913] via-transparent to-[#060913]/60 pointer-events-none" />
 
       {/* Card */}
       <div

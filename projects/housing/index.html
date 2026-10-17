@@ -3,297 +3,651 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mini City — Citizen Housing & Financial Analytics</title>
+  <title>Neo City — Housing & Financial Ledger 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #030712;
-      --card: #0f172a;
-      --border: #1e293b;
-      --cyan: #00f0ff;
-      --pink: #ec4899;
-      --green: #22c55e;
-      --text: #f8fafc;
+      --bg: #060913;
+      --card: rgba(13, 20, 36, 0.85);
+      --card-hover: rgba(18, 28, 50, 0.95);
+      --border: rgba(0, 240, 200, 0.22);
+      --border-lit: rgba(0, 240, 200, 0.5);
+      --accent: #00f0c8;
+      --accent-glow: rgba(0, 240, 200, 0.15);
+      --blue: #38bdf8;
+      --gold: #d8b44b;
+      --pink: #e2668a;
+      --purple: #9a7cdb;
+      --green: #72b66f;
+      --text: #f1f5f9;
       --muted: #94a3b8;
+      --syne: 'Syne', sans-serif;
+      --mono: 'JetBrains Mono', 'DM Mono', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      padding: 28px;
-      line-height: 1.5;
+      font-family: var(--mono);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
     }
-    .header {
+
+    /* Background 3D Canvas */
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Content Overlay */
+    .app-wrap {
+      position: relative;
+      z-index: 10;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 28px;
+      padding: 16px 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      margin-bottom: 24px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
     }
-    .user-badge {
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0,240,200,0.2), rgba(56,189,248,0.2));
+      border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .brand-title {
+      font-family: var(--syne);
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .nav-actions {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: var(--card);
-      border: 1px solid var(--cyan);
-      padding: 10px 18px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,240,255,0.15);
     }
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), var(--pink));
-      display: flex;
+    .badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: #030712;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(0, 240, 200, 0.08);
+      border: 1px solid var(--border);
+      color: var(--accent);
     }
+    .badge.gold {
+      background: rgba(216, 180, 75, 0.1);
+      border-color: rgba(216, 180, 75, 0.3);
+      color: var(--gold);
+    }
+    .btn-return {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-return:hover {
+      background: rgba(0, 240, 200, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Top Stats Grid */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     .stat-card {
       background: var(--card);
       border: 1px solid var(--border);
+      border-radius: 12px;
       padding: 20px;
-      border-radius: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s;
     }
-    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-    .stat-val { font-size: 1.8rem; font-weight: 800; }
-    .analytics-grid {
+    .stat-card:hover {
+      border-color: var(--border-lit);
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(0, 240, 200, 0.12);
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .stat-val {
+      font-family: var(--syne);
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .stat-val.accent { color: var(--accent); }
+    .stat-val.gold { color: var(--gold); }
+    .stat-val.purple { color: var(--purple); }
+    .stat-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Main Dashboard Grid */
+    .main-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 24px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
-    .chart-card {
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
       background: var(--card);
       border: 1px solid var(--border);
-      padding: 24px;
       border-radius: 14px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
     }
-    .chart-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .bar-row {
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .panel-title {
+      font-family: var(--syne);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 10px;
     }
-    .bar-label { width: 140px; font-size: 0.85rem; color: var(--muted); }
-    .bar-track { flex: 1; height: 10px; background: #1e293b; border-radius: 5px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
-    .bar-amount { width: 60px; text-align: right; font-size: 0.85rem; font-weight: 700; }
+
+    /* 3D Property Preview Box */
+    .tower-3d-box {
+      width: 100%;
+      height: 240px;
+      border-radius: 10px;
+      background: rgba(3, 7, 18, 0.7);
+      border: 1px solid rgba(0, 240, 200, 0.2);
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tower-tag {
+      position: absolute;
+      top: 12px; left: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      z-index: 5;
+    }
+
+    /* Ledger Table */
     .ledger-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 14px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
     }
     .ledger-table th {
       text-align: left;
-      padding: 10px 14px;
+      padding: 10px 12px;
       color: var(--muted);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
       font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
     }
     .ledger-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid #131d31;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
     }
-    .badge {
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
+    .tx-pos { color: var(--green); font-weight: 700; }
+    .tx-neg { color: var(--pink); font-weight: 700; }
+
+    /* Actions Grid */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
     }
-    .badge-earn { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e; }
-    .badge-spend { background: rgba(236, 72, 153, 0.15); color: #ec4899; border: 1px solid #ec4899; }
-    .btn-action {
-      background: #0284c7;
-      color: #fff;
-      border: 0;
-      padding: 10px 18px;
+    .action-btn {
+      padding: 10px 14px;
       border-radius: 8px;
+      background: rgba(0, 240, 200, 0.08);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .action-btn:hover {
+      background: rgba(0, 240, 200, 0.2);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .action-btn.pink {
+      background: rgba(226, 102, 138, 0.1);
+      border-color: rgba(226, 102, 138, 0.3);
+      color: var(--pink);
+    }
+    .action-btn.pink:hover {
+      background: rgba(226, 102, 138, 0.25);
+      border-color: var(--pink);
+    }
+    .action-btn.gold {
+      background: rgba(216, 180, 75, 0.1);
+      border-color: rgba(216, 180, 75, 0.3);
+      color: var(--gold);
+    }
+    .action-btn.gold:hover {
+      background: rgba(216, 180, 75, 0.25);
+      border-color: var(--gold);
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <h1 style="font-size: 1.4rem; font-weight: 800; color: #00f0ff;">CITIZEN RESIDENCE & ANALYTICS</h1>
-      <p style="font-size: 0.8rem; color: var(--muted);">Centralized City Identity & Financial Ledger Overview</p>
-    </div>
-    <div class="user-badge">
-      <div class="avatar" id="userAvatar">S</div>
+
+<!-- Three.js Canvas Backdrop -->
+<canvas id="bg-canvas"></canvas>
+
+<div class="app-wrap">
+  <!-- Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">🏠</div>
       <div>
-        <div style="font-weight: 700; font-size: 0.9rem;" id="userName">saisakthi</div>
-        <div style="font-size: 0.75rem; color: #22c55e;" id="authStatus">● Central Auth Verified</div>
+        <div class="brand-title">Housing &amp; Ledger Hub</div>
+        <div class="brand-sub">District 08 · Neo City Persistent State</div>
       </div>
     </div>
-  </div>
+    <div class="nav-actions">
+      <div class="badge gold"><span>🪙</span> Balance: <span id="wallet-display">2,850 NCC</span></div>
+      <div class="badge"><span>⚡</span> Status: Connected</div>
+      <a href="/" class="btn-return">← Back to City 3D</a>
+    </div>
+  </header>
 
-  <!-- Summary Cards -->
+  <!-- Stats Row -->
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-label">Wallet Balance</div>
-      <div class="stat-val" style="color: #00f0ff;" id="balDisplay">₹1,000</div>
+      <div class="stat-label">Assigned Property</div>
+      <div class="stat-val accent">Penthouse 42B</div>
+      <div class="stat-note">Tower Alpha · Level 42</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Total City Earnings</div>
-      <div class="stat-val" style="color: #22c55e;" id="totalEarned">₹380</div>
+      <div class="stat-label">Citizen Net Worth</div>
+      <div class="stat-val gold" id="networth-val">18,450 NCC</div>
+      <div class="stat-note">+420 NCC current cycle</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Total City Spending</div>
-      <div class="stat-val" style="color: #ec4899;" id="totalSpent">₹185</div>
+      <div class="stat-label">Monthly Lease Cost</div>
+      <div class="stat-val purple">150 NCC</div>
+      <div class="stat-note">Next deduction in 4 days</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Economic Health</div>
-      <div class="stat-val" style="color: #facc15;">98.4%</div>
+      <div class="stat-label">Trust &amp; Credit Score</div>
+      <div class="stat-val" style="color:var(--green)">785 <span style="font-size:1rem;color:var(--muted)">/ 850</span></div>
+      <div class="stat-note">Tier 1 Elite Resident</div>
     </div>
   </div>
 
-  <!-- Realtime Analytics Grid -->
-  <div class="analytics-grid">
-    <!-- Spending Breakdown -->
-    <div class="chart-card">
-      <div class="chart-title">
-        <span>Expense Distribution (Spend)</span>
-        <span style="font-size: 0.8rem; color: #ec4899;">Breakdown</span>
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Left Panel: 3D Property Inspector -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><span>🏢</span> 3D Residence Model</div>
+        <div class="badge">Interactive Orbit</div>
       </div>
-      <div class="bar-row">
-        <span class="bar-label">🏥 Healthcare Visits</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 65%; background: #0ea5e9;"></div></div>
-        <span class="bar-amount">₹150</span>
+
+      <!-- Embedded Three.js Sub-Viewer -->
+      <div class="tower-3d-box" id="tower-box">
+        <div class="tower-tag">TOWER ALPHA (ROTATING 3D MODEL)</div>
       </div>
-      <div class="bar-row">
-        <span class="bar-label">🛒 Supermarket Groceries</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 25%; background: #22c55e;"></div></div>
-        <span class="bar-amount">₹25</span>
+
+      <div style="font-size:0.8rem;color:var(--muted);line-height:1.7;margin-bottom:14px">
+        Your residency record is cryptographically signed and stored in the central PostgreSQL ledger. Real-time metrics are synced with MinIO and monitored by Prometheus.
       </div>
-      <div class="bar-row">
-        <span class="bar-label">☕ Cyber Espresso</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 10%; background: #facc15;"></div></div>
-        <span class="bar-amount">₹10</span>
+
+      <div class="actions-grid">
+        <button class="action-btn" onclick="performWork()">💼 Shift Work (+200)</button>
+        <button class="action-btn pink" onclick="payLease()">🔑 Pay Lease (-150)</button>
+        <button class="action-btn gold" onclick="investProperty()">📈 Invest (+10%)</button>
       </div>
     </div>
 
-    <!-- Earning Breakdown -->
-    <div class="chart-card">
-      <div class="chart-title">
-        <span>Revenue Streams (Earn)</span>
-        <span style="font-size: 0.8rem; color: #22c55e;">Breakdown</span>
+    <!-- Right Panel: Ledger Log -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><span>📜</span> Unified City Ledger</div>
+        <div class="badge">Live Events</div>
       </div>
-      <div class="bar-row">
-        <span class="bar-label">🎬 Influencer Media Hub</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 50%; background: #ec4899;"></div></div>
-        <span class="bar-amount">₹200</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label">🩺 Doctor Consultations</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 30%; background: #38bdf8;"></div></div>
-        <span class="bar-amount">₹100</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label">🏪 Grocery Shift Work</span>
-        <div class="bar-track"><div class="bar-fill" style="width: 20%; background: #22c55e;"></div></div>
-        <span class="bar-amount">₹80</span>
-      </div>
+
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>District / Service</th>
+            <th>Type</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-rows">
+          <tr>
+            <td>Just now</td>
+            <td>Housing Authority</td>
+            <td>Residency Verification</td>
+            <td class="tx-pos">+50 NCC</td>
+          </tr>
+          <tr>
+            <td>12m ago</td>
+            <td>Grocery Market</td>
+            <td>Supplies Purchase</td>
+            <td class="tx-neg">-85 NCC</td>
+          </tr>
+          <tr>
+            <td>1h ago</td>
+            <td>Bank Manager</td>
+            <td>Deposit Interest</td>
+            <td class="tx-pos">+120 NCC</td>
+          </tr>
+          <tr>
+            <td>3h ago</td>
+            <td>Video District</td>
+            <td>Media Payout</td>
+            <td class="tx-pos">+450 NCC</td>
+          </tr>
+          <tr>
+            <td>Yesterday</td>
+            <td>Hospital Clinic</td>
+            <td>Health Checkup</td>
+            <td class="tx-neg">-120 NCC</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <!-- Unified City Ledger -->
-  <div class="chart-card">
-    <div class="chart-title">
-      <span>Recent City Transactions Ledger</span>
-      <button class="btn-action" onclick="refreshLedger()">Refresh Analytics</button>
-    </div>
-    <table class="ledger-table">
-      <thead>
-        <tr>
-          <th>Transaction ID</th>
-          <th>District Service</th>
-          <th>Type</th>
-          <th>Details</th>
-          <th>Amount</th>
-          <th>Sync Status</th>
-        </tr>
-      </thead>
-      <tbody id="ledgerBody">
-        <tr>
-          <td><code>tx_77319</code></td>
-          <td>Video Stream Hub</td>
-          <td><span class="badge badge-earn">+ EARN</span></td>
-          <td>Influencer Creator Payout (2K Views)</td>
-          <td style="color: #22c55e; font-weight: 700;">+₹200</td>
-          <td>✅ Bank Reconciled</td>
-        </tr>
-        <tr>
-          <td><code>tx_77318</code></td>
-          <td>Hospital Management</td>
-          <td><span class="badge badge-spend">- SPEND</span></td>
-          <td>Specialist Consultation Appointment</td>
-          <td style="color: #ec4899; font-weight: 700;">-₹150</td>
-          <td>✅ Bank Reconciled</td>
-        </tr>
-        <tr>
-          <td><code>tx_77317</code></td>
-          <td>Grocery Store</td>
-          <td><span class="badge badge-earn">+ EARN</span></td>
-          <td>Barista & Provisions Restock Shift</td>
-          <td style="color: #22c55e; font-weight: 700;">+₹80</td>
-          <td>✅ Bank Reconciled</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<!-- Three.js Library -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 
-  <script>
-    // Read Centralized City Auth and Balance
-    let balance = 1000;
-    try {
-      const cached = localStorage.getItem('mini_city_cached_balance');
-      if (cached) balance = parseFloat(cached);
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-      const authUser = localStorage.getItem('mini_city_auth_user');
-      if (authUser) {
-        const u = JSON.parse(authUser);
-        document.getElementById('userName').textContent = u.username || 'Citizen';
-        document.getElementById('userAvatar').textContent = (u.username || 'C')[0].toUpperCase();
-      }
-    } catch (e) {}
+// ── FULLSCREEN BACKGROUND 3D CITY GRID ──────────────────────────────────────
+const bgCanvas = document.getElementById('bg-canvas');
+const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
+bgRenderer.setSize(window.innerWidth, window.innerHeight);
+bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    document.getElementById('balDisplay').textContent = '₹' + balance.toLocaleString();
+const bgScene = new THREE.Scene();
+bgScene.fog = new THREE.FogExp2(0x060913, 0.02);
 
-    function refreshLedger() {
-      try {
-        const ledger = JSON.parse(localStorage.getItem('mini_city_safe_mode_ledger') || '[]');
-        const tbody = document.getElementById('ledgerBody');
-        ledger.forEach(entry => {
-          const tr = document.createElement('tr');
-          const isEarn = entry.type === 'earn';
-          tr.innerHTML = `
-            <td><code>${entry.eventId.slice(0, 8)}</code></td>
-            <td>${entry.service}</td>
-            <td><span class="badge ${isEarn ? 'badge-earn' : 'badge-spend'}">${isEarn ? '+ EARN' : '- SPEND'}</span></td>
-            <td>${entry.description}</td>
-            <td style="color: ${isEarn ? '#22c55e' : '#ec4899'}; font-weight: 700;">${isEarn ? '+' : '-'}₹${entry.amount}</td>
-            <td>${entry.synced ? '✅ Bank Reconciled' : '⏳ Safe Mode Queued'}</td>
-          `;
-          tbody.prepend(tr);
-        });
-      } catch (e) {}
-    }
-  </script>
+const bgCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 300);
+bgCamera.position.set(0, 15, 30);
+bgCamera.lookAt(0, 0, 0);
+
+// Grid & Neon lines
+const grid = new THREE.GridHelper(100, 50, 0x00f0c8, 0x112233);
+grid.material.opacity = 0.35;
+grid.material.transparent = true;
+bgScene.add(grid);
+
+// Floating ambient particles
+const pGeo = new THREE.BufferGeometry();
+const pCount = 500;
+const pPos = new Float32Array(pCount * 3);
+for (let i = 0; i < pCount * 3; i += 3) {
+  pPos[i] = (Math.random() - 0.5) * 80;
+  pPos[i + 1] = Math.random() * 30;
+  pPos[i + 2] = (Math.random() - 0.5) * 80;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({ color: 0x00f0c8, size: 0.25, transparent: true, opacity: 0.6 });
+const particles = new THREE.Points(pGeo, pMat);
+bgScene.add(particles);
+
+// ── SUB-PANEL 3D TOWER INSPECTOR ────────────────────────────────────────────
+const towerBox = document.getElementById('tower-box');
+const towerRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+towerRenderer.setSize(towerBox.clientWidth, towerBox.clientHeight);
+towerRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+towerRenderer.shadowMap.enabled = true;
+towerBox.appendChild(towerRenderer.domElement);
+
+const towerScene = new THREE.Scene();
+const towerCamera = new THREE.PerspectiveCamera(50, towerBox.clientWidth / towerBox.clientHeight, 0.1, 100);
+towerCamera.position.set(8, 9, 12);
+
+const towerControls = new OrbitControls(towerCamera, towerRenderer.domElement);
+towerControls.enableDamping = true;
+towerControls.autoRotate = true;
+towerControls.autoRotateSpeed = 2.0;
+towerControls.target.set(0, 3.5, 0);
+
+// Tower Lighting
+const towerLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+towerLight1.position.set(10, 20, 10);
+towerScene.add(towerLight1);
+
+const towerLight2 = new THREE.PointLight(0x00f0c8, 3.0, 20);
+towerLight2.position.set(-6, 8, -6);
+towerScene.add(towerLight2);
+
+const towerLight3 = new THREE.PointLight(0xd8b44b, 2.5, 20);
+towerLight3.position.set(6, 3, 6);
+towerScene.add(towerLight3);
+
+// Tower Mesh Group
+const towerGroup = new THREE.Group();
+towerScene.add(towerGroup);
+
+// Concrete Base
+const base = new THREE.Mesh(
+  new THREE.BoxGeometry(4.5, 1, 4.5),
+  new THREE.MeshStandardMaterial({ color: 0x111927, metalness: 0.8, roughness: 0.3 })
+);
+base.position.y = 0.5;
+towerGroup.add(base);
+
+// Glass Skyscraper Body
+const towerBody = new THREE.Mesh(
+  new THREE.BoxGeometry(3.6, 7, 3.6),
+  new THREE.MeshStandardMaterial({
+    color: 0x0a1c2e,
+    metalness: 0.9,
+    roughness: 0.15,
+    emissive: 0x003344,
+    emissiveIntensity: 0.5
+  })
+);
+towerBody.position.y = 4.5;
+towerGroup.add(towerBody);
+
+// Glowing Window Slabs
+for (let y = 1.6; y <= 7.2; y += 1.0) {
+  const slab = new THREE.Mesh(
+    new THREE.BoxGeometry(3.68, 0.08, 3.68),
+    new THREE.MeshStandardMaterial({
+      color: 0x00f0c8,
+      emissive: 0x00f0c8,
+      emissiveIntensity: 2.0
+    })
+  );
+  slab.position.y = y;
+  towerGroup.add(slab);
+}
+
+// Penthouse Halo Ring
+const halo = new THREE.Mesh(
+  new THREE.TorusGeometry(2.4, 0.08, 16, 64),
+  new THREE.MeshStandardMaterial({
+    color: 0xd8b44b,
+    emissive: 0xd8b44b,
+    emissiveIntensity: 2.5
+  })
+);
+halo.rotation.x = Math.PI / 2;
+halo.position.y = 8.2;
+towerGroup.add(halo);
+
+// Penthouse Antenna Spire
+const spire = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.04, 0.12, 2.2, 8),
+  new THREE.MeshStandardMaterial({ color: 0x00f0c8, emissive: 0x00f0c8, emissiveIntensity: 3 })
+);
+spire.position.y = 9.2;
+towerGroup.add(spire);
+
+// ── ANIMATION LOOP ──────────────────────────────────────────────────────────
+let clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const time = clock.getElapsedTime();
+
+  // Rotate background grid & particles
+  particles.rotation.y = time * 0.02;
+  bgCamera.position.x = Math.sin(time * 0.1) * 6;
+  bgCamera.lookAt(0, 0, 0);
+  bgRenderer.render(bgScene, bgCamera);
+
+  // Rotate sub-tower
+  halo.rotation.z = time * 0.5;
+  towerControls.update();
+  towerRenderer.render(towerScene, towerCamera);
+}
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+  bgCamera.aspect = window.innerWidth / window.innerHeight;
+  bgCamera.updateProjectionMatrix();
+  bgRenderer.setSize(window.innerWidth, window.innerHeight);
+
+  if (towerBox) {
+    towerCamera.aspect = towerBox.clientWidth / towerBox.clientHeight;
+    towerCamera.updateProjectionMatrix();
+    towerRenderer.setSize(towerBox.clientWidth, towerBox.clientHeight);
+  }
+});
+
+// ── WALLET & LEDGER LOGIC ───────────────────────────────────────────────────
+let walletBalance = parseInt(localStorage.getItem('neo_credits') || '2850');
+let netWorth = walletBalance + 15600;
+
+function updateUI() {
+  document.getElementById('wallet-display').textContent = `${walletBalance.toLocaleString()} NCC`;
+  document.getElementById('networth-val').textContent = `${(walletBalance + 15600).toLocaleString()} NCC`;
+  localStorage.setItem('neo_credits', walletBalance.toString());
+}
+updateUI();
+
+function addLedgerEntry(service, type, amount, isPos) {
+  const tbody = document.getElementById('ledger-rows');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>Just now</td>
+    <td>${service}</td>
+    <td>${type}</td>
+    <td class="${isPos ? 'tx-pos' : 'tx-neg'}">${isPos ? '+' : ''}${amount} NCC</td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+window.performWork = function() {
+  walletBalance += 200;
+  updateUI();
+  addLedgerEntry('Housing Maintenance', 'Shift Work Bonus', 200, true);
+};
+
+window.payLease = function() {
+  if (walletBalance >= 150) {
+    walletBalance -= 150;
+    updateUI();
+    addLedgerEntry('Housing Authority', 'Penthouse Lease Paid', -150, false);
+  } else {
+    alert('Insufficient funds! Perform shift work or withdraw from Bank Manager.');
+  }
+};
+
+window.investProperty = function() {
+  const gain = Math.round(walletBalance * 0.1);
+  walletBalance += gain;
+  updateUI();
+  addLedgerEntry('Tower Alpha Trust', 'Dividend Distribution', gain, true);
+};
+</script>
 </body>
 </html>

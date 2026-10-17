@@ -1,90 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a9 9 0 0 1 9 9'/><path d='M4 4a16 16 0 0 1 16 16'/><circle cx='5' cy='19' r='1'/></svg>">  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a9 9 0 0 1 9 9'/><path d='M4 4a16 16 0 0 1 16 16'/><circle cx='5' cy='19' r='1'/></svg>">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Inkwell{% endblock %}</title>
+  <title>{% block title %}Inkwell 3D — Publishing Platform{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #0f0e0c;
-      --paper: #f5f0e8;
-      --cream: #ede8dc;
-      --accent: #c8501a;
-      --accent2: #2a5f8f;
-      --muted: #7a7060;
+      --bg: #060913;
+      --surface: rgba(13, 20, 36, 0.88);
+      --border: rgba(16, 185, 129, 0.25);
+      --border-lit: rgba(16, 185, 129, 0.6);
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.18);
+      --cyan: #00f0c8;
+      --gold: #d8b44b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --syne: 'Syne', sans-serif;
+      --mono: 'JetBrains Mono', 'DM Mono', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'DM Sans', sans-serif;
-      background-color: var(--paper);
-      color: var(--ink);
+      font-family: var(--mono);
+      background-color: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
     }
-    h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+    h1, h2, h3 { font-family: var(--syne); letter-spacing: -0.02em; }
 
-    /* Grain texture overlay */
-    body::before {
-      content: '';
+    #blog-3d-bg {
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      width: 100vw; height: 100vh;
+      z-index: 0;
       pointer-events: none;
-      z-index: 1000;
-      opacity: 0.4;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
     }
 
     nav { 
-      background: var(--ink); 
-      border-bottom: 3px solid var(--accent);
+      background: rgba(10, 16, 28, 0.92); 
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .nav-brand { 
-      font-family: 'Playfair Display', serif; 
-      font-style: italic;
-      font-size: 1.8rem;
-      color: var(--paper);
+      font-family: var(--syne); 
+      font-weight: 800;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
     }
     .nav-link {
-      color: #b0a898;
-      font-size: 0.85rem;
-      font-weight: 500;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       text-decoration: none;
-      padding: 0.3rem 0;
-      border-bottom: 1px solid transparent;
-      transition: color 0.2s, border-color 0.2s;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
-    .nav-link:hover { color: var(--paper); border-color: var(--accent); }
+    .nav-link:hover { color: var(--accent); background: rgba(16, 185, 129, 0.1); }
 
     .btn-primary {
-      background: var(--accent);
-      color: white;
-      padding: 0.6rem 1.5rem;
-      font-size: 0.85rem;
-      font-weight: 500;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      color: #060913;
+      padding: 0.65rem 1.5rem;
+      font-size: 0.82rem;
+      font-family: var(--syne);
+      font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border: none;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 0 16px var(--accent-glow);
+      transition: all 0.2s;
       width: 100%;
     }
-    .btn-primary:hover { background: #a8401a; transform: translateY(-1px); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 24px var(--accent-glow); }
 
     .card {
-      background: white;
-      border: 1px solid #ddd8cc;
-      box-shadow: 4px 4px 0 #ddd8cc;
-      transition: transform 0.2s, box-shadow 0.2s;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      color: var(--text);
     }
-    .card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #c8c0b0; }
+    .card:hover { 
+      transform: translateY(-3px); 
+      border-color: var(--border-lit);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15); 
+    }
 
     .divider {
       border: none;
-      border-top: 1px solid #ddd8cc;
+      border-top: 1px solid rgba(255,255,255,0.06);
       margin: 1.5rem 0;
     }
 
@@ -168,8 +195,67 @@
 
   <footer style="text-align:center;padding:2rem 1.5rem;margin-top:4rem;">
     <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:#3a3428;margin-bottom:0.5rem;">Inkwell</p>
-    <p>&copy; {{ year|default:"2026" }} · All rights reserved</p>
-  </footer>
+<canvas id="blog-3d-bg"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+  (function initBlog3D() {
+    const canvas = document.getElementById('blog-3d-bg');
+    if (!canvas || !window.THREE) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x060913, 0.025);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 3, 16);
+
+    const grid = new THREE.GridHelper(50, 25, 0x10b981, 0x0f291e);
+    grid.position.y = -5;
+    grid.material.opacity = 0.28;
+    grid.material.transparent = true;
+    scene.add(grid);
+
+    // Rotating 3D Editorial Crystal
+    const group = new THREE.Group();
+    group.position.set(10, 2, -2);
+    scene.add(group);
+
+    const crystalGeo = new THREE.OctahedronGeometry(1.6, 0);
+    const crystalMat = new THREE.MeshBasicMaterial({ color: 0x10b981, wireframe: true });
+    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+    group.add(crystal);
+
+    const innerGeo = new THREE.OctahedronGeometry(1.1, 0);
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0x00f0c8 });
+    const inner = new THREE.Mesh(innerGeo, innerMat);
+    group.add(inner);
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(2.4, 0.04, 8, 48),
+      new THREE.MeshBasicMaterial({ color: 0x10b981 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    let clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      group.rotation.y = t * 0.4;
+      group.rotation.x = Math.sin(t * 0.3) * 0.2;
+      crystal.rotation.z = t * 0.3;
+      ring.rotation.z = t * 0.6;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+</script>
 </body>
 </html>

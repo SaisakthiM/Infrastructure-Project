@@ -4,6 +4,7 @@ import {
   Play, Clock, LogOut, Terminal, CheckCircle, XCircle,
   Loader2, Search, X, AlertCircle, ChevronRight,
 } from "lucide-react";
+import { Compiler3DBackground } from "./Compiler3DBackground";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -843,6 +844,7 @@ function AppRouter() {
 export default function App() {
   return (
     <AuthProvider>
+      <Compiler3DBackground />
       <AppRouter />
     </AuthProvider>
   );
