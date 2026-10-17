@@ -56,3 +56,21 @@ target/
 *.log
 *.cache
 *.zip
+
+# Terragrunt generated cache
+**/.terragrunt-cache/
+
+# Terraform local data
+**/.terraform/
+
+# Rust build artifacts
+/target/
+
+# Python virtual environments
+.venv/
+venv/
+
+# Generated archives — only if they are reproducible
+# projects/intro.zip
+# projects/Video Uploader/Main/video-frontend.zip
+# projects/Document Intelligence Platform/doc-frontend.zip
