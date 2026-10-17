@@ -1,0 +1,10 @@
+{
+  "description": "Guide a robot through Saisakthi M's interactive 3D portfolio world, then walk the full city of live backend systems, realtime products, and platform engineering.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
