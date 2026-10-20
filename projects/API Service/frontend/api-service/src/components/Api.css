@@ -1,0 +1,16 @@
+.district-nav { position: fixed; top: 64px; left: 16px; z-index: 40; display: flex; gap: 4px; padding: 5px; flex-wrap: wrap; max-width: calc(100vw - 32px); }
+.district-nav a { padding: 6px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 12px; border: 1px solid transparent; }
+.district-nav a:hover { color: var(--text); }
+.district-nav a.on { color: var(--text); background: rgba(255,255,255,.08); border-color: var(--line-accent); }
+.page { position: relative; z-index: 10; padding: 120px 20px 40px; pointer-events: none; }
+.page > * { pointer-events: auto; }
+.two-col { display: grid; grid-template-columns: minmax(300px, 420px) 1fr minmax(260px, 380px); gap: 16px; align-items: start; }
+.two-col .mid { pointer-events: none; min-height: 40vh; }
+.row-between { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.list-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.list-row:last-child { border: 0; }
+.list-row:hover { background: rgba(255,255,255,.04); }
+.up { color: var(--ok); } .down { color: var(--bad); }
+.forecast { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 12px; }
+.forecast > div { padding: 8px; border: 1px solid var(--line); border-radius: 10px; text-align: center; font-size: 12px; }
+@media (max-width: 1100px) { .two-col { grid-template-columns: 1fr; } .two-col .mid { display: none; } }

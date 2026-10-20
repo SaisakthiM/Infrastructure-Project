@@ -13,6 +13,7 @@ import (
 var (
 	regenOnly     bool
 	importantOnly bool
+	missingOnly   bool
 )
 
 var configureCmd = &cobra.Command{
@@ -34,6 +35,9 @@ Flags:
   --important   Only ask Section 1 (GitHub/URLs) + Section 2 (secrets).
                 Skip all advanced fields — identical to the default wizard
                 but makes the intent explicit. Good for CI/first-run.
+  --missing     Read every environment's variable.tf and ask only for the
+                variables that still have no value (e.g. smtp_user after you
+                added it). Nothing else is prompted or rewritten.
   --regen       Skip all prompts entirely and just re-write tfvars from
                 whatever is already saved. Use after 'clean' or when
                 tfvars files are missing but config is already set.`,
@@ -43,6 +47,8 @@ Flags:
 func init() {
 	configureCmd.Flags().BoolVar(&regenOnly, "regen", false,
 		"Regenerate tfvars from saved values without prompting")
+	configureCmd.Flags().BoolVar(&missingOnly, "missing", false,
+		"Only ask for Terraform variables that have no value yet (read from each environment's variable.tf)")
 	configureCmd.Flags().BoolVar(&importantOnly, "important", false,
 		"Only prompt for Section 1 (GitHub/URLs) + Section 2 (secrets), skip advanced fields")
 }
@@ -58,6 +64,32 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	if !cfg.InfraExists() {
 		ui.Warn("Infrastructure files not found at '%s'.", cfg.InfraDir)
 		ui.Info("Run 'social-platform install' first, or set InfraDir in %s", config.Path())
+	}
+
+	if missingOnly {
+		if !cfg.InfraExists() {
+			return fmt.Errorf("no infrastructure folder at '%s' — run 'social-platform install' or 'social-platform use <folder>'", cfg.InfraDir)
+		}
+		if err := secrets.SyncTfvars(cfg); err != nil {
+			return fmt.Errorf("preparing terraform.tfvars: %w", err)
+		}
+		n, err := secrets.PromptMissing(cfg)
+		if err != nil {
+			return err
+		}
+		left, err := secrets.CollectMissing(cfg)
+		if err != nil {
+			return err
+		}
+		switch {
+		case len(left) == 0 && n == 0:
+			ui.Success("Every Terraform variable already has a value.")
+		case len(left) == 0:
+			ui.Success("Saved %d variable(s); all environments are complete.", n)
+		default:
+			ui.Warn("%d variable(s) still have no value.", len(left))
+		}
+		return nil
 	}
 
 	// --important is the same as the default wizard (Section 1 + 2 only).
@@ -178,6 +210,13 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	spin.Stop(err == nil)
 	if err != nil {
 		return fmt.Errorf("generating tfvars: %w", err)
+	}
+
+	// Variables the wizard does not know about (read from variable.tf): ask for what is still missing.
+	if cfg.InfraExists() {
+		if _, err := secrets.PromptMissing(cfg); err != nil {
+			return err
+		}
 	}
 
 	ui.Success("prod-docker/terraform.tfvars  written")

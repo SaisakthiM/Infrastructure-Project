@@ -173,8 +173,26 @@ function fitTerm(t) {
   code{font-family:var(--mono);color:var(--cyan);font-size:.95em}
   .mt8{margin-top:8px}.mt16{margin-top:16px}
 </style>
+
+<style id="city3d-style">
+  #bg3d { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; display: block; }
+  body { background: #05070d !important; }
+  .sidebar, .topbar, .card, .panel > *:not(.xterm-wrap) { position: relative; z-index: 1; }
+  .sidebar, .topbar { background: rgba(8, 12, 22, 0.72) !important; backdrop-filter: blur(10px); }
+  .card { background: rgba(10, 15, 26, 0.74) !important; backdrop-filter: blur(8px); }
+  .src-grid { display: grid; gap: 14px; }
+  .src-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0; }
+  .src-row input[type=text], .var-item input, .var-item textarea { flex: 1; min-width: 220px; padding: 9px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(4,8,18,.8); color: inherit; font: inherit; }
+  .src-pill { display: inline-block; padding: 2px 10px; border-radius: 99px; border: 1px solid rgba(255,255,255,.18); font-size: 12px; margin-right: 6px; }
+  .src-pill.ok { color: #34d399; border-color: #34d39966; } .src-pill.warn { color: #fbbf24; border-color: #fbbf2466; } .src-pill.bad { color: #f87171; border-color: #f8717166; }
+  .var-item { margin: 12px 0; padding: 10px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
+  .var-item small { display: block; opacity: .7; margin: 2px 0 6px; }
+  .var-item.flash { animation: varflash 1.2s ease-out 2; }
+  @keyframes varflash { 0% { box-shadow: 0 0 0 0 #fbbf24aa; } 100% { box-shadow: 0 0 0 14px transparent; } }
+</style>
 </head>
 <body>
+<canvas id="bg3d"></canvas>
 <div class="layout">
 
 <header class="topbar">
@@ -197,6 +215,7 @@ function fitTerm(t) {
   <div class="sidebar-section">Setup</div>
   <div class="sidebar-item"        id="nav-install"  onclick="showPanel('install',this)"><span class="sidebar-icon">⬇</span>Install</div>
   <div class="sidebar-item"        id="nav-configure"onclick="showPanel('configure',this)"><span class="sidebar-icon">⚙</span>Configure</div>
+  <div class="sidebar-item"        id="nav-source"   onclick="showPanel('source',this)"><span class="sidebar-icon">⎇</span>Source &amp; Sync</div>
   <div class="sidebar-section">Info</div>
   <div class="sidebar-item"        id="nav-jobs"     onclick="showPanel('jobs',this)"><span class="sidebar-icon">◎</span>Job History</div>
   <div class="sidebar-section">Maintenance</div>
@@ -596,6 +615,45 @@ function fitTerm(t) {
   <div class="xterm-wrap" id="update-output"></div>
 </div>
 
+<!-- ── SOURCE & SYNC ── -->
+<div class="panel" id="panel-source">
+  <div class="src-grid">
+    <div class="card">
+      <h3>Deploy from folder</h3>
+      <p class="muted">Choose the folder deployments run from — e.g. your own <code>~/Infrastructure-Project</code> checkout — so the edits you make there are what gets applied.</p>
+      <div id="src-current"></div>
+      <div class="src-row">
+        <input type="text" id="src-path" list="src-candidates" placeholder="~/Infrastructure-Project" spellcheck="false">
+        <datalist id="src-candidates"></datalist>
+        <button class="btn" id="src-use" onclick="useFolder()">Use this folder</button>
+      </div>
+      <p class="muted" id="src-msg"></p>
+    </div>
+
+    <div class="card">
+      <h3>Sync with git</h3>
+      <p class="muted"><code>git fetch</code> then fast-forward. Only tracked files change — Terraform state, provider caches and terraform.tfvars are never touched.</p>
+      <div class="src-row">
+        <label><input type="checkbox" id="sync-autostash"> stash my uncommitted edits</label>
+        <label><input type="checkbox" id="sync-rebase"> rebase local commits</label>
+        <label><input type="checkbox" id="sync-dry"> dry run</label>
+      </div>
+      <div class="src-row">
+        <button class="btn" onclick="runSync()">Fetch &amp; sync</button>
+        <span class="badge" id="source-badge">idle</span>
+      </div>
+      <div class="xterm-wrap" id="source-output"></div>
+    </div>
+
+    <div class="card" id="vars-card">
+      <h3>Terraform variables</h3>
+      <p class="muted">Read from each environment's <code>variable.tf</code>. Anything without a value is listed here, so new variables you add are asked for instead of failing mid-deploy.</p>
+      <div id="vars-list"><p class="muted">Checking…</p></div>
+      <div class="src-row"><button class="btn" id="vars-save" onclick="saveVars()" disabled>Save values</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CLEAN ── -->
 <div class="panel" id="panel-clean">
   <div class="page-header">
@@ -751,6 +809,7 @@ async function loadEnvs() {
 
 // ── navigation ────────────────────────────────────────────────────────────
 function showPanel(name, el) {
+  if (name === 'source' && window.loadSource) { window.loadSource(); window.loadVars(); }
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
@@ -759,7 +818,7 @@ function showPanel(name, el) {
   const termIds = {
     deploy: 'deploy-output', destroy: 'destroy-output', status: 'plan-output',
     logs: 'logs-output', import: 'import-output', install: 'install-output',
-    update: 'update-output',
+    update: 'update-output', source: 'source-output',
   };
   if (termIds[name]) {
     requestAnimationFrame(() => {
@@ -1384,5 +1443,167 @@ async function postJSON(url,body) {
   return r.json();
 }
 </script>
+
+<script>
+// ── 3D cluster hooks: every job stream also drives the 3D map ─────────────────
+(function () {
+  const NativeES = window.EventSource;
+  function ES(url, opts) {
+    const es = new NativeES(url, opts);
+    if (String(url).indexOf('/api/job/') !== -1) {
+      es.addEventListener('message', e => window.Cluster3D && window.Cluster3D.feed(e.data));
+      es.addEventListener('done', e => window.Cluster3D && window.Cluster3D.finish(e.data === 'done'));
+    }
+    return es;
+  }
+  ES.prototype = NativeES.prototype;
+  ES.CONNECTING = 0; ES.OPEN = 1; ES.CLOSED = 2;
+  window.EventSource = ES;
+
+  // A deploy refused because Terraform variables have no value: jump to the Variables card.
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async function (...args) {
+    const res = await nativeFetch(...args);
+    try {
+      if (res.status === 409 && String(args[0]).indexOf('/api/run') !== -1) {
+        const data = await res.clone().json();
+        if (data && data.missing) {
+          showPanel('source', document.getElementById('nav-source'));
+          renderVars(data.missing, true);
+          alert('Deploy stopped: ' + data.missing.length + ' Terraform variable(s) have no value yet. Fill them in under "Terraform variables", then deploy again.');
+        }
+      }
+    } catch (e) { /* not JSON: ignore */ }
+    return res;
+  };
+})();
+
+// ── Source & Sync ─────────────────────────────────────────────────────────────
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+window.loadSource = async function () {
+  const box = document.getElementById('src-current');
+  try {
+    const d = await (await fetch('/api/source')).json();
+    box.replaceChildren();
+    box.append(el('p', null, d.infra_dir ? ('Folder: ' + d.infra_dir) : 'No folder selected yet.'));
+    const pills = el('p');
+    pills.append(el('span', 'src-pill ' + (d.is_local ? 'ok' : 'warn'), d.is_local ? 'your own folder' : 'downloaded release copy'));
+    const i = d.info;
+    if (i && i.is_git) {
+      pills.append(el('span', 'src-pill', i.branch + ' @ ' + i.head));
+      if (i.behind > 0) pills.append(el('span', 'src-pill warn', i.behind + ' behind'));
+      if (i.ahead > 0) pills.append(el('span', 'src-pill', i.ahead + ' ahead'));
+      if (i.behind === 0 && i.ahead === 0 && i.upstream) pills.append(el('span', 'src-pill ok', 'up to date'));
+      if (i.dirty) pills.append(el('span', 'src-pill warn', i.dirty_files.length + ' uncommitted'));
+    } else if (d.exists) {
+      pills.append(el('span', 'src-pill', 'not a git repo — sync unavailable'));
+    }
+    box.append(pills);
+    const dl = document.getElementById('src-candidates');
+    dl.replaceChildren();
+    (d.candidates || []).forEach(c => { const o = document.createElement('option'); o.value = c; dl.append(o); });
+    const inp = document.getElementById('src-path');
+    if (!inp.value && d.infra_dir) inp.value = d.infra_dir;
+  } catch (e) { box.textContent = 'Could not read source info: ' + e; }
+};
+
+window.useFolder = async function () {
+  const path = document.getElementById('src-path').value.trim();
+  const msg = document.getElementById('src-msg');
+  if (!path) { msg.textContent = 'Enter a folder path first.'; return; }
+  msg.textContent = 'Checking…';
+  try {
+    let carry = false;
+    const planRes = await fetch('/api/source/plan', { method: 'POST', body: JSON.stringify({ path }) });
+    const plan = await planRes.json();
+    if (!planRes.ok) { msg.textContent = plan.error || 'That folder cannot be used.'; return; }
+    if (plan.state_envs && plan.state_envs.length) {
+      carry = confirm('Terraform state exists for: ' + plan.state_envs.join(', ') +
+        '\n\nCopy it into the new folder? (Recommended — otherwise Terraform will try to re-create containers that already exist.)');
+    }
+    const res = await fetch('/api/source/use', { method: 'POST', body: JSON.stringify({ path, carry_state: carry }) });
+    const data = await res.json();
+    if (!res.ok) { msg.textContent = data.error || 'Failed.'; return; }
+    msg.textContent = 'Deploying from ' + data.dir + (data.carried_state && data.carried_state.length ? ' — copied state: ' + data.carried_state.join(', ') : '');
+    window.loadSource(); window.loadVars();
+  } catch (e) { msg.textContent = 'Failed: ' + e; }
+};
+
+window.runSync = async function () {
+  const t = getTerm('source-output');
+  t.clear();
+  setBadge('source-badge', 'running');
+  try {
+    const res = await fetch('/api/source/sync', { method: 'POST', body: JSON.stringify({
+      autostash: document.getElementById('sync-autostash').checked,
+      rebase: document.getElementById('sync-rebase').checked,
+      dry_run: document.getElementById('sync-dry').checked,
+    }) });
+    const { job_id } = await res.json();
+    streamToTerm(job_id, 'source-output', 'source-badge', () => { window.loadSource(); window.loadVars(); }, () => window.loadSource());
+  } catch (e) { setBadge('source-badge', 'failed'); t.write('error: ' + e + '\r\n'); }
+};
+
+// ── Terraform variables ──────────────────────────────────────────────────────
+function renderVars(missing, flash) {
+  const list = document.getElementById('vars-list');
+  list.replaceChildren();
+  document.getElementById('vars-save').disabled = !missing.length;
+  if (!missing.length) { list.append(el('p', 'src-pill ok', 'Every variable has a value')); return; }
+  missing.forEach((m, idx) => {
+    const item = el('div', 'var-item' + (flash ? ' flash' : ''));
+    item.dataset.env = m.env; item.dataset.name = m.name;
+    item.append(el('strong', null, m.env + ' → ' + m.name));
+    if (m.description) item.append(el('small', null, m.description));
+    const input = m.multiline ? el('textarea') : el('input');
+    if (!m.multiline) input.type = m.sensitive ? 'password' : 'text';
+    else input.rows = 4;
+    input.autocomplete = 'off';
+    input.placeholder = m.can_generate ? 'leave empty to generate a random value' : (m.type && m.type !== 'string' ? 'HCL, e.g. ' + m.type : 'value');
+    input.id = 'var-' + idx;
+    item.append(input);
+    if (m.can_generate) {
+      const b = el('button', 'btn', 'Generate');
+      b.type = 'button';
+      b.onclick = async () => { input.type = 'text'; input.value = (await (await fetch('/api/variables/generate', { method: 'POST' })).json()).value; };
+      item.append(b);
+    }
+    list.append(item);
+  });
+  window._missingVars = missing;
+}
+
+window.loadVars = async function () {
+  try {
+    const res = await fetch('/api/variables/missing');
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('vars-list').textContent = data.error || 'Not available yet.'; return; }
+    renderVars(data.missing || [], false);
+  } catch (e) { document.getElementById('vars-list').textContent = 'Could not check variables: ' + e; }
+};
+
+window.saveVars = async function () {
+  const answers = [];
+  (window._missingVars || []).forEach((m, idx) => {
+    let value = document.getElementById('var-' + idx).value;
+    if (!value.trim() && m.can_generate) value = '';
+    if (value.trim()) answers.push({ env: m.env, name: m.name, value });
+  });
+  // generated variables left empty get a random value
+  for (let idx = 0; idx < (window._missingVars || []).length; idx++) {
+    const m = window._missingVars[idx];
+    if (m.can_generate && !document.getElementById('var-' + idx).value.trim()) {
+      answers.push({ env: m.env, name: m.name, value: (await (await fetch('/api/variables/generate', { method: 'POST' })).json()).value });
+    }
+  }
+  if (!answers.length) { alert('Nothing to save yet.'); return; }
+  const res = await fetch('/api/variables/save', { method: 'POST', body: JSON.stringify({ answers }) });
+  const data = await res.json();
+  if (!res.ok) { alert(data.error || 'Could not save.'); return; }
+  renderVars(data.missing || [], false);
+};
+</script>
+<script type="module" src="/cluster3d.js"></script>
 </body>
 </html>

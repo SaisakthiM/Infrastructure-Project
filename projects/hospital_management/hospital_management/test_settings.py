@@ -1,3 +1,5 @@
+import os
+
 from .settings import *
 
 DATABASES = {
@@ -6,3 +8,6 @@ DATABASES = {
         'NAME': ':memory:',
     }
 }
+
+# tests must never write analytics events into the real metrics file
+HOSPITAL_METRICS_LOG = os.devnull

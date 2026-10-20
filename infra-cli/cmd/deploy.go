@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/deploy"
+	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/secrets"
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
 )
 
@@ -93,6 +94,29 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		ui.Info("Deploying %s → replacing %s", env, deployReplace)
 	} else {
 		ui.Info("Deploying %s", env)
+	}
+
+	// Every variable the environments declare must have a value. New ones (added to
+	// variable.tf since the last configure) are asked for here instead of making
+	// terraform stop halfway with "No value for required variable".
+	var targets []string
+	if env != deploy.EnvAll {
+		targets = []string{string(env)}
+	}
+	left, err := secrets.Preflight(cfg, targets, isInteractive())
+	if err != nil {
+		return err
+	}
+	if len(left) > 0 {
+		names := make([]string, 0, len(left))
+		for _, m := range left {
+			names = append(names, m.Env+"/"+m.Name)
+		}
+		return fmt.Errorf("%d required variable(s) have no value: %s\n  run 'social-platform configure --missing' to enter them", len(left), strings.Join(names, ", "))
+	}
+
+	if cfg.IsLocal() {
+		ui.Info("Source folder: %s", cfg.InfraDir)
 	}
 
 	if !deployAutoApprove {

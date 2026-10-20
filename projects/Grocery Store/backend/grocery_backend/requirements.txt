@@ -1,0 +1,5 @@
+django>=5.2
+djangorestframework>=3.15
+gunicorn
+pytest
+pytest-django

@@ -43,6 +43,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'hospital.context_processors.scene_stats',
             ],
         },
     },
@@ -92,3 +93,6 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://saisakthi.qzz.io",
 ]
+
+# Where appointment/earning events are appended for the analytics pipeline (point this at a mounted volume).
+HOSPITAL_METRICS_LOG = os.environ.get('HOSPITAL_METRICS_LOG', str(BASE_DIR / 'metrics.jsonl'))

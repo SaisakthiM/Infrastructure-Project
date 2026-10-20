@@ -144,7 +144,10 @@ locals {
     # attaching an already-attached policy is an error in mc; treat that as success
     attach_policy() {
       out=$(mc admin policy attach shared "$1" --user "$2" 2>&1) || {
-        echo "$out" | grep -qi already || { echo "$out" >&2; exit 1; }
+        case "$out" in
+          *[Aa][Ll][Rr][Ee][Aa][Dd][Yy]*) ;;
+          *) echo "$out" >&2; exit 1 ;;
+        esac
       }
     }
   EOT
@@ -327,7 +330,7 @@ resource "docker_container" "shared_minio" {
   memory  = 384
   cpus    = "0.4"
   name    = local.shared_minio_host
-  image   = "quay.io/minio/minio:latest" # pin a tag once you've checked what you're running
+  image   = "pgsty/silo:RELEASE.2026-09-16T00-00-00Z" # pin a tag once you've checked what you're running
   restart = "always"
   command = ["server", "/data", "--console-address", ":9001"]
   env = [
@@ -353,7 +356,7 @@ resource "docker_container" "shared_minio_init" {
   memory     = 64
   cpus       = "0.1"
   name       = "shared-minio-init"
-  image      = "quay.io/minio/mc:latest"
+  image      = "pgsty/mc:latest"
   must_run   = false
   restart    = "no"
   attach     = true

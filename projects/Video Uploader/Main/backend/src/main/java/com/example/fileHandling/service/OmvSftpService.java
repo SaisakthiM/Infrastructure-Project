@@ -1,47 +1,53 @@
 package com.example.fileHandling.service;
 
-import com.jcraft.jsch.*;
-import org.springframework.stereotype.Service;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import java.io.FileInputStream;
+import org.springframework.stereotype.Service;
 
+/**
+ * Optional off-box backup of uploads to the OpenMediaVault NAS over SFTP.
+ * Configure with environment variables; with none set, backup is simply skipped:
+ *   OMV_HOST, OMV_PORT (default 22), OMV_USER, OMV_PASSWORD, OMV_UPLOAD_DIR
+ */
 @Service
 public class OmvSftpService {
 
-    private final String OMV_HOST = "192.168.50.10";
-    private final int OMV_PORT = 22;
-    private final String OMV_USER = "admin";        // your OMV username (seen in top right)
-    private final String OMV_PASSWORD = "saisakthi2008";
-    private final String OMV_UPLOAD_DIR = "/srv/dev-disk-by-uuid-2f4044e5-cd7b-4e2e-9d3e-7dacf9ad43e1/FileUpload/";
+  private static String env(String key, String fallback) {
+    String v = System.getenv(key);
+    return (v == null || v.isBlank()) ? fallback : v;
+  }
 
-    public void uploadToOmv(String localFilePath, String filename) throws Exception {
-        JSch jsch = new JSch();
-        Session session = null;
-        ChannelSftp channelSftp = null;
+  public boolean isConfigured() {
+    return env("OMV_HOST", null) != null && env("OMV_USER", null) != null && env("OMV_PASSWORD", null) != null
+        && env("OMV_UPLOAD_DIR", null) != null;
+  }
 
-        try {
-            session = jsch.getSession(OMV_USER, OMV_HOST, OMV_PORT);
-            session.setPassword(OMV_PASSWORD);
-
-            // Disable strict host key checking (fine for local network)
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
-
-            // Navigate to upload directory on OMV
-            channelSftp.cd(OMV_UPLOAD_DIR);
-
-            // Upload the file
-            try (FileInputStream fis = new FileInputStream(localFilePath)) {
-                channelSftp.put(fis, filename);
-            }
-
-            System.out.println("File uploaded to OMV successfully: " + filename);
-
-        } finally {
-            if (channelSftp != null) channelSftp.disconnect();
-            if (session != null) session.disconnect();
-        }
+  public void uploadToOmv(String localFilePath, String filename) throws Exception {
+    if (!isConfigured()) {
+      System.out.println("OMV backup skipped (OMV_* environment variables not set)");
+      return;
     }
+    JSch jsch = new JSch();
+    Session session = null;
+    ChannelSftp channel = null;
+    try {
+      session = jsch.getSession(env("OMV_USER", null), env("OMV_HOST", null), Integer.parseInt(env("OMV_PORT", "22")));
+      session.setPassword(env("OMV_PASSWORD", null));
+      // the NAS is on the private LAN; set OMV_STRICT_HOSTKEY=yes once a known_hosts file is mounted
+      session.setConfig("StrictHostKeyChecking", env("OMV_STRICT_HOSTKEY", "no"));
+      session.connect(10_000);
+
+      channel = (ChannelSftp) session.openChannel("sftp");
+      channel.connect(10_000);
+      channel.cd(env("OMV_UPLOAD_DIR", null));
+      try (FileInputStream in = new FileInputStream(localFilePath)) {
+        channel.put(in, filename);
+      }
+    } finally {
+      if (channel != null) channel.disconnect();
+      if (session != null) session.disconnect();
+    }
+  }
 }

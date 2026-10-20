@@ -14,6 +14,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Where the infrastructure files come from.
+const (
+	SourceRelease = "release"
+	SourceLocal   = "local"
+)
+
+// infraDirOverride is set by the global --dir flag for the current run only.
+var infraDirOverride string
+
+// SetInfraDirOverride makes Load() use dir instead of the saved infra folder
+// for this process (nothing is written to the config file).
+func SetInfraDirOverride(dir string) { infraDirOverride = dir }
+
+// InfraDirOverride returns the active one-run override ("" when none).
+func InfraDirOverride() string { return infraDirOverride }
+
 const (
 	appName    = "social-platform"
 	configFile = "config.yaml"
@@ -25,6 +41,16 @@ const (
 type Config struct {
 	InfraDir   string `mapstructure:"infra_dir"`
 	ReleaseTag string `mapstructure:"release_tag"`
+
+	// Source says where InfraDir came from: SourceRelease (downloaded by
+	// `install`/`update`) or SourceLocal (a folder you picked with `use`,
+	// typically your own git checkout, kept current with `sync`).
+	Source string `mapstructure:"source"`
+
+	// remembered when a one-run --dir override is active, so Save() never
+	// persists the override by accident.
+	overridden                              bool
+	savedInfraDir, savedSource, savedProjects string
 
 	Paths PathsEnv `mapstructure:"paths"`
 
@@ -103,19 +129,34 @@ func Load() (*Config, error) {
 	v.SetConfigFile(Path())
 	v.SetConfigType("yaml")
 
-	if err := v.ReadInConfig(); err != nil {
-		if os.IsNotExist(err) {
-			return &Config{}, nil
-		}
-		return nil, fmt.Errorf("reading config: %w", err)
-	}
-
 	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := v.ReadInConfig(); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("reading config: %w", err)
+		}
+	} else if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshaling config: %w", err)
 	}
+	applyOverride(&cfg)
 	return &cfg, nil
 }
+
+// applyOverride swaps in the --dir folder (in memory only).
+func applyOverride(cfg *Config) {
+	if infraDirOverride == "" {
+		return
+	}
+	cfg.overridden = true
+	cfg.savedInfraDir, cfg.savedSource, cfg.savedProjects = cfg.InfraDir, cfg.Source, cfg.Paths.ProjectsDir
+	cfg.InfraDir = infraDirOverride
+	cfg.Source = SourceLocal
+	if p := filepath.Join(infraDirOverride, "projects"); looksLikeProjectsDir(p) {
+		cfg.Paths.ProjectsDir = p
+	}
+}
+
+// IsLocal reports whether the infra folder is a user-selected folder.
+func (c *Config) IsLocal() bool { return c.Source == SourceLocal }
 
 // Save writes the config to disk using explicit per-field Viper keys so that
 // nested struct fields are saved with the exact key names the mapstructure tags
@@ -131,12 +172,17 @@ func Save(cfg *Config) error {
 	v.SetConfigFile(Path())
 	v.SetConfigType("yaml")
 
-	// Top-level scalars.
-	v.Set("infra_dir", cfg.InfraDir)
+	// Top-level scalars. A --dir override is for one run only: never persist it.
+	infraDir, source, projects := cfg.InfraDir, cfg.Source, cfg.Paths.ProjectsDir
+	if cfg.overridden {
+		infraDir, source, projects = cfg.savedInfraDir, cfg.savedSource, cfg.savedProjects
+	}
+	v.Set("infra_dir", infraDir)
 	v.Set("release_tag", cfg.ReleaseTag)
+	v.Set("source", source)
 
 	// paths — machine-specific, never hardcoded into .tf source.
-	v.Set("paths.projects_dir", cfg.Paths.ProjectsDir)
+	v.Set("paths.projects_dir", projects)
 
 	// prod_docker — explicit keys match mapstructure tags exactly.
 	v.Set("prod_docker.blog_db_name", cfg.ProdDocker.BlogDBName)

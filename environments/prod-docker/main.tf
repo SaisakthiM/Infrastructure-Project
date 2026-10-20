@@ -68,6 +68,14 @@ resource "docker_volume" "whisper_minio_data" { name = "whisper_minio_data" }
 
 resource "docker_volume" "compiler_dist" { name = "gateway_compiler-dist"}
 
+# Persistent data for the city districts (without these, every container re-create wipes the data)
+resource "docker_volume" "grocery_data"     { name = "gateway_grocery-data" }
+resource "docker_volume" "housing_data"     { name = "gateway_housing-data" }
+resource "docker_volume" "api_service_data" { name = "gateway_api-service-data" }
+resource "docker_volume" "video_uploads"    { name = "gateway_video-uploads" }
+resource "docker_volume" "video_data"       { name = "gateway_video-data" }
+resource "docker_volume" "hospital_data"    { name = "gateway_hospital-data" }
+
 
 
 resource "docker_image" "bank_backend" {
@@ -401,7 +409,7 @@ resource "docker_container" "whisper_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "whisper-frontend-build"
-  image                 = "whisper-frontend:latest"
+  image                 = "whisper-frontend:${substr(null_resource.whisper_frontend_image.triggers.dir_sha, 0, 12)}"
   depends_on = [null_resource.whisper_frontend_image]
   destroy_grace_seconds = 30
   must_run              = true
@@ -446,7 +454,7 @@ resource "docker_container" "bank_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "bank-frontend-build"
-  image                 = "bank-frontend-build:latest"
+  image                 = "bank-frontend-build:${substr(null_resource.bank_frontend_build_image.triggers.dir_sha, 0, 12)}"
   depends_on = [null_resource.bank_frontend_build_image]
   destroy_grace_seconds = 30
   must_run              = true
@@ -475,109 +483,109 @@ resource "docker_container" "quiz_frontend_build" {
 }
 
 
-resource "docker_image" "compiler_db" {
-  name         = "online_compiler_db:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Online Compiler/database_new")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Online Compiler/database_new", "**") :
-      filesha256("${var.projects_dir}/Online Compiler/database_new/${f}")
-      if !can(regex("(\\.git|\\.dockerignore|dbserver|\\.o|data/)", f))
-    ]))
-  }
-}
+# resource "docker_image" "compiler_db" {
+#   name         = "online_compiler_db:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Online Compiler/database_new")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Online Compiler/database_new", "**") :
+#       filesha256("${var.projects_dir}/Online Compiler/database_new/${f}")
+#       if !can(regex("(\\.git|\\.dockerignore|dbserver|\\.o|data/)", f))
+#     ]))
+#   }
+# }
 
-resource "docker_image" "compiler_server" {
-  name         = "online_compiler_server:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Online Compiler/server_new")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Online Compiler/server_new", "**") :
-      filesha256("${var.projects_dir}/Online Compiler/server_new/${f}")
-      if !can(regex("(\\.git|\\.dockerignore|^server$|\\.o|users\\.db)", f))
-    ]))
-  }
-}
+# resource "docker_image" "compiler_server" {
+#   name         = "online_compiler_server:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Online Compiler/server_new")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Online Compiler/server_new", "**") :
+#       filesha256("${var.projects_dir}/Online Compiler/server_new/${f}")
+#       if !can(regex("(\\.git|\\.dockerignore|^server$|\\.o|users\\.db)", f))
+#     ]))
+#   }
+# }
 
-resource "docker_container" "compiler_db" {
-  # --- resource optimization pass ---
-  memory = 256   # MB, hard ceiling
-  cpus   = "0.3"
-  name                  = "compiler-db"
-  image                 = docker_image.compiler_db.image_id
-  restart               = "unless-stopped"
-  destroy_grace_seconds = 30
-  must_run              = true
+# resource "docker_container" "compiler_db" {
+#   # --- resource optimization pass ---
+#   memory = 256   # MB, hard ceiling
+#   cpus   = "0.3"
+#   name                  = "compiler-db"
+#   image                 = docker_image.compiler_db.image_id
+#   restart               = "unless-stopped"
+#   destroy_grace_seconds = 30
+#   must_run              = true
 
-  networks_advanced { name = "gateway-net" }
+#   networks_advanced { name = "gateway-net" }
 
-  mounts {
-    source = docker_volume.compiler_db_data.name
-    target = "/app/data"
-    type   = "volume"
-  }
+#   mounts {
+#     source = docker_volume.compiler_db_data.name
+#     target = "/app/data"
+#     type   = "volume"
+#   }
 
-  # Not exposed externally — only the auth server talks to it
-  # over the gateway-net by container name "compiler-db"
+#   # Not exposed externally — only the auth server talks to it
+#   # over the gateway-net by container name "compiler-db"
 
-  healthcheck {
-    test         = ["CMD-SHELL", "curl -sf 'http://localhost:8080/search?database_name=x&table_name=y&id=1' || exit 0"]
-    interval     = "5s"
-    timeout      = "3s"
-    retries      = 5
-    start_period = "5s"
-  }
-}
+#   healthcheck {
+#     test         = ["CMD-SHELL", "curl -sf 'http://localhost:8080/search?database_name=x&table_name=y&id=1' || exit 0"]
+#     interval     = "5s"
+#     timeout      = "3s"
+#     retries      = 5
+#     start_period = "5s"
+#   }
+# }
 
-module "compiler_server" {
-  # --- resource optimization pass ---
-  # NOTE: modules/docker_app must declare `memory` (number, MB) and
-  # `cpus` (string) variables and forward them to its docker_container
-  # resource for these two lines to actually do anything -- see the
-  # module patch in the chat reply.
-  memory = 512
-  cpus   = "0.5"
-  source        = "../../modules/docker_app"
-  name          = "compiler-server"
-  image         = docker_image.compiler_server.image_id
-  internal_port = 9090
-  external_port = 0          # nginx proxies it — not exposed directly
-  network       = "gateway-net"
+# module "compiler_server" {
+#   # --- resource optimization pass ---
+#   # NOTE: modules/docker_app must declare `memory` (number, MB) and
+#   # `cpus` (string) variables and forward them to its docker_container
+#   # resource for these two lines to actually do anything -- see the
+#   # module patch in the chat reply.
+#   memory = 512
+#   cpus   = "0.5"
+#   source        = "../../modules/docker_app"
+#   name          = "compiler-server"
+#   image         = docker_image.compiler_server.image_id
+#   internal_port = 9090
+#   external_port = 0          # nginx proxies it — not exposed directly
+#   network       = "gateway-net"
 
-  env = [
-    "DB_HOST=compiler-db",   # container name on gateway-net
-    "DB_PORT=8080",
-  ]
+#   env = [
+#     "DB_HOST=compiler-db",   # container name on gateway-net
+#     "DB_PORT=8080",
+#   ]
 
-  depends_on = [docker_container.compiler_db]
-}
+#   depends_on = [docker_container.compiler_db]
+# }
 
-resource "docker_container" "compiler_frontend_build" {
-  # --- resource optimization pass ---
-  memory = 128   # MB, hard ceiling
-  cpus   = "0.2"
-  name                  = "compiler-frontend-build"
-  image                 = docker_image.compiler_frontend.name
-  destroy_grace_seconds = 30
-  must_run              = true
-  networks_advanced { name = "gateway-net" }
-  env = [
-    "VITE_API_URL=${var.compiler_domain}"
-  ]
-  mounts {
-    source = docker_volume.compiler_dist.name
-    target = "/dist"
-    type   = "volume"
-  }
-}
+# resource "docker_container" "compiler_frontend_build" {
+#   # --- resource optimization pass ---
+#   memory = 128   # MB, hard ceiling
+#   cpus   = "0.2"
+#   name                  = "compiler-frontend-build"
+#   image                 = docker_image.compiler_frontend.name
+#   destroy_grace_seconds = 30
+#   must_run              = true
+#   networks_advanced { name = "gateway-net" }
+#   env = [
+#     "VITE_API_URL=${var.compiler_domain}"
+#   ]
+#   mounts {
+#     source = docker_volume.compiler_dist.name
+#     target = "/dist"
+#     type   = "volume"
+#   }
+# }
 
 
 
@@ -591,12 +599,21 @@ module "video_backend" {
   cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "video-uploader-backend"
-  image         = "video-uploader-backend:latest"
+  image         = "video-uploader-backend:${substr(null_resource.video_backend_image.triggers.dir_sha, 0, 12)}"
   depends_on = [null_resource.video_backend_image]
   internal_port = 8080
   external_port = 0
   network       = "gateway-net"
-  env           = ["UPLOADS_DIR=/app/Uploads"]
+  env = [
+    "UPLOADS_DIR=/app/Uploads",
+    "CITY_BANK_API_URL=http://bank-backend:8080/api",
+    "CITY_DATA_DIR=/data",
+  ]
+  # uploads and views/likes/earnings must survive container re-creation
+  named_volumes = [
+    { volume_name = docker_volume.video_uploads.name, container_path = "/app/Uploads", read_only = false },
+    { volume_name = docker_volume.video_data.name, container_path = "/data", read_only = false },
+  ]
 }
 
 resource "docker_container" "video_frontend_build" {
@@ -604,7 +621,7 @@ resource "docker_container" "video_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "video-frontend-build"
-  image                 = docker_image.video_frontend_build.name
+  image                 = docker_image.video_frontend_build.image_id
   destroy_grace_seconds = 30
   must_run              = true
   networks_advanced { name = "gateway-net" }
@@ -625,10 +642,18 @@ module "hospital_management" {
   cpus   = "0.5"
   source        = "../../modules/docker_app"
   name          = "hospital-management"
-  image         = "hospital_management:latest"
+  image         = "hospital_management:${substr(null_resource.hospital_management_image.triggers.dir_sha, 0, 12)}"
   internal_port = 8000
   external_port = 0
   network       = "gateway-net"
+  depends_on    = [null_resource.hospital_management_image]
+  env = [
+    "BANK_API_URL=http://bank-backend:8080/api",
+    "HOSPITAL_METRICS_LOG=/data/metrics.jsonl",
+  ]
+  named_volumes = [
+    { volume_name = docker_volume.hospital_data.name, container_path = "/data", read_only = false },
+  ]
 }
 
 module "blog_website" {
@@ -678,13 +703,59 @@ module "api_service_backend" {
   cpus   = "0.3"
   source        = "../../modules/docker_app"
   name          = "api-service-backend"
-  image         = "api-service-backend:latest"
+  image         = "api-service-backend:${substr(null_resource.api_service_backend_image.triggers.dir_sha, 0, 12)}"
   depends_on = [null_resource.api_service_backend_image]
   internal_port = 8000
   external_port = 0
   network       = "gateway-net"
   env = [
+    "PORT=8000",
     "API_KEY_WEATHER=${var.api_key_weather}",
+    "BANK_API_URL=http://bank-backend:8080/api",
+    "DATA_DIR=/data",
+  ]
+  named_volumes = [
+    { volume_name = docker_volume.api_service_data.name, container_path = "/data", read_only = false },
+  ]
+}
+
+module "grocery_backend" {
+  memory        = 256
+  cpus          = "0.3"
+  source        = "../../modules/docker_app"
+  name          = "grocery-backend"
+  image         = "grocery-backend:${substr(null_resource.grocery_backend_image.triggers.dir_sha, 0, 12)}"
+  depends_on    = [null_resource.grocery_backend_image]
+  internal_port = 8000
+  external_port = 0
+  network       = "gateway-net"
+  env = [
+    "DJANGO_SECRET_KEY=${var.grocery_secret_key}",
+    "ALLOWED_HOSTS=localhost,127.0.0.1,grocery-backend,saisakthi.qzz.io",
+    "BANK_API_URL=http://bank-backend:8080/api",
+    "GROCERY_DB_PATH=/data/db.sqlite3",
+  ]
+  named_volumes = [
+    { volume_name = docker_volume.grocery_data.name, container_path = "/data", read_only = false },
+  ]
+}
+
+module "housing_backend" {
+  memory        = 192
+  cpus          = "0.2"
+  source        = "../../modules/docker_app"
+  name          = "housing-backend"
+  image         = "housing-backend:${substr(null_resource.housing_backend_image.triggers.dir_sha, 0, 12)}"
+  depends_on    = [null_resource.housing_backend_image]
+  internal_port = 8000
+  external_port = 0
+  network       = "gateway-net"
+  env = [
+    "BANK_API_URL=http://bank-backend:8080/api",
+    "HOUSING_DB=/data/housing.db",
+  ]
+  named_volumes = [
+    { volume_name = docker_volume.housing_data.name, container_path = "/data", read_only = false },
   ]
 }
 
@@ -693,7 +764,7 @@ resource "docker_container" "api_service_frontend_build" {
   memory = 128   # MB, hard ceiling
   cpus   = "0.2"
   name                  = "api-service-frontend-build"
-  image                 = docker_image.api_service_frontend_build.name
+  image                 = docker_image.api_service_frontend_build.image_id
   must_run              = false
   restart               = "no"
   destroy_grace_seconds = 30
@@ -763,89 +834,89 @@ resource "docker_container" "doc_frontend_build" {
 
 
 
-# ---------------------------------------------------------------------------
-# Selenium (Chrome grid) for local test runs -- built from the compose at
-# ${var.projects_dir}/Selenium (services: "selenium" = selenium/standalone-chrome,
-# "java" = the test runner built from Selenium/java/selenium/Dockerfile).
-#
-# Capped at 8 cores / 12GB combined so your own Chrome + VS Code still have
-# headroom on the host -- see the resource-optimization thread. shm_size
-# mirrors the compose file's `shm_size: 2gb`; Chrome needs real /dev/shm or
-# it crashes mid-session under any real load.
-# ---------------------------------------------------------------------------
-resource "docker_volume" "selenium_chrome_profiles" {
-  # Declared in the source docker-compose.yml (top-level `volumes:
-  # chrome_profiles`) but not actually mounted by either service there --
-  # kept here 1:1 with the compose for now. Add a `volumes { }` block below
-  # if you start mounting it.
-  name = "selenium_chrome-profiles"
-}
+# # ---------------------------------------------------------------------------
+# # Selenium (Chrome grid) for local test runs -- built from the compose at
+# # ${var.projects_dir}/Selenium (services: "selenium" = selenium/standalone-chrome,
+# # "java" = the test runner built from Selenium/java/selenium/Dockerfile).
+# #
+# # Capped at 8 cores / 12GB combined so your own Chrome + VS Code still have
+# # headroom on the host -- see the resource-optimization thread. shm_size
+# # mirrors the compose file's `shm_size: 2gb`; Chrome needs real /dev/shm or
+# # it crashes mid-session under any real load.
+# # ---------------------------------------------------------------------------
+# resource "docker_volume" "selenium_chrome_profiles" {
+#   # Declared in the source docker-compose.yml (top-level `volumes:
+#   # chrome_profiles`) but not actually mounted by either service there --
+#   # kept here 1:1 with the compose for now. Add a `volumes { }` block below
+#   # if you start mounting it.
+#   name = "selenium_chrome-profiles"
+# }
 
-resource "docker_image" "selenium_chrome" {
-  name         = "selenium/standalone-chrome:latest"
-  keep_locally = true
-}
+# resource "docker_image" "selenium_chrome" {
+#   name         = "selenium/standalone-chrome:latest"
+#   keep_locally = true
+# }
 
-resource "docker_container" "selenium_chrome" {
-  name    = "selenium"
-  image   = docker_image.selenium_chrome.image_id
-  restart = "unless-stopped"
+# resource "docker_container" "selenium_chrome" {
+#   name    = "selenium"
+#   image   = docker_image.selenium_chrome.image_id
+#   restart = "unless-stopped"
 
-  env = [
-    "SE_NODE_MAX_SESSIONS=2",
-    "SE_NODE_OVERRIDE_MAX_SESSIONS=true",
-  ]
+#   env = [
+#     "SE_NODE_MAX_SESSIONS=2",
+#     "SE_NODE_OVERRIDE_MAX_SESSIONS=true",
+#   ]
 
-  # Chrome/webdriver is the heavy half of the 8-core/12GB budget.
-  memory   = 8192   # MB
-  cpus     = "6"
-  shm_size = 2048   # MB == compose's `shm_size: 2gb`
+#   # Chrome/webdriver is the heavy half of the 8-core/12GB budget.
+#   memory   = 8192   # MB
+#   cpus     = "6"
+#   shm_size = 2048   # MB == compose's `shm_size: 2gb`
 
-  ports {
-    internal = 4444
-    external = 4444
-  }
-  ports {
-    internal = 7900   # noVNC -- drop this block if you don't need to watch it run
-    external = 7900
-  }
+#   ports {
+#     internal = 4444
+#     external = 4444
+#   }
+#   ports {
+#     internal = 7900   # noVNC -- drop this block if you don't need to watch it run
+#     external = 7900
+#   }
 
-  networks_advanced { name = "gateway-net" }
-}
+#   networks_advanced { name = "gateway-net" }
+# }
 
-resource "docker_image" "selenium_java" {
-  name         = "selenium-java-runner:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Selenium/java/selenium")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Selenium/java/selenium", "**") :
-      filesha256("${var.projects_dir}/Selenium/java/selenium/${f}")
-      if !can(regex("(\\.git|target|__pycache__)", f))
-    ]))
-  }
-}
+# resource "docker_image" "selenium_java" {
+#   name         = "selenium-java-runner:latest"
+#   keep_locally = true
+#   build {
+#     context    = abspath("${var.projects_dir}/Selenium/java/selenium")
+#     dockerfile = "Dockerfile"
+#   }
+#   triggers = {
+#     dir_sha = sha256(join("", [
+#       for f in fileset("${var.projects_dir}/Selenium/java/selenium", "**") :
+#       filesha256("${var.projects_dir}/Selenium/java/selenium/${f}")
+#       if !can(regex("(\\.git|target|__pycache__)", f))
+#     ]))
+#   }
+# }
 
-resource "docker_container" "selenium_java" {
-  name     = "selenium-java-runner"
-  image    = docker_image.selenium_java.image_id
-  must_run = true
-  restart  = "unless-stopped"
+# resource "docker_container" "selenium_java" {
+#   name     = "selenium-java-runner"
+#   image    = docker_image.selenium_java.image_id
+#   must_run = true
+#   restart  = "unless-stopped"
 
-  memory = 4096
-  cpus   = "2"
+#   memory = 4096
+#   cpus   = "2"
 
-  env = [
-    "JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+DisableExplicitGC",
-    "SE_JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100",
-  ]
+#   env = [
+#     "JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+DisableExplicitGC",
+#     "SE_JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100",
+#   ]
 
-  networks_advanced { name = "gateway-net" }
-  depends_on = [docker_container.selenium_chrome]
-}
+#   networks_advanced { name = "gateway-net" }
+#   depends_on = [docker_container.selenium_chrome]
+# }
 
 # ---------------------------------------------------------------------------
 # Converted from docker_image.api_service_backend — provider build-context bug workaround.
@@ -858,22 +929,20 @@ resource "null_resource" "api_service_backend_image" {
       if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
     ]))
   }
-
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
       set -euo pipefail
-      IMAGE="api-service-backend:latest"
+      IMAGE="api-service-backend"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
       BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/API Service/backend"
 
-      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Image $IMAGE already exists, skipping build."
-        exit 0
-      fi
-
-      echo "Building $IMAGE from $BUILD_DIR ..."
+      # Always build when this resource runs (it only runs when the sources changed).
+      # The old "skip if the image already exists" check meant edits were never deployed.
+      # Containers reference the content-hash tag, so a rebuild also replaces the running container.
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE" .
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
       echo "Build complete."
     EOT
   }
@@ -890,22 +959,20 @@ resource "null_resource" "bank_frontend_build_image" {
       if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
     ]))
   }
-
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
       set -euo pipefail
-      IMAGE="bank-frontend-build:latest"
+      IMAGE="bank-frontend-build"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
       BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Bank Manager/frontend"
 
-      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Image $IMAGE already exists, skipping build."
-        exit 0
-      fi
-
-      echo "Building $IMAGE from $BUILD_DIR ..."
+      # Always build when this resource runs (it only runs when the sources changed).
+      # The old "skip if the image already exists" check meant edits were never deployed.
+      # Containers reference the content-hash tag, so a rebuild also replaces the running container.
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE" .
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
       echo "Build complete."
     EOT
   }
@@ -922,22 +989,20 @@ resource "null_resource" "video_backend_image" {
       if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
     ]))
   }
-
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
       set -euo pipefail
-      IMAGE="video-uploader-backend:latest"
+      IMAGE="video-uploader-backend"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
       BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Video Uploader/Main/backend"
 
-      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Image $IMAGE already exists, skipping build."
-        exit 0
-      fi
-
-      echo "Building $IMAGE from $BUILD_DIR ..."
+      # Always build when this resource runs (it only runs when the sources changed).
+      # The old "skip if the image already exists" check meant edits were never deployed.
+      # Containers reference the content-hash tag, so a rebuild also replaces the running container.
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE" .
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
       echo "Build complete."
     EOT
   }
@@ -954,22 +1019,20 @@ resource "null_resource" "whisper_frontend_image" {
       if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
     ]))
   }
-
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
       set -euo pipefail
-      IMAGE="whisper-frontend:latest"
+      IMAGE="whisper-frontend"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
       BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Whatsapp/whatsapp-frontend"
 
-      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Image $IMAGE already exists, skipping build."
-        exit 0
-      fi
-
-      echo "Building $IMAGE from $BUILD_DIR ..."
+      # Always build when this resource runs (it only runs when the sources changed).
+      # The old "skip if the image already exists" check meant edits were never deployed.
+      # Containers reference the content-hash tag, so a rebuild also replaces the running container.
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE" -f Dockerfile.prod .
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" -f Dockerfile.prod .
       echo "Build complete."
     EOT
   }
@@ -986,22 +1049,71 @@ resource "null_resource" "hospital_management_image" {
       if !can(regex("(^|/)(node_modules|\\.git|\\.next|__pycache__|\\.venv|target)/", f))
     ]))
   }
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="hospital_management"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/hospital_management"
+
+      # Always build when this resource runs (it only runs when the sources changed).
+      # The old "skip if the image already exists" check meant edits were never deployed.
+      # Containers reference the content-hash tag, so a rebuild also replaces the running container.
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+      echo "Build complete."
+    EOT
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Grocery + housing backends (new city districts). Same pattern as above.
+# ---------------------------------------------------------------------------
+resource "null_resource" "grocery_backend_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/Grocery Store/backend/grocery_backend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/Grocery Store/backend/grocery_backend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|__pycache__|\\.venv|\\.pytest_cache)/", f)) && f != "db.sqlite3"
+    ]))
+  }
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
       set -euo pipefail
-      IMAGE="hospital_management:latest"
-      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/hospital_management"
-
-      if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Image $IMAGE already exists, skipping build."
-        exit 0
-      fi
-
-      echo "Building $IMAGE from $BUILD_DIR ..."
+      IMAGE="grocery-backend"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/Grocery Store/backend/grocery_backend"
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE" .
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+      echo "Build complete."
+    EOT
+  }
+}
+
+resource "null_resource" "housing_backend_image" {
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${trimsuffix(var.projects_dir, "/")}/housing/backend", "**") :
+      filesha256("${trimsuffix(var.projects_dir, "/")}/housing/backend/${f}")
+      if !can(regex("(^|/)(node_modules|\\.git|__pycache__|\\.venv|\\.pytest_cache)/", f)) && !endswith(f, ".db")
+    ]))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      IMAGE="housing-backend"
+      TAG="${substr(self.triggers.dir_sha, 0, 12)}"
+      BUILD_DIR="${trimsuffix(var.projects_dir, "/")}/housing/backend"
+      echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
+      cd "$BUILD_DIR"
+      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
       echo "Build complete."
     EOT
   }

@@ -29,6 +29,7 @@
 
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "three": "^0.164.0",
 
     "axios": "^1.12.2",
     "jwt-decode": "^4.0.0",

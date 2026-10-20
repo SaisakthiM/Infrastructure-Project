@@ -1,113 +1,175 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Patient, Doctor, Appointment
+from django.db import transaction
+from django.db.models import Sum
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_GET, require_POST
 
-def dashboard(request):
-    context = {
+from .city_identity import identity_for
+from .forms import BookAppointmentForm, DoctorForm, PatientForm, RescheduleForm
+from .metrics_logger import log_hospital_financial_event
+from .models import Appointment, Doctor, Patient
+
+
+def _wants_json(request):
+    return request.headers.get("X-Requested-With") == "fetch"
+
+
+def _summary():
+    paid = Appointment.objects.filter(paid=True)
+    return {
         "doctor_count": Doctor.objects.count(),
         "patient_count": Patient.objects.count(),
         "appointment_count": Appointment.objects.count(),
+        "pending_count": Appointment.objects.filter(is_completed=False).count(),
+        "completed_count": Appointment.objects.filter(is_completed=True).count(),
+        "revenue": paid.aggregate(total=Sum("fee"))["total"] or 0,
     }
+
+
+# ─── Dashboard ──────────────────────────────────────────────────────────────
+
+def dashboard(request):
+    context = _summary()
+    context["upcoming"] = (
+        Appointment.objects.filter(is_completed=False).select_related("patient", "doctor")[:6]
+    )
     return render(request, "dashboard.html", context)
 
+
+@require_GET
+def api_summary(request):
+    return JsonResponse(_summary())
+
+
+# ─── Patients ───────────────────────────────────────────────────────────────
+
 def manage_patients(request):
-    patients = Patient.objects.all()
-    return render(request, "patients/list.html", {"patients": patients})
+    return render(request, "patients/list.html", {"patients": Patient.objects.all()})
+
 
 def add_patient(request):
-    if request.method == "POST":
-        name = request.POST['name']
-        age = request.POST['age']
-        contact = request.POST['contact']
-        Patient.objects.create(name=name, age=age, contact=contact)
-        return redirect('manage_patients')
-    return render(request, "patients/add.html")
+    form = PatientForm(request.POST) if request.method == "POST" else PatientForm()
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("manage_patients")
+    return render(request, "patients/add.html", {"form": form})
+
 
 def update_patient(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
-    if request.method == "POST":
-        patient.name = request.POST['name']
-        patient.age = request.POST['age']
-        patient.contact = request.POST['contact']
-        patient.save()
-        return redirect('manage_patients')
-    return render(request, "patients/update.html", {"patient": patient})
+    form = PatientForm(request.POST, instance=patient) if request.method == "POST" else PatientForm(instance=patient)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("manage_patients")
+    return render(request, "patients/update.html", {"form": form, "patient": patient})
 
-# Similar views for Doctors and Appointments...
+
+# ─── Doctors ────────────────────────────────────────────────────────────────
+
 def manage_doctors(request):
-    doctors = Doctor.objects.all()
-    return render(request, "doctors/list.html", {"doctors": doctors})
+    return render(request, "doctors/list.html", {"doctors": Doctor.objects.all()})
+
 
 def add_doctor(request):
-    if request.method == "POST":
-        name = request.POST['name']
-        specialty = request.POST['specialty']
-        contact = request.POST['contact']
-        Doctor.objects.create(name=name, specialty=specialty, contact=contact)
-        return redirect('manage_doctors')
-    return render(request, "doctors/add.html")
+    form = DoctorForm(request.POST) if request.method == "POST" else DoctorForm()
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("manage_doctors")
+    return render(request, "doctors/add.html", {"form": form})
+
 
 def update_doctor(request, pk):
     doctor = get_object_or_404(Doctor, pk=pk)
-    if request.method == "POST":
-        doctor.name = request.POST['name']
-        doctor.specialty = request.POST['specialty']
-        doctor.contact = request.POST['contact']
-        doctor.save()
-        return redirect('manage_doctors')
-    return render(request, "doctors/update.html", {"doctor": doctor})
+    form = DoctorForm(request.POST, instance=doctor) if request.method == "POST" else DoctorForm(instance=doctor)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("manage_doctors")
+    return render(request, "doctors/update.html", {"form": form, "doctor": doctor})
+
+
+# ─── Appointments ───────────────────────────────────────────────────────────
 
 def manage_appointments(request):
-    appointments = Appointment.objects.select_related('patient', 'doctor').all()
+    appointments = Appointment.objects.select_related("patient", "doctor")
     return render(request, "appointments/list.html", {"appointments": appointments})
 
+
 def book_appointment(request):
-    from .metrics_logger import log_hospital_financial_event
+    """
+    Browser flow (hospital-city.js): the citizen's bank is charged first, then the form is POSTed with
+    X-City-Paid plus their bank identity. We verify the identity with the bank and mark the visit as paid.
+    A plain form POST (no headers) still books the visit, just unpaid.
+    """
     if request.method == "POST":
-        patient_id = request.POST['patient']
-        doctor_id = request.POST['doctor']
-        date = request.POST['date']
-        time = request.POST['time']
-        patient = get_object_or_404(Patient, id=patient_id)
-        doctor = get_object_or_404(Doctor, id=doctor_id)
-        fee = getattr(doctor, 'consultation_fee', 150)
-        payout = getattr(doctor, 'doctor_earnings', 100)
-        
-        appointment = Appointment.objects.create(
-            patient=patient,
-            doctor=doctor,
-            date=date,
-            time=time,
-            fee=fee,
-            doctor_payout=payout
-        )
+        form = BookAppointmentForm(request.POST)
+        if form.is_valid():
+            doctor = form.cleaned_data["doctor"]
+            payer = identity_for(request) if request.headers.get("X-City-Paid") else None
 
-        # Log financial analytics event for MinIO
-        log_hospital_financial_event('appointment_booked', {
-            'appointment_id': appointment.id,
-            'patient': patient.name,
-            'doctor': doctor.name,
-            'patient_spent': fee,
-            'doctor_earned': payout
-        })
+            appointment = form.save(commit=False)
+            appointment.fee = doctor.consultation_fee
+            appointment.doctor_payout = doctor.doctor_earnings
+            appointment.paid = bool(payer)
+            appointment.payer = payer or ""
+            appointment.save()
 
-        return redirect('manage_appointments')
-    context = {
-        "patients": Patient.objects.all(),
-        "doctors": Doctor.objects.all()
-    }
+            log_hospital_financial_event(
+                "appointment_booked",
+                {
+                    "appointment_id": appointment.id,
+                    "patient": appointment.patient.name,
+                    "doctor": doctor.name,
+                    "patient_spent": appointment.fee,
+                    "doctor_earned": appointment.doctor_payout,
+                    "paid": appointment.paid,
+                    "payer": appointment.payer,
+                },
+            )
+            if _wants_json(request):
+                return JsonResponse({"ok": True, "id": appointment.id, "fee": appointment.fee, "paid": appointment.paid}, status=201)
+            return redirect("manage_appointments")
+        if _wants_json(request):
+            return JsonResponse({"ok": False, "errors": form.errors.get_json_data()}, status=400)
+    else:
+        form = BookAppointmentForm()
+
+    context = {"form": form, "patients": Patient.objects.all(), "doctors": Doctor.objects.all()}
     return render(request, "appointments/book.html", context)
 
 
 def update_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
-    if request.method == "POST":
-        appointment.date = request.POST['date']
-        appointment.time = request.POST['time']
-        appointment.save()
-        return redirect('manage_appointments')
-    context = {
-        "appointment": appointment,
-        "patients": Patient.objects.all(),
-        "doctors": Doctor.objects.all()
-    }
-    return render(request, "appointments/update.html", context)
+    form = RescheduleForm(request.POST, instance=appointment) if request.method == "POST" else RescheduleForm(instance=appointment)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("manage_appointments")
+    return render(request, "appointments/update.html", {"form": form, "appointment": appointment})
+
+
+@require_POST
+def complete_appointment(request, pk):
+    """A logged-in citizen treats a patient and earns the doctor payout (credited by the browser via the bank)."""
+    who = identity_for(request)
+    if not who:
+        return JsonResponse({"ok": False, "error": "Log in to the city bank to treat patients."}, status=401)
+
+    with transaction.atomic():
+        appointment = get_object_or_404(Appointment.objects.select_for_update(), pk=pk)
+        if appointment.is_completed:
+            return JsonResponse({"ok": False, "error": "This visit has already been treated."}, status=409)
+        appointment.is_completed = True
+        appointment.completed_by = who
+        appointment.completed_at = timezone.now()
+        appointment.save(update_fields=["is_completed", "completed_by", "completed_at"])
+
+    log_hospital_financial_event(
+        "appointment_completed",
+        {
+            "appointment_id": appointment.id,
+            "doctor": appointment.doctor.name,
+            "doctor_earned": appointment.doctor_payout,
+            "treated_by": who,
+        },
+    )
+    return JsonResponse({"ok": True, "appointment": appointment.id, "payout": appointment.doctor_payout})

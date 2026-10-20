@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	updateForce   bool
+	updateForce     bool
 	updateSkipClean bool
+	updateWipeState bool
 )
 
 var updateCmd = &cobra.Command{
@@ -26,9 +27,9 @@ GitHub release. If a newer version is available it:
   1. Syncs changed files from the new release into ~/.social-platform/infra/
      — only files that actually differ are written; everything else (and
      anything not tracked by the release at all) is left alone.
-  2. Removes local terraform.tfstate* files, but only for environments whose
-     .tf/.hcl files were part of this sync (avoids "state changed" errors on
-     re-deploy without nuking state for environments that didn't change).
+  2. Keeps local terraform.tfstate* files. (The old behaviour of deleting the
+     state of changed environments is now opt-in with --wipe-state, because
+     Terraform then forgets containers that are already running.)
   3. Keeps .terragrunt-cache/ and .terraform/ as-is — providers don't
      re-download, deploys stay fast.
   4. Preserves all terraform.tfvars files — your secrets stay intact.
@@ -44,6 +45,8 @@ Flags:
 func init() {
 	updateCmd.Flags().BoolVar(&updateForce, "force", false,
 		"Download and apply the latest release even if already up to date")
+	updateCmd.Flags().BoolVar(&updateWipeState, "wipe-state", false,
+		"Also delete local terraform.tfstate* of environments whose config changed (old behaviour; off by default because it makes Terraform forget running containers)")
 	updateCmd.Flags().BoolVar(&updateSkipClean, "skip-clean", false,
 		"Skip .terragrunt-cache/.terraform wipe after updating")
 }
@@ -54,6 +57,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Load()
 	if err != nil || cfg == nil {
 		cfg = &config.Config{}
+	}
+
+	if cfg.IsLocal() {
+		return fmt.Errorf("you are deploying from your own folder (%s), which 'update' would overwrite with a release copy.\n"+
+			"  Use 'social-platform sync' to pull your latest git changes instead,\n"+
+			"  or 'social-platform install' to go back to the downloaded release copy", cfg.InfraDir)
 	}
 
 	// ── Step 1: Fetch latest release from GitHub ───────────────────────────
@@ -131,6 +140,9 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	if len(affected) == 0 {
 		ui.Info("No Terraform/Terragrunt config changed — existing state left untouched.")
+	} else if !updateWipeState {
+		ui.Info("Config changed in: %s", strings.Join(affected, ", "))
+		ui.Info("Terraform state kept (pass --wipe-state to clear it). Re-deploy these environments to apply the changes.")
 	} else {
 		ui.Info("Config changed in: %s", strings.Join(affected, ", "))
 		var count int

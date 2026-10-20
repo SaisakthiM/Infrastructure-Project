@@ -1,0 +1,19 @@
+/* hospital district layout (shared look lives in /city-core/city.css) */
+:root { --accent: #9fdded; }
+.hosp-layout { display: grid; grid-template-columns: 210px minmax(0, 760px); gap: 18px; align-items: start; }
+.hosp-nav { padding: 14px; display: grid; gap: 4px; position: sticky; top: 72px; }
+.hosp-brand { display: flex; gap: 10px; align-items: center; padding: 4px 6px 12px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.hosp-brand .cross { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: rgba(159, 221, 237, 0.14); border: 1px solid var(--line-accent); color: var(--accent); }
+.hosp-brand strong { font-family: var(--font-display); font-size: 16px; display: block; line-height: 1.1; }
+.hosp-brand small { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+.hosp-nav a { padding: 9px 12px; border-radius: 9px; color: var(--muted); text-decoration: none; border: 1px solid transparent; }
+.hosp-nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.hosp-nav a.on { color: var(--text); background: rgba(159, 221, 237, 0.12); border-color: var(--line-accent); }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.page-head .display { font-size: 30px; }
+.form-card { max-width: 560px; }
+@media (max-width: 900px) {
+  .hosp-layout { grid-template-columns: 1fr; }
+  .hosp-nav { position: static; display: flex; flex-wrap: wrap; }
+  .hosp-brand { display: none; }
+}

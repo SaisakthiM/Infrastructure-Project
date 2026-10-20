@@ -1,10 +1,14 @@
 package com.example.fileHandling.controller;
 
+import com.example.fileHandling.service.BankIdentityService;
+import com.example.fileHandling.service.EngagementService;
 import com.example.fileHandling.service.OmvSftpService;
+import com.example.fileHandling.util.UploadsDir;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -14,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,28 +32,53 @@ public class FileController {
   @Autowired
   private OmvSftpService omvSftpService;
 
+  // optional collaborators: absent in controller-slice tests, present in the running app
+  @Autowired(required = false)
+  private EngagementService engagement;
+
+  @Autowired(required = false)
+  private BankIdentityService identity;
+
   private String getUploadsPath() {
-    String env = System.getenv("UPLOADS_DIR");
-    return (env != null && !env.isEmpty()) ? env : System.getProperty("user.dir") + "/Uploads";
+    return UploadsDir.resolve().toString();
+  }
+
+  private String verifiedUser(String authorization, String accountId) {
+    return identity == null ? null : identity.verify(authorization, accountId);
   }
 
   @RequestMapping(value = "/upload", method = RequestMethod.POST)
-  public String uploadFile(@RequestParam("fileToUpload") MultipartFile file) {
-    String filePath = getUploadsPath() + File.separator + file.getOriginalFilename();
+  public String uploadFile(
+      @RequestParam("fileToUpload") MultipartFile file,
+      @RequestHeader(value = "Authorization", required = false) String authorization,
+      @RequestHeader(value = "X-City-Account", required = false) String accountId) {
+
+    String name = UploadsDir.safeName(file.getOriginalFilename());
+    if (name == null) {
+      return "Error: invalid file name";
+    }
 
     try {
-      new File(getUploadsPath()).mkdirs();
-      FileOutputStream fout = new FileOutputStream(filePath);
-      fout.write(file.getBytes());
-      fout.close();
+      Path dir = UploadsDir.resolve();
+      Files.createDirectories(dir);
+      Path target = dir.resolve(name).normalize();
+      if (!target.startsWith(dir.normalize())) {
+        return "Error: invalid file name";
+      }
+      file.transferTo(target);
+
+      if (engagement != null) {
+        String creator = verifiedUser(authorization, accountId);
+        engagement.registerUpload(name, creator == null ? "anonymous" : creator);
+      }
 
       // Upload to OMV in background — don't block the response
-      String finalFilePath = filePath;
-      String originalFilename = file.getOriginalFilename();
+      final String finalFilePath = target.toString();
+      final String finalName = name;
       new Thread(() -> {
         try {
-          omvSftpService.uploadToOmv(finalFilePath, originalFilename);
-          System.out.println("OMV backup successful: " + originalFilename);
+          omvSftpService.uploadToOmv(finalFilePath, finalName);
+          System.out.println("OMV backup successful: " + finalName);
         } catch (Exception e) {
           System.out.println("OMV backup failed (non-critical): " + e.getMessage());
         }
@@ -93,7 +123,10 @@ public class FileController {
   }
 
   @RequestMapping(value = "/remove/{path:.+}", method = RequestMethod.DELETE)
-  public ResponseEntity<String> removeFile(@PathVariable("path") String filename) {
+  public ResponseEntity<String> removeFile(
+      @PathVariable("path") String filename,
+      @RequestHeader(value = "Authorization", required = false) String authorization,
+      @RequestHeader(value = "X-City-Account", required = false) String accountId) {
     // Prevent path traversal
     if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
       return ResponseEntity.badRequest().body("Invalid filename.");
@@ -106,6 +139,11 @@ public class FileController {
       return new ResponseEntity<>("File Not Found", HttpStatus.NOT_FOUND);
     }
 
+    // uploads made by a logged-in citizen can only be removed by that citizen
+    if (engagement != null && !engagement.canDelete(filename, verifiedUser(authorization, accountId))) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only delete your own uploads.");
+    }
+
     String filePath = getUploadsPath() + File.separator + filename;
     File file = new File(filePath);
 
@@ -115,18 +153,9 @@ public class FileController {
           .body("Could not delete file: " + filename);
     }
 
-    // Best-effort OMV removal in background — don't block the response
-    /*
-    new Thread(() -> {
-      try {
-        omvSftpService.removeFromOmv(filename);
-        System.out.println("OMV removal successful: " + filename);
-      } catch (Exception e) {
-        System.out.println("OMV removal failed (non-critical): " + e.getMessage());
-      }
-    }).start();
-    
-    */
+    if (engagement != null) {
+      engagement.forget(filename);
+    }
 
     return ResponseEntity.ok("File Removed Successfully!");
   }

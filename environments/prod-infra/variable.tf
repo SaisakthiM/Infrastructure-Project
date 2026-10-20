@@ -59,6 +59,7 @@ variable "atlantis_gh_webhook_secret" {
 
 variable "smtp_user" {
   type = string
+  default = "saisakthicloud@gmail.com"
 }
 
 variable "smtp_password" {

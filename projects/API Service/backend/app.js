@@ -3,10 +3,15 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var client = require('prom-client');          // ← add
+var client = require('prom-client');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var weatherRouter = require('./routes/weather');
+var geoRouter = require('./routes/geo');
+var marketsRouter = require('./routes/markets');
+var worldRouter = require('./routes/world');
+var exchangeRouter = require('./routes/exchange');
 
 var app = express();
 
@@ -34,22 +39,28 @@ app.use((req, res, next) => {
 });
 // ──────────────────────────────────────────────────────────
 
+// The browser app is served from the same origin in production; CORS only matters for local dev.
 const cors = require('cors');
-app.use(cors({
-    origin: "http://localhost:5173"
-}));
+const origins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean);
+app.use(cors({ origin: origins }));
+app.set('trust proxy', 1);
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(logger('dev'));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/api/weather', weatherRouter);
+app.use('/api/geo', geoRouter);
+app.use('/api/markets', marketsRouter);
+app.use('/api/world', worldRouter);
+app.use('/api/exchange', exchangeRouter);
 
 // ── /metrics endpoint ──────────────────────────────────────
 app.get('/metrics', async (req, res) => {
@@ -63,11 +74,16 @@ app.use(function(req, res, next) {
   next(createError(404));
 });
 
-// error handler
+// error handler: JSON for the API, the jade page for everything else
 app.use(function(err, req, res, next) {
+  const status = err.status || 500;
+  if (status >= 500) console.error(err);
+  if (req.path.startsWith('/api/')) {
+    return res.status(status).json({ error: status >= 500 ? 'Something went wrong.' : err.message });
+  }
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-  res.status(err.status || 500);
+  res.status(status);
   res.render('error');
 });
 

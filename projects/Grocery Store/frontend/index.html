@@ -3,514 +3,75 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Neo City — Cyber Grocery Market 3D</title>
+  <title>FreshMart · Mini City Grocery</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/city-core/city.css">
   <style>
-    :root {
-      --bg: #060913;
-      --card: rgba(13, 20, 36, 0.88);
-      --card-hover: rgba(18, 28, 50, 0.96);
-      --border: rgba(114, 182, 111, 0.28);
-      --border-lit: rgba(114, 182, 111, 0.6);
-      --accent: #72b66f;
-      --accent-glow: rgba(114, 182, 111, 0.2);
-      --cyan: #00f0c8;
-      --gold: #d8b44b;
-      --pink: #e2668a;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --syne: 'Syne', sans-serif;
-      --mono: 'JetBrains Mono', 'DM Mono', monospace;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--mono);
-      min-height: 100vh;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    #bg-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw; height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .app-wrap {
-      position: relative;
-      z-index: 10;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    /* Header */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      backdrop-filter: blur(16px);
-      margin-bottom: 24px;
-      box-shadow: 0 0 25px rgba(0,0,0,0.5);
-    }
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .brand-icon {
-      width: 44px; height: 44px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(114,182,111,0.2), rgba(0,240,200,0.2));
-      border: 1px solid var(--accent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-      box-shadow: 0 0 16px var(--accent-glow);
-    }
-    .brand-title {
-      font-family: var(--syne);
-      font-size: 1.4rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
-    }
-    .brand-sub {
-      font-size: 0.72rem;
-      color: var(--muted);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      background: rgba(114, 182, 111, 0.1);
-      border: 1px solid var(--border);
-      color: var(--accent);
-    }
-    .badge.gold {
-      background: rgba(216, 180, 75, 0.1);
-      border-color: rgba(216, 180, 75, 0.3);
-      color: var(--gold);
-    }
-    .btn-return {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      font-family: var(--mono);
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--text);
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .btn-return:hover {
-      background: rgba(114, 182, 111, 0.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* Shift Banner */
-    .shift-banner {
-      background: linear-gradient(135deg, rgba(114, 182, 111, 0.12), rgba(0, 240, 200, 0.08));
-      border: 1px solid var(--border);
-      padding: 18px 24px;
-      border-radius: 12px;
-      margin-bottom: 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      backdrop-filter: blur(12px);
-    }
-    .shift-desc {
-      font-size: 0.85rem;
-      color: #cbd5e1;
-    }
-    .btn-shift {
-      background: linear-gradient(135deg, var(--accent), var(--cyan));
-      color: #030712;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-family: var(--syne);
-      font-weight: 800;
-      font-size: 0.88rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 0 16px var(--accent-glow);
-    }
-    .btn-shift:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 24px var(--accent-glow);
-    }
-
-    /* 3D Stall Showcase Box */
-    .stall-3d-box {
-      width: 100%;
-      height: 220px;
-      border-radius: 12px;
-      background: rgba(10, 16, 30, 0.7);
-      border: 1px solid var(--border);
-      margin-bottom: 24px;
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(12px);
-    }
-    .stall-tag {
-      position: absolute;
-      top: 12px; left: 12px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      z-index: 5;
-    }
-
-    /* Product Grid */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 18px;
-    }
-    .product-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      backdrop-filter: blur(12px);
-      transition: all 0.25s;
-    }
-    .product-card:hover {
-      border-color: var(--border-lit);
-      transform: translateY(-3px);
-      box-shadow: 0 0 20px rgba(114, 182, 111, 0.15);
-    }
-    .product-emoji {
-      font-size: 42px;
-      text-align: center;
-      margin: 8px 0;
-      filter: drop-shadow(0 0 10px rgba(114, 182, 111, 0.3));
-    }
-    .product-title {
-      font-family: var(--syne);
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: #fff;
-    }
-    .product-desc {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.5;
-      flex-grow: 1;
-    }
-    .product-foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-    .product-price {
-      font-family: var(--syne);
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: var(--gold);
-    }
-    .btn-buy {
-      background: rgba(114, 182, 111, 0.15);
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-buy:hover {
-      background: var(--accent);
-      color: #030712;
-      transform: scale(1.05);
-    }
+    :root { --accent: #72b66f; }
+    .shop { display: grid; grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px); gap: 16px; align-items: start; }
+    .shop .mid { pointer-events: none; min-height: 40vh; }
+    .tabs-row { margin: 6px; }
+    .line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .line:last-child { border: 0; }
+    .qty { display: inline-flex; align-items: center; gap: 6px; }
+    .qty button { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text); cursor: pointer; }
+    .total { display: flex; justify-content: space-between; font: 800 20px var(--font-display); padding: 14px 0 6px; }
+    .big { font: 800 40px var(--font-display); letter-spacing: -0.03em; }
+    .timer { height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; margin: 10px 0; }
+    .timer > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent), #00f0c8); transform-origin: left; }
+    .order { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .hidden { display: none !important; }
+    @media (max-width: 1100px) { .shop { grid-template-columns: 1fr; } .shop .mid { display: none; } }
   </style>
+  <script type="importmap">
+  { "imports": { "three": "/city-core/vendor/three/three.module.js", "three/addons/": "/city-core/vendor/three/addons/" } }
+  </script>
 </head>
-<body>
+<body class="city-body">
+  <div class="city-ui">
+    <div class="shop">
+      <section class="glass accent" aria-label="Store">
+        <div class="hd">FreshMart <small id="stock-note">loading shelves…</small></div>
+        <div class="tabs-row" role="tablist">
+          <button class="on" data-tab="shop">Shop</button>
+          <button data-tab="work">Work a shift</button>
+          <button data-tab="orders">My orders</button>
+        </div>
+        <div class="bd" id="tab-shop">
+          <p class="muted" style="margin-top:0">Click anything on the shelves to put it in your basket. Prices are charged to your city bank account.</p>
+          <div id="cats" class="btn-row"></div>
+        </div>
+        <div class="bd hidden" id="tab-work">
+          <div id="work-idle">
+            <p style="margin-top:0">Restock the shelves. Click the glowing crates on the floor before the clock runs out.</p>
+            <p class="muted" id="work-rules"></p>
+            <button class="btn primary block" id="work-start">Start shift</button>
+          </div>
+          <div id="work-live" class="hidden">
+            <div class="big"><span id="work-count">0</span><span class="muted" style="font-size:16px"> / <span id="work-max">12</span> crates</span></div>
+            <div class="timer"><i id="work-bar"></i></div>
+            <div class="muted"><span id="work-left">30</span>s left</div>
+            <button class="btn block" id="work-end" style="margin-top:12px">Clock out now</button>
+          </div>
+        </div>
+        <div class="bd hidden" id="tab-orders"><div id="orders" class="muted">Log in to see your orders.</div></div>
+      </section>
 
-<canvas id="bg-canvas"></canvas>
+      <div class="mid"></div>
 
-<div class="app-wrap">
-  <!-- Header -->
-  <header>
-    <div class="brand-group">
-      <div class="brand-icon">🛒</div>
-      <div>
-        <div class="brand-title">Neo City Cyber Market 3D</div>
-        <div class="brand-sub">District 05 · Automated Retail &amp; Logistics</div>
-      </div>
-    </div>
-    <div class="nav-actions">
-      <div class="badge gold"><span>🪙</span> Credits: <span id="wallet-val">2,850 NCC</span></div>
-      <div class="badge"><span>📦</span> Cart: <span id="cart-count">0 Items</span></div>
-      <a href="/" class="btn-return">← Back to City 3D</a>
-    </div>
-  </header>
-
-  <!-- Shift Work Banner -->
-  <div class="shift-banner">
-    <div>
-      <div style="font-family:var(--syne);font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:4px">
-        ⚡ Citizen Shift Work Available
-      </div>
-      <div class="shift-desc">
-        Complete a supply chain &amp; restocking shift to earn +150 NCC directly into your citizen ledger.
-      </div>
-    </div>
-    <button class="btn-shift" onclick="doShift()">Start Shift (+150)</button>
-  </div>
-
-  <!-- 3D Interactive Market Stall Showcase -->
-  <div class="stall-3d-box" id="stall-box">
-    <div class="stall-tag">RETAIL PEDESTAL 3D (INTERACTIVE ORBIT)</div>
-  </div>
-
-  <!-- Product Catalog Grid -->
-  <div class="grid">
-    <div class="product-card">
-      <div class="product-emoji">⚡</div>
-      <div class="product-title">Quantum Energy Cell</div>
-      <div class="product-desc">High-density microfusion battery pack to keep personal cyber-implants charged.</div>
-      <div class="product-foot">
-        <div class="product-price">45 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Quantum Energy Cell', 45)">Purchase</button>
-      </div>
-    </div>
-
-    <div class="product-card">
-      <div class="product-emoji">🍜</div>
-      <div class="product-title">Neo Tokyo Ramen Ration</div>
-      <div class="product-desc">Nutrient-dense thermal self-heating ramen with synthetic protein broth.</div>
-      <div class="product-foot">
-        <div class="product-price">25 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Neo Tokyo Ramen', 25)">Purchase</button>
-      </div>
-    </div>
-
-    <div class="product-card">
-      <div class="product-emoji">🧬</div>
-      <div class="product-title">Nano-Med Injector</div>
-      <div class="product-desc">Emergency cellular regeneration booster authorized by Health Services.</div>
-      <div class="product-foot">
-        <div class="product-price">80 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Nano-Med Injector', 80)">Purchase</button>
-      </div>
-    </div>
-
-    <div class="product-card">
-      <div class="product-emoji">💾</div>
-      <div class="product-title">Optical Data Crystal</div>
-      <div class="product-desc">Encrypted 50TB storage crystal for local backups and off-grid documentation.</div>
-      <div class="product-foot">
-        <div class="product-price">120 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Optical Data Crystal', 120)">Purchase</button>
-      </div>
-    </div>
-
-    <div class="product-card">
-      <div class="product-emoji">☕</div>
-      <div class="product-title">Synthetic Espresso Pods</div>
-      <div class="product-desc">High-stimulant roasted caffeine concentrate popular with night-shift engineers.</div>
-      <div class="product-foot">
-        <div class="product-price">30 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Synthetic Espresso', 30)">Purchase</button>
-      </div>
-    </div>
-
-    <div class="product-card">
-      <div class="product-emoji">🛡️</div>
-      <div class="product-title">Personal Firewall Dongle</div>
-      <div class="product-desc">Hardware token providing multi-factor authentication across all city services.</div>
-      <div class="product-foot">
-        <div class="product-price">110 NCC</div>
-        <button class="btn-buy" onclick="buyItem('Personal Firewall Dongle', 110)">Purchase</button>
-      </div>
+      <section class="glass" aria-label="Basket">
+        <div class="hd">Basket <small id="basket-count">empty</small></div>
+        <div class="bd">
+          <div id="basket"><div class="empty">Nothing yet.</div></div>
+          <div class="total"><span>Total</span><span id="basket-total">₹0</span></div>
+          <button class="btn primary block" id="checkout" disabled>Pay with city bank</button>
+        </div>
+      </section>
     </div>
   </div>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-// ── FULLSCREEN BACKGROUND GRID ──────────────────────────────────────────────
-const bgCanvas = document.getElementById('bg-canvas');
-const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
-bgRenderer.setSize(window.innerWidth, window.innerHeight);
-bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-const bgScene = new THREE.Scene();
-bgScene.fog = new THREE.FogExp2(0x060913, 0.02);
-
-const bgCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-bgCamera.position.set(0, 12, 25);
-bgCamera.lookAt(0, 0, 0);
-
-const grid = new THREE.GridHelper(100, 50, 0x72b66f, 0x112218);
-grid.material.opacity = 0.35;
-grid.material.transparent = true;
-bgScene.add(grid);
-
-// ── 3D RETAIL STALL SHOWCASE ────────────────────────────────────────────────
-const stallBox = document.getElementById('stall-box');
-const stallRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-stallRenderer.setSize(stallBox.clientWidth, stallBox.clientHeight);
-stallRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-stallBox.appendChild(stallRenderer.domElement);
-
-const stallScene = new THREE.Scene();
-const stallCamera = new THREE.PerspectiveCamera(50, stallBox.clientWidth / stallBox.clientHeight, 0.1, 100);
-stallCamera.position.set(0, 4.5, 9);
-
-const stallControls = new OrbitControls(stallCamera, stallRenderer.domElement);
-stallControls.enableDamping = true;
-stallControls.autoRotate = true;
-stallControls.autoRotateSpeed = 2.5;
-stallControls.target.set(0, 1.2, 0);
-
-const dLight = new THREE.DirectionalLight(0xffffff, 1.8);
-dLight.position.set(5, 10, 5);
-stallScene.add(dLight);
-
-const pLight = new THREE.PointLight(0x72b66f, 3.5, 15);
-pLight.position.set(0, 2.5, 0);
-stallScene.add(pLight);
-
-// Pedestal Group
-const stallGroup = new THREE.Group();
-stallScene.add(stallGroup);
-
-// Glowing Octagonal Pedestal
-const pedestal = new THREE.Mesh(
-  new THREE.CylinderGeometry(2.4, 2.8, 0.6, 8),
-  new THREE.MeshStandardMaterial({ color: 0x0f1d17, roughness: 0.4, metalness: 0.8 })
-);
-stallGroup.add(pedestal);
-
-// Neon Glow Ring
-const ring = new THREE.Mesh(
-  new THREE.TorusGeometry(2.6, 0.07, 16, 48),
-  new THREE.MeshStandardMaterial({ color: 0x72b66f, emissive: 0x72b66f, emissiveIntensity: 3.0 })
-);
-ring.rotation.x = Math.PI / 2;
-ring.position.y = 0.32;
-stallGroup.add(ring);
-
-// Rotating Floating Supply Crystal
-const crystal = new THREE.Mesh(
-  new THREE.OctahedronGeometry(1.1, 0),
-  new THREE.MeshStandardMaterial({
-    color: 0x00f0c8,
-    emissive: 0x72b66f,
-    emissiveIntensity: 2.2,
-    metalness: 0.9,
-    roughness: 0.1
-  })
-);
-crystal.position.y = 2.0;
-stallGroup.add(crystal);
-
-// Loop
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-
-  crystal.rotation.y = t * 1.5;
-  crystal.position.y = 2.0 + Math.sin(t * 2.5) * 0.15;
-  ring.rotation.z = t * 0.4;
-
-  stallControls.update();
-  stallRenderer.render(stallScene, stallCamera);
-  bgRenderer.render(bgScene, bgCamera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  bgCamera.aspect = window.innerWidth / window.innerHeight;
-  bgCamera.updateProjectionMatrix();
-  bgRenderer.setSize(window.innerWidth, window.innerHeight);
-
-  if (stallBox) {
-    stallCamera.aspect = stallBox.clientWidth / stallBox.clientHeight;
-    stallCamera.updateProjectionMatrix();
-    stallRenderer.setSize(stallBox.clientWidth, stallBox.clientHeight);
-  }
-});
-
-// ── WALLET LOGIC ────────────────────────────────────────────────────────────
-let credits = parseInt(localStorage.getItem('neo_credits') || '2850');
-let cartCount = 0;
-
-function syncUI() {
-  document.getElementById('wallet-val').textContent = `${credits.toLocaleString()} NCC`;
-  document.getElementById('cart-count').textContent = `${cartCount} Items`;
-  localStorage.setItem('neo_credits', credits.toString());
-}
-syncUI();
-
-window.doShift = function() {
-  credits += 150;
-  syncUI();
-  alert('Shift completed! +150 NCC deposited into your citizen balance.');
-};
-
-window.buyItem = function(name, cost) {
-  if (credits >= cost) {
-    credits -= cost;
-    cartCount += 1;
-    syncUI();
-    alert(`Acquired ${name} for ${cost} NCC!`);
-  } else {
-    alert('Insufficient credits! Work a shift to earn more credits.');
-  }
-};
-</script>
+  <script type="module" src="/grocery/grocery.js"></script>
 </body>
 </html>

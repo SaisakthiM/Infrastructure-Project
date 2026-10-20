@@ -1,86 +1,31 @@
 {% extends 'base.html' %}
+{% block title %}Appointments{% endblock %}
+{% block page_id %}list{% endblock %}
 {% block content %}
-
-<div class="page-header">
-  <div class="page-header-left">
-    <div class="page-title">Appointments</div>
-    <div class="page-sub">All scheduled patient appointments</div>
-  </div>
-  <a href="{% url 'book_appointment' %}" class="btn btn-primary">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Book Appointment
-  </a>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Appointment List
-    </span>
-    <span style="font-size:.78rem;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:999px;font-weight:600">
-      {{ appointments|length }} record{{ appointments|length|pluralize }}
-    </span>
-  </div>
-
-  <div style="overflow-x:auto">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Patient</th>
-          <th>Doctor</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for appointment in appointments %}
-        <tr>
-          <td style="color:#94a3b8;font-size:.78rem;font-weight:600">{{ forloop.counter }}</td>
-          <td>
-            <div style="display:flex;align-items:center;gap:9px">
-              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0d9488,#0891b2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0">
-                {{ appointment.patient.name|slice:":1"|upper }}
-              </div>
-              <span style="font-weight:500">{{ appointment.patient.name }}</span>
-            </div>
-          </td>
-          <td>
-            <div style="font-weight:500">{{ appointment.doctor.name }}</div>
-          </td>
-          <td>
-            <span style="background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:6px">
-              {{ appointment.date }}
-            </span>
-          </td>
-          <td>
-            <span style="background:#f0fdf4;color:#15803d;font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:6px">
-              {{ appointment.time }}
-            </span>
-          </td>
-          <td>
-            <a href="{% url 'update_appointment' appointment.id %}" class="link-edit">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:3px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6">
-            <div class="empty-state">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <p>No appointments scheduled yet.</p>
-              <a href="{% url 'book_appointment' %}" class="btn btn-primary" style="margin-top:12px">Book the first one</a>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
+<header class="page-head"><div><div class="eyebrow">Schedule</div><h1 class="display">Appointments</h1></div><a class="btn primary" href="{% url 'book_appointment' %}">+ Book visit</a></header>
+<section class="glass">
+  {% if appointments %}
+  <div class="scroll-x"><table class="tbl">
+    <thead><tr><th>Patient</th><th>Doctor</th><th>When</th><th class="num">Fee</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for a in appointments %}
+      <tr id="appt-{{ a.id }}">
+        <td>{{ a.patient.name }}</td>
+        <td>{{ a.doctor.name }} <span class="muted">· {{ a.doctor.specialty }}</span></td>
+        <td>{{ a.date|date:"d M Y" }} {{ a.time|time:"H:i" }}</td>
+        <td class="num">₹{{ a.fee }}</td>
+        <td>
+          {% if a.paid %}<span class="pill ok">paid{% if a.payer %} · {{ a.payer }}{% endif %}</span>{% else %}<span class="pill warn">unpaid</span>{% endif %}
+          {% if a.is_completed %}<span class="pill">treated{% if a.completed_by %} · {{ a.completed_by }}{% endif %}</span>{% else %}<span class="pill">waiting</span>{% endif %}
+        </td>
+        <td class="num">
+          {% if not a.is_completed %}
+            <button class="btn sm primary treat-btn" data-id="{{ a.id }}" data-payout="{{ a.doctor_payout }}">Treat +₹{{ a.doctor_payout }}</button>
+            <a class="btn sm" href="{% url 'update_appointment' a.pk %}">Reschedule</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">No appointments yet.</div>{% endif %}
+</section>
 {% endblock %}

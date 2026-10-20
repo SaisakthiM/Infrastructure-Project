@@ -33,6 +33,8 @@ resource "docker_volume" "intro_dist" { name = "gateway_intro-dist" }
 resource "docker_volume" "record_dist" { name = "gateway_record-dist" }
 resource "docker_volume" "grocery_dist" { name = "gateway_grocery-dist" }
 resource "docker_volume" "housing_dist" { name = "gateway_housing-dist" }
+# shared 3D + bank layer (three.js, models, textures, city-core.js) served at /city-core/
+resource "docker_volume" "city_core_dist" { name = "gateway_city-core-dist" }
 
 module "gateway" {
   # --- resource optimization pass ---
@@ -88,6 +90,7 @@ module "gateway" {
     { volume_name = docker_volume.record_dist.name, container_path = "/apps/record", read_only = true },
     { volume_name = docker_volume.grocery_dist.name, container_path = "/apps/grocery", read_only = true },
     { volume_name = docker_volume.housing_dist.name, container_path = "/apps/housing", read_only = true },
+    { volume_name = docker_volume.city_core_dist.name, container_path = "/apps/city-core", read_only = true },
     { volume_name = "gateway_whisper-dist", container_path = "/apps/whisper", read_only = true },
     { volume_name = "gateway_compiler-dist", container_path = "/apps/compiler", read_only = true },
 
@@ -136,7 +139,7 @@ resource "null_resource" "housing_page" {
   depends_on = [module.gateway]
 
   triggers = {
-    file_sha   = filesha256("${var.projects_dir}/housing/index.html")
+    file_sha   = filesha256("${var.projects_dir}/housing/frontend/index.html")
     always_run = timestamp()
   }
   provisioner "local-exec" {
@@ -144,7 +147,25 @@ resource "null_resource" "housing_page" {
       docker pull alpine && \
       docker run --rm \
         -v gateway_housing-dist:/dest \
-        -v "${abspath("${var.projects_dir}/housing")}:/src:ro" \
+        -v "${abspath("${var.projects_dir}/housing/frontend")}:/src:ro" \
+        alpine sh -c "cp -r /src/. /dest/"
+    EOT
+  }
+}
+
+resource "null_resource" "city_core_page" {
+  depends_on = [module.gateway]
+
+  triggers = {
+    file_sha   = filesha256("${var.projects_dir}/city-core/city-core.js")
+    always_run = timestamp()
+  }
+  provisioner "local-exec" {
+    command = <<-EOT
+      docker pull alpine && \
+      docker run --rm \
+        -v gateway_city-core-dist:/dest \
+        -v "${abspath("${var.projects_dir}/city-core")}:/src:ro" \
         alpine sh -c "cp -r /src/. /dest/"
     EOT
   }

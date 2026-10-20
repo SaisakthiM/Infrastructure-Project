@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Housing · Mini City</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/city-core/city.css">
+  <style>
+    :root { --accent: #d9a066; }
+    .housing { display: grid; grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 360px); gap: 16px; align-items: start; }
+    .housing .mid { pointer-events: none; min-height: 40vh; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .prop { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .prop:last-child { border: 0; }
+    .prop:hover { background: rgba(255,255,255,.04); }
+    .tier { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .tier:last-child { border: 0; }
+    .tier small { display: block; color: var(--muted); }
+    .big { font: 800 30px var(--font-display); letter-spacing: -0.03em; }
+    .hidden { display: none !important; }
+    @media (max-width: 1100px) { .housing { grid-template-columns: 1fr; } .housing .mid { display: none; } }
+  </style>
+  <script type="importmap">
+  { "imports": { "three": "/city-core/vendor/three/three.module.js", "three/addons/": "/city-core/vendor/three/addons/" } }
+  </script>
+</head>
+<body class="city-body">
+  <div class="city-ui">
+    <div class="housing">
+      <section class="glass accent" aria-label="Neighbourhood">
+        <div class="hd">Neighbourhood <small id="stats-line">loading…</small></div>
+        <div class="bd">
+          <div class="legend">
+            <span><i style="background:#3ddc84"></i>for sale</span>
+            <span><i style="background:#f5c542"></i>yours</span>
+            <span><i style="background:#8892a6"></i>neighbours</span>
+          </div>
+        </div>
+        <div class="hd">Rent income <small id="rent-note">log in</small></div>
+        <div class="bd">
+          <div class="big" id="claimable">₹0</div>
+          <p class="muted" id="rent-help" style="margin-top:4px">Properties pay rent every hour, up to 24 hours at a time.</p>
+          <button class="btn primary block" id="collect" disabled>Collect rent</button>
+        </div>
+        <div class="hd">My homes <small id="homes-count"></small></div>
+        <div class="bd" id="homes"><div class="empty">Log in to see your homes.</div></div>
+      </section>
+
+      <div class="mid"></div>
+
+      <section class="glass" aria-label="Plot details">
+        <div class="hd">Plot <small id="plot-title">click a plot</small></div>
+        <div class="bd" id="plot-body"><div class="empty">Select a plot on the map to see what you can do with it.</div></div>
+      </section>
+    </div>
+  </div>
+  <script type="module" src="/housing/housing.js"></script>
+</body>
+</html>

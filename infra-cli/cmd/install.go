@@ -97,6 +97,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		cfg = &config.Config{}
 	}
 	cfg.InfraDir = infraDir
+	cfg.Source = config.SourceRelease
 	cfg.ReleaseTag = chosen.TagName
 	if err := config.Save(cfg); err != nil {
 		return fmt.Errorf("saving config: %w", err)

@@ -1,0 +1,95 @@
+# Mini City additions. Layer it on top of your existing compose file (it holds no secrets itself):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.city.yml up -d --build
+#
+# Secrets come from the environment / a .env file next to this one:
+#   GROCERY_SECRET_KEY=<long random string>
+#   API_KEY_WEATHER=<your OpenWeather key>
+services:
+
+  gateway:
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../city-core:/apps/city-core:ro
+      - ../Grocery Store/frontend:/apps/grocery:ro
+      - ../housing/frontend:/apps/housing:ro
+      - api-service-dist:/apps/api-service
+    depends_on:
+      - api-service-frontend-build
+      - grocery-backend
+      - housing-backend
+      - api-service-backend
+
+  # ─── GROCERY ────────────────────────────────────────────────
+  grocery-backend:
+    build:
+      context: ../Grocery Store/backend/grocery_backend
+    container_name: grocery-backend
+    environment:
+      DJANGO_SECRET_KEY: ${GROCERY_SECRET_KEY:?set GROCERY_SECRET_KEY}
+      BANK_API_URL: http://bank-backend:8080/api
+      GROCERY_DB_PATH: /data/db.sqlite3
+    volumes:
+      - grocery-data:/data
+    networks:
+      - gateway-net
+
+  # ─── HOUSING ────────────────────────────────────────────────
+  housing-backend:
+    build:
+      context: ../housing/backend
+    container_name: housing-backend
+    environment:
+      BANK_API_URL: http://bank-backend:8080/api
+    volumes:
+      - housing-data:/data
+    networks:
+      - gateway-net
+
+  # ─── API SERVICE ────────────────────────────────────────────
+  api-service-backend:
+    build:
+      context: ../API Service/backend
+    container_name: api-service-backend
+    environment:
+      PORT: "8000"
+      API_KEY_WEATHER: ${API_KEY_WEATHER:-}
+      BANK_API_URL: http://bank-backend:8080/api
+      DATA_DIR: /data
+    volumes:
+      - api-service-data:/data
+    networks:
+      - gateway-net
+
+  api-service-frontend-build:
+    build:
+      context: ../API Service/frontend/api-service
+      dockerfile: Dockerfile.prod
+    container_name: api-service-frontend-build
+    volumes:
+      - api-service-dist:/dist
+    networks:
+      - gateway-net
+
+  # ─── EXISTING SERVICES: new settings only ───────────────────
+  video-uploader-backend:
+    environment:
+      CITY_BANK_API_URL: http://bank-backend:8080/api
+      DATA_DIR: /data
+    volumes:
+      - video-data:/data
+
+  hospital-management:
+    environment:
+      BANK_API_URL: http://bank-backend:8080/api
+      HOSPITAL_METRICS_LOG: /data/metrics.jsonl
+    volumes:
+      - hospital-data:/data
+
+volumes:
+  grocery-data:
+  housing-data:
+  api-service-data:
+  api-service-dist:
+  video-data:
+  hospital-data:

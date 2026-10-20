@@ -143,6 +143,9 @@ func main() {
 	// Clean route.
 	mux.HandleFunc("/api/clean", handleClean)
 
+	// Source folder, git sync and Terraform variables.
+	registerSourceRoutes(mux)
+
 	addr := ":" + *port
 	fmt.Printf("\n  social-platform Web UI\n")
 	fmt.Printf("  Open: http://localhost%s\n\n", addr)
@@ -197,6 +200,18 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 	if err != nil || !cfg.InfraExists() {
 		http.Error(w, "infra not found — run install first", http.StatusPreconditionFailed)
 		return
+	}
+
+	if req.Command == "deploy" {
+		if missing := missingForEnv(cfg, req.Env); len(missing) > 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":   "some Terraform variables have no value yet",
+				"missing": missing,
+			})
+			return
+		}
 	}
 
 	job := newJob(req.Command, req.Env)
@@ -864,12 +879,20 @@ func handleUpdateRun(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Force     bool `json:"force"`
 		SkipClean bool `json:"skip_clean"`
+		WipeState bool `json:"wipe_state"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	cfg, _ := config.Load()
 	if cfg == nil {
 		cfg = &config.Config{}
+	}
+	if cfg.IsLocal() {
+		job := newJob("update", "infra")
+		writeJSON(w, map[string]string{"job_id": job.ID})
+		fmt.Fprintf(jobWriter{job: job}, "You are deploying from your own folder (%s).\nUse Source & Sync → Sync to pull your git changes; 'update' would overwrite it with a release copy.\n", cfg.InfraDir)
+		job.finish(fmt.Errorf("update is disabled while deploying from your own folder"))
+		return
 	}
 
 	job := newJob("update", "infra")
@@ -934,6 +957,9 @@ func handleUpdateRun(w http.ResponseWriter, r *http.Request) {
 		affected := release.AffectedEnvironments(changed)
 		if len(affected) == 0 {
 			fmt.Fprintf(jw, "No Terraform/Terragrunt config changed — existing state left untouched.\n")
+		} else if !req.WipeState {
+			fmt.Fprintf(jw, "Config changed in: %s\n", strings.Join(affected, ", "))
+			fmt.Fprintf(jw, "Terraform state kept. Re-deploy these environments to apply the changes.\n")
 		} else {
 			fmt.Fprintf(jw, "Config changed in: %s\n", strings.Join(affected, ", "))
 			count := 0

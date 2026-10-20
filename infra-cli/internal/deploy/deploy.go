@@ -243,7 +243,7 @@ func runInDir(cfg *config.Config, env Environment, binary string, args []string,
 
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dir
-	cmd.Env = os.Environ()
+	cmd.Env = withProviderCache(os.Environ())
 	cmd.Stdin = os.Stdin
 
 	writers := append([]io.Writer{os.Stdout}, extraOut...)
@@ -274,6 +274,31 @@ func runInDir(cfg *config.Config, env Environment, binary string, args []string,
 		return fmt.Errorf("terragrunt exited with error: %w", err)
 	}
 	return nil
+}
+
+// withProviderCache points Terraform at one shared provider cache so providers
+// are downloaded once and reused across folders, syncs and re-installs (a
+// Terragrunt cache directory is keyed by path, so a new source folder would
+// otherwise download every provider again). An existing TF_PLUGIN_CACHE_DIR
+// is respected.
+func withProviderCache(env []string) []string {
+	for _, e := range env {
+		if strings.HasPrefix(e, "TF_PLUGIN_CACHE_DIR=") {
+			return env
+		}
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return env
+	}
+	dir := filepath.Join(home, ".terraform.d", "plugin-cache")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return env
+	}
+	return append(env,
+		"TF_PLUGIN_CACHE_DIR="+dir,
+		"TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true",
+	)
 }
 
 // RefreshHelmRepos runs `helm repo update` before terragrunt so a stale or

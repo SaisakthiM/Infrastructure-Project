@@ -36,6 +36,10 @@ variable "doc_django_secret_key" { sensitive = true }
 # ─── API SERVICE ──────────────────────────────────────────────
 variable "api_key_weather"     { sensitive = true }
 
+# ─── GROCERY ──────────────────────────────────────────────────
+# Django SECRET_KEY of the grocery backend (the app refuses to start without one).
+variable "grocery_secret_key"  { sensitive = true }
+
 # ─── WHISPER APP ──────────────────────────────────────────────
 variable "whisper_db_user"        {}
 variable "whisper_db_password"    { sensitive = true }
