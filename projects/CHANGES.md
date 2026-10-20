@@ -1,5 +1,31 @@
 # What changed, per project
 
+## Round 2 — localhost bank, login gate, skins, API Service deploy
+
+Copy the folders over your repo as before. NEW = new files.
+
+- **city-core/** — `city-core.js` (login gate on every `mountHud`, local vault + offline sign-in, bank fallback URLs,
+  gateway-error handling), `city.css` (gate styles). NEW: `city-gate.js`, `city-gate.css` (add the one `<script>` line to
+  the city home page), `city-skin.js`, `city-skin.css`, `SKIN.md` (3D look for Whisper / Notes). README updated.
+- **gateway/** — `nginx/default.conf`: serves any host (`localhost`, `127.0.0.1`, catch-all), every upstream resolved at
+  request time so the gateway boots even when the bank (or any service) is down, `/bank/api/` answers a clean `503 JSON`
+  when the bank is not there, `/bank/` shows a readable page instead of a bare 403, `/api-service/` never caches the page
+  and explains itself when nothing is published, commented Whisper template (WebSocket headers).
+  `docker-compose.city.yml`: `api-service-frontend-build` is now a one-shot that republishes on every run, CORS origins for
+  localhost, `bank-backend` gets `CITY_CORS_ORIGINS` / `CITY_ALLOWED_HOSTS`.
+- **API Service/frontend/api-service/** — NEW `Dockerfile.prod` (builds with `--base=/api-service/`, copies into the shared
+  volume on every start, writes `/api-service/build.txt`) and `.dockerignore`. Most likely why the new services never showed (I could not see your original Dockerfile.prod):
+  the old image only filled the volume once, so nginx kept serving the first build. `src/lib/city.ts` type tweak.
+  If you already have a `Dockerfile.prod`, compare it with this one before overwriting.
+- **bank-localhost/** (NEW) — `CityLocalHosts.java` (CORS for localhost, as a pre-Security filter) + `README.md`
+  (why `localhost/bank/` is a 403 and how to fix it; where the host list lives). The bank source was not in the zip.
+- **whisper/frontend/src/city/** (NEW) — `cityTheme.js` (MUI theme), `CityBackdrop.jsx`. Whisper source was not in the zip,
+  so this is a theme + backdrop, not a rebuilt UI. Setup in `city-core/SKIN.md`.
+
+---
+
+# Round 1
+
 Copy each folder over your repo (same paths). Files marked DELETE should be removed.
 
 ## city-core/  (NEW)  — see city-core/README.md

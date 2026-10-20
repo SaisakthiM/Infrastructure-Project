@@ -56,22 +56,37 @@ services:
       API_KEY_WEATHER: ${API_KEY_WEATHER:-}
       BANK_API_URL: http://bank-backend:8080/api
       DATA_DIR: /data
+      # browsers on the gateway call same-origin, so CORS only matters for `vite dev` and direct-port testing
+      CORS_ORIGINS: ${CITY_CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173,http://localhost:8080}
     volumes:
       - api-service-data:/data
     networks:
       - gateway-net
 
+  # One-shot job: builds the SPA and copies it into the api-service-dist volume every time it runs
+  # (see Dockerfile.prod). It exits after copying, which is expected.
+  # If the page ever looks stale:  docker compose -f docker-compose.yml -f docker-compose.city.yml \
+  #                                  up -d --build --force-recreate api-service-frontend-build
+  # then open /api-service/build.txt to see when the files that nginx serves were published.
   api-service-frontend-build:
     build:
       context: ../API Service/frontend/api-service
       dockerfile: Dockerfile.prod
     container_name: api-service-frontend-build
+    restart: "no"
     volumes:
       - api-service-dist:/dist
     networks:
       - gateway-net
 
   # ─── EXISTING SERVICES: new settings only ───────────────────
+  # The bank must accept pages served from localhost (CORS + host list). See ../bank-localhost/README.md for the
+  # one Java class that reads this variable; set CITY_CORS_ORIGINS in .env to add more origins.
+  bank-backend:
+    environment:
+      CITY_CORS_ORIGINS: ${CITY_CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:80,http://localhost:5173,http://localhost:3000}
+      CITY_ALLOWED_HOSTS: ${CITY_ALLOWED_HOSTS:-localhost,127.0.0.1,bank-backend}
+
   video-uploader-backend:
     environment:
       CITY_BANK_API_URL: http://bank-backend:8080/api

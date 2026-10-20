@@ -7,13 +7,16 @@
  *      * you can still spend money you already hold, but only at ONE service
  *      * earnings go to an offline queue and are applied when the bank returns
  *  - A HUD (balance, bank status, login) any page can mount with one call
+ *  - LOGIN GATE: every page that mounts the HUD asks for bank credentials first (non-dismissible)
+ *  - Bank fallbacks: several bank URLs are tried in order (see candidateBases); the one that answers is remembered
+ *  - Local vault: after a successful login a salted PBKDF2 verifier of the password is kept on this device,
+ *    so a known person can still sign in (Safe Mode) when the bank is down. A first-ever login with the bank
+ *    down is refused — there is nothing local to check it against.
  *
  * No dependencies, no build step. Plain ES module:
  *      import City from '/city-core/city-core.js';
  *      City.mountHud({ service: 'grocery', title: 'Grocery Store', accent: '#72b66f' });
  */
-
-const BANK_BASE = (typeof window !== 'undefined' && window.CITY_BANK_BASE) || '/bank/api';
 
 const KEY = {
   session: 'city.session',
@@ -22,7 +25,56 @@ const KEY = {
   ledger: 'city.ledger.v1',
   lock: 'city.safe.lock',
   syncLock: 'city.sync.lock',
+  vault: 'city.vault.v1',
+  last: 'city.lastUser',
+  base: 'city.bank.base',
 };
+
+/**
+ * Where the bank lives. Tried in this order, first answer wins and is remembered:
+ *   1. window.CITY_BANK_BASE            (string)  — set before this module loads
+ *   2. window.CITY_BANK_BASES           (array)   — extra / fallback bank URLs
+ *   3. /bank/api                                  — the gateway (production and docker-compose)
+ *   4. http://localhost:8080/api, 127.0.0.1:8080  — only when the page itself is on localhost
+ *      (the bank container's published port; the bank must allow the page's origin in its CORS list)
+ */
+function candidateBases() {
+  const w = typeof window !== 'undefined' ? window : {};
+  const out = [];
+  const add = (b) => {
+    const v = String(b || '').trim().replace(/\/+$/, '');
+    if (v && !out.includes(v)) out.push(v);
+  };
+  add(w.CITY_BANK_BASE);
+  (Array.isArray(w.CITY_BANK_BASES) ? w.CITY_BANK_BASES : []).forEach(add);
+  add('/bank/api');
+  const host = w.location && w.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
+    add('http://localhost:8080/api');
+    add('http://127.0.0.1:8080/api');
+  }
+  let remembered = null;
+  try {
+    remembered = localStorage.getItem(KEY.base);
+  } catch {
+    /* no storage */
+  }
+  if (remembered && out.includes(remembered)) {
+    out.splice(out.indexOf(remembered), 1);
+    out.unshift(remembered);
+  }
+  return out;
+}
+
+let activeBase = candidateBases()[0];
+function setActiveBase(base) {
+  activeBase = base;
+  try {
+    localStorage.setItem(KEY.base, base);
+  } catch {
+    /* no storage */
+  }
+}
 
 const MAX_AMOUNT = 1_000_000_000;
 const REQUEST_TIMEOUT_MS = 8000;
@@ -92,7 +144,13 @@ const state = {
   account: null, // { balance, loanBalance, creditScore, customerName, accountNumber }
   service: null,
   ready: false,
+  bankUp: null, // null = unknown, true / false = result of the last reachability check
+  needsReauth: false, // offline sign-in is active and the bank is back, but we no longer hold the password
 };
+
+// The typed password lives in memory only (never on disk) so an offline session can be upgraded
+// to a real bank session without asking again, as long as the tab stays open.
+let memAuth = null; // { username, password }
 
 function emit() {
   const snap = City.snapshot();
@@ -114,7 +172,8 @@ function emit() {
 
 function loadSession() {
   const s = readJSON(KEY.session, null);
-  if (!s || !s.token) return null;
+  if (!s || (!s.token && !s.offline)) return null;
+  if (s.offline) return s; // an offline sign-in has no live token; it is upgraded when the bank returns
   const claims = decodeJwt(s.token);
   if (claims && claims.exp && claims.exp * 1000 < Date.now()) {
     localStorage.removeItem(KEY.session);
@@ -134,6 +193,7 @@ function setSession(s) {
 
 function setAccount(a) {
   if (!a) return;
+  setTimeout(vaultTouch, 0);
   state.account = {
     balance: Number(a.balance ?? 0),
     loanBalance: Number(a.loanBalance ?? 0),
@@ -144,9 +204,86 @@ function setAccount(a) {
   writeJSON(KEY.account, state.account);
 }
 
+/* ───────────────────────── local vault (offline sign-in) ───────────────────────── */
+
+const VAULT_ITER = 150_000;
+const canVault = () => typeof crypto !== 'undefined' && !!crypto.subtle && typeof localStorage !== 'undefined';
+const vkey = (u) => String(u || '').trim().toLowerCase();
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = (str) => Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+const vaultRead = () => readJSON(KEY.vault, {});
+
+async function derive(password, salt, iter) {
+  const raw = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, raw, 256);
+}
+
+/** remember a verified login on this device (verifier only, never the password) */
+async function vaultSave(username, password, data) {
+  if (!canVault()) return;
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await derive(password, salt, VAULT_ITER);
+    const v = vaultRead();
+    v[vkey(username)] = {
+      username: data.username || username,
+      salt: b64(salt),
+      hash: b64(hash),
+      iter: VAULT_ITER,
+      token: data.token,
+      accountId: data.accountId,
+      accountNumber: data.accountNumber,
+      account: {
+        balance: data.balance,
+        loanBalance: data.loanBalance,
+        creditScore: data.creditScore,
+        customerName: data.customerName,
+        accountNumber: data.accountNumber,
+      },
+      savedAt: Date.now(),
+    };
+    writeJSON(KEY.vault, v);
+    localStorage.setItem(KEY.last, data.username || username);
+  } catch {
+    /* vault is a convenience; never block a login on it */
+  }
+}
+
+/** keep the vaulted token + balance fresh for the signed-in person */
+function vaultTouch() {
+  if (!state.session || state.session.offline) return;
+  const v = vaultRead();
+  const rec = v[vkey(state.session.username)];
+  if (!rec) return;
+  rec.token = state.session.token;
+  if (state.account) rec.account = { ...state.account };
+  writeJSON(KEY.vault, v);
+}
+
+async function vaultVerify(username, password) {
+  if (!canVault()) return null;
+  const rec = vaultRead()[vkey(username)];
+  if (!rec) return null;
+  try {
+    const got = new Uint8Array(await derive(password, unb64(rec.salt), rec.iter));
+    const want = unb64(rec.hash);
+    if (got.length !== want.length) return null;
+    let diff = 0;
+    for (let i = 0; i < got.length; i += 1) diff |= got[i] ^ want[i];
+    return diff === 0 ? rec : null;
+  } catch {
+    return null;
+  }
+}
+
+const vaultHas = (username) => !!vaultRead()[vkey(username)];
+const vaultAny = () => Object.keys(vaultRead()).length > 0;
+
 /* ───────────────────────── bank transport ───────────────────────── */
 
-async function bankRequest(path, { method = 'GET', body, auth = true } = {}) {
+const isHtml = (res) => (res.headers.get('content-type') || '').includes('text/html');
+
+async function bankRequestAt(base, path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) {
     if (!state.session) throw new AuthError('Not logged in');
@@ -156,7 +293,7 @@ async function bankRequest(path, { method = 'GET', body, auth = true } = {}) {
   const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   let res;
   try {
-    res = await fetch(BANK_BASE + path, {
+    res = await fetch(base + path, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -168,6 +305,8 @@ async function bankRequest(path, { method = 'GET', body, auth = true } = {}) {
     clearTimeout(timer);
   }
 
+  // an HTML error page (nginx 403/404/502 …) is the gateway talking, not the bank: the bank is "not there"
+  if (isHtml(res) && !res.ok) throw new BankDown('Bank not reachable through the gateway (' + res.status + ')');
   if ([500, 502, 503, 504].includes(res.status)) throw new BankDown('Bank unavailable (' + res.status + ')');
 
   let json = null;
@@ -186,11 +325,59 @@ async function bankRequest(path, { method = 'GET', body, auth = true } = {}) {
     }
     throw new AuthError(json?.message || 'Session expired — please log in again');
   }
+  if (res.status === 404 && json == null) throw new BankDown('Bank endpoint not found (' + path + ')');
   if (res.status === 429) throw new BankError('Bank is rate-limiting you — wait a few seconds', 429);
   if (!res.ok || (json && json.success === false)) {
     throw new BankError(json?.message || 'Bank rejected the request (' + res.status + ')', res.status);
   }
   return json?.data ?? null;
+}
+
+/**
+ * Money-moving calls only ever use the active bank (a retry elsewhere after a timeout could charge twice).
+ * Reads, login and register walk the fallback list until one bank answers.
+ */
+async function bankRequest(path, opts = {}) {
+  const { method = 'GET', auth = true } = opts;
+  const failover = opts.failover ?? (method === 'GET' || !auth);
+  const bases = failover ? candidateBases() : [activeBase];
+  let down = null;
+  for (const base of bases) {
+    try {
+      const out = await bankRequestAt(base, path, opts);
+      if (base !== activeBase) setActiveBase(base);
+      state.bankUp = true;
+      return out;
+    } catch (e) {
+      if (e instanceof BankDown) {
+        down = e;
+        continue;
+      }
+      state.bankUp = true; // it answered, just not with what we hoped
+      throw e;
+    }
+  }
+  state.bankUp = false;
+  throw down || new BankDown('Bank unreachable');
+}
+
+/** a bank "answers" when anything JSON-ish (even a 400/401) comes back instead of a network error / gateway page */
+async function pingBase(base) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const res = await fetch(base + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: ctrl.signal,
+    });
+    return ![500, 502, 503, 504].includes(res.status) && !isHtml(res);
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const bankOp = (op, amount) =>
@@ -367,10 +554,39 @@ async function syncQueue() {
   emit();
 }
 
+/** an offline sign-in is active: when the bank answers again, upgrade to a real bank session */
+async function reauth() {
+  if (!(await City.checkBank())) {
+    if (state.mode !== 'safe') {
+      state.mode = 'safe';
+      emit();
+    }
+    return null;
+  }
+  const s = state.session;
+  if (memAuth && s && vkey(memAuth.username) === vkey(s.username)) {
+    try {
+      await City.login(memAuth.username, memAuth.password);
+      City.toast('Bank is back — signed in again.', 'ok');
+      return City.snapshot();
+    } catch (e) {
+      if (e instanceof BankDown) return null;
+      memAuth = null; // password no longer valid at the bank
+    }
+  }
+  if (!state.needsReauth) {
+    state.needsReauth = true;
+    emit();
+  }
+  return null;
+}
+
 /* ───────────────────────── public API ───────────────────────── */
 
 const City = {
-  BANK_BASE,
+  get BANK_BASE() {
+    return activeBase;
+  },
   money,
 
   /** current snapshot, safe to hand to UI code */
@@ -388,6 +604,9 @@ const City = {
       pending: q.filter((e) => e.status === 'pending' || e.status === 'inflight').length,
       failed: q.filter((e) => e.status === 'failed').length,
       lock: localStorage.getItem(KEY.lock),
+      offline: !!state.session?.offline,
+      needsReauth: state.needsReauth,
+      bankUp: state.bankUp,
     };
   },
 
@@ -408,12 +627,41 @@ const City = {
 
   async login(username, password) {
     const data = await bankRequest('/auth/login', { method: 'POST', body: { username, password }, auth: false });
+    memAuth = { username: data.username || username, password };
+    vaultSave(username, password, data);
     return City._adopt(data);
   },
 
   async register(username, password) {
     const data = await bankRequest('/auth/register', { method: 'POST', body: { username, password }, auth: false });
+    memAuth = { username: data.username || username, password };
+    vaultSave(username, password, data);
     return City._adopt(data);
+  },
+
+  /**
+   * Bank down + this device has seen this person before: check the password against the local verifier and
+   * continue in Safe Mode (spend from the cached balance at one service, earnings queued).
+   * Returns null when there is nothing local to check against or the password is wrong.
+   */
+  async loginOffline(username, password) {
+    const rec = await vaultVerify(username, password);
+    if (!rec) return null;
+    memAuth = { username: rec.username, password };
+    setSession({
+      token: rec.token,
+      username: rec.username,
+      accountId: rec.accountId,
+      accountNumber: rec.accountNumber,
+      savedAt: Date.now(),
+      offline: true,
+    });
+    setAccount({ ...(rec.account || {}), customerName: rec.account?.customerName ?? rec.username });
+    state.mode = 'safe';
+    state.needsReauth = false;
+    emit();
+    scheduleProbe();
+    return City.snapshot();
   },
 
   _adopt(data) {
@@ -426,6 +674,8 @@ const City = {
     });
     setAccount(data);
     state.mode = 'online';
+    state.needsReauth = false;
+    state.bankUp = true;
     emit();
     scheduleProbe();
     syncQueue();
@@ -436,13 +686,51 @@ const City = {
     setSession(null);
     state.account = null;
     state.mode = 'anon';
+    state.needsReauth = false;
+    memAuth = null;
     clearTimeout(probeTimer);
     emit();
+  },
+
+  /** also forget the offline-login verifier of this device (use on shared computers) */
+  forgetDevice() {
+    try {
+      localStorage.removeItem(KEY.vault);
+      localStorage.removeItem(KEY.last);
+    } catch {
+      /* ignore */
+    }
+    City.logout();
+  },
+
+  /** is any configured bank answering right now? (also picks and remembers the first one that does) */
+  async checkBank() {
+    for (const base of candidateBases()) {
+      if (await pingBase(base)) {
+        setActiveBase(base);
+        state.bankUp = true;
+        emit();
+        return true;
+      }
+    }
+    state.bankUp = false;
+    emit();
+    return false;
+  },
+
+  hasLocalLogin: (username) => (username ? vaultHas(username) : vaultAny()),
+  lastUser: () => {
+    try {
+      return localStorage.getItem(KEY.last) || '';
+    } catch {
+      return '';
+    }
   },
 
   /** re-read the account from the bank; flips Safe Mode on/off automatically */
   async refresh() {
     if (!state.session) return null;
+    if (state.session.offline) return reauth();
     try {
       const acct = await fetchAccount();
       setAccount(acct);
@@ -555,20 +843,37 @@ const City = {
 
   openLogin(opts = {}) {
     if (typeof document === 'undefined' || document.getElementById('city-login')) return;
-    buildLogin(opts);
+    const mount = () => buildLogin(opts);
+    if (document.body) mount();
+    else document.addEventListener('DOMContentLoaded', mount, { once: true });
   },
 
-  mountHud({ service, title, accent = '#00f0c8', home = '/', requireLogin = false } = {}) {
+  /**
+   * The gate: nothing on the page is usable until somebody is signed in. Re-opens by itself on logout / expiry.
+   * Safe to call more than once.
+   */
+  requireLogin() {
+    if (typeof document === 'undefined' || City._gate) return;
+    City._gate = true;
+    City.ready.then(() => {
+      const check = () => {
+        if (!state.session) City.openLogin({ required: true });
+      };
+      check();
+      City.on(() => {
+        if (state.ready) check();
+      });
+    });
+  },
+
+  /** requireLogin defaults to true: every district asks for credentials first. Pass false for a public page. */
+  mountHud({ service, title, accent = '#00f0c8', home = '/', requireLogin = true } = {}) {
     state.service = service;
     if (typeof document === 'undefined') return;
     document.documentElement.style.setProperty('--accent', accent);
     document.body.classList.add('city-body');
     if (!document.getElementById('city-hud')) buildHud({ service, title, home });
-    if (requireLogin) {
-      City.ready.then(() => {
-        if (!state.session) City.openLogin({ required: true });
-      });
-    }
+    if (requireLogin) City.requireLogin();
   },
 };
 
@@ -598,6 +903,15 @@ function buildHud({ service, title, home }) {
     { class: 'hud-menu', hidden: true },
     el('a', { href: '/bank/' }, 'Open bank'),
     el('button', { type: 'button', onclick: () => City.logout() }, 'Log out'),
+    el(
+      'button',
+      {
+        type: 'button',
+        title: 'Log out and delete the offline-login data stored on this device',
+        onclick: () => City.forgetDevice(),
+      },
+      'Forget this device',
+    ),
   );
   const banner = el('div', { class: 'hud-banner', id: 'city-banner', hidden: true });
 
@@ -651,10 +965,16 @@ function buildHud({ service, title, home }) {
     userBtn.textContent = s.username ? s.username[0].toUpperCase() : '?';
     userBtn.title = s.username || 'Log in';
 
-    if (s.mode === 'safe') {
+    if (s.needsReauth) {
+      banner.hidden = false;
+      banner.replaceChildren(
+        'The bank is back. Sign in once more to sync your offline activity. ',
+        el('button', { type: 'button', class: 'hud-banner-btn', onclick: () => City.openLogin({ reauth: true }) }, 'Sign in'),
+      );
+    } else if (s.mode === 'safe') {
       banner.hidden = false;
       banner.textContent =
-        `Bank offline — Safe Mode. Spending is locked to ${s.lock ? '“' + s.lock + '”' : 'the first service you spend at'}; ` +
+        `${s.offline ? 'Offline sign-in' : 'Bank offline'} — Safe Mode. Spending is locked to ${s.lock ? '“' + s.lock + '”' : 'the first service you spend at'}; ` +
         `${s.pending} transaction${s.pending === 1 ? '' : 's'} waiting for the bank.`;
     } else if (s.failed > 0) {
       banner.hidden = false;
@@ -680,21 +1000,83 @@ function countTo(node, from, to) {
   requestAnimationFrame(step);
 }
 
-function buildLogin({ required = false } = {}) {
+/** while the gate is up, nothing behind it can be focused or clicked */
+function lockPage(on) {
+  document.documentElement.classList.toggle('city-locked', on);
+  for (const n of Array.from(document.body.children)) {
+    if (n.id === 'city-login' || n.id === 'city-toasts') continue;
+    if (on) {
+      if (!n.hasAttribute('inert')) {
+        n.setAttribute('inert', '');
+        n.dataset.cityLocked = '1';
+      }
+    } else if (n.dataset.cityLocked) {
+      n.removeAttribute('inert');
+      delete n.dataset.cityLocked;
+    }
+  }
+}
+
+function buildLogin({ required = false, reauth = false } = {}) {
   let mode = 'login';
+  let checking = false;
+
   const err = el('div', { class: 'login-err', role: 'alert' });
-  const user = el('input', { type: 'text', autocomplete: 'username', required: true, maxlength: '40', placeholder: 'username' });
+  const user = el('input', {
+    type: 'text',
+    autocomplete: 'username',
+    required: true,
+    maxlength: '40',
+    placeholder: 'username',
+    autocapitalize: 'none',
+    spellcheck: 'false',
+    value: (reauth && state.session?.username) || City.lastUser(),
+  });
   const pass = el('input', { type: 'password', autocomplete: 'current-password', required: true, placeholder: 'password' });
+  const eye = el('button', { type: 'button', class: 'login-eye', 'aria-label': 'Show password', title: 'Show / hide password' }, '👁');
+  eye.onclick = () => {
+    pass.type = pass.type === 'password' ? 'text' : 'password';
+  };
   const submit = el('button', { type: 'submit', class: 'btn primary' }, 'Enter the city');
   const tabLogin = el('button', { type: 'button', class: 'tab on' }, 'Log in');
   const tabReg = el('button', { type: 'button', class: 'tab' }, 'Create account');
+
+  const dot = el('i', { class: 'dot' });
+  const statusText = el('span', {}, 'Contacting the city bank…');
+  const retry = el('button', { type: 'button', class: 'login-retry' }, 'Retry');
+  const status = el('div', { class: 'login-status checking', role: 'status' }, dot, statusText, retry);
+
+  const paintStatus = (up) => {
+    const known = City.hasLocalLogin(user.value.trim() || undefined);
+    status.className = 'login-status ' + (up == null ? 'checking' : up ? 'up' : 'down');
+    retry.hidden = up !== false;
+    if (up == null) statusText.textContent = 'Contacting the city bank…';
+    else if (up) statusText.textContent = 'Bank online';
+    else if (known) statusText.textContent = 'Bank unreachable — you can still sign in with the login saved on this device (Safe Mode).';
+    else if (City.hasLocalLogin()) statusText.textContent = 'Bank unreachable — only accounts used on this device before can sign in right now.';
+    else statusText.textContent = 'Bank unreachable — the city is closed until it is back. Nothing is saved on this device to sign in with yet.';
+    tabReg.disabled = up === false;
+    if (up === false && mode === 'register') setMode('login');
+  };
+
+  async function probe() {
+    if (checking) return;
+    checking = true;
+    paintStatus(null);
+    paintStatus(await City.checkBank());
+    checking = false;
+  }
+  retry.onclick = probe;
+  user.addEventListener('input', () => {
+    if (state.bankUp === false) paintStatus(false);
+  });
 
   const setMode = (m) => {
     mode = m;
     tabLogin.classList.toggle('on', m === 'login');
     tabReg.classList.toggle('on', m === 'register');
     pass.autocomplete = m === 'login' ? 'current-password' : 'new-password';
-    submit.textContent = m === 'login' ? 'Enter the city' : 'Open my account';
+    submit.textContent = m === 'login' ? (reauth ? 'Sign in & sync' : 'Enter the city') : 'Open my account';
     err.textContent = '';
   };
   tabLogin.onclick = () => setMode('login');
@@ -705,31 +1087,62 @@ function buildLogin({ required = false } = {}) {
     { class: 'login-card', onsubmit: onSubmit },
     el('div', { class: 'login-logo' }, '◈'),
     el('h2', {}, 'City Bank'),
-    el('p', {}, 'One account for every district. Your balance follows you everywhere.'),
+    el(
+      'p',
+      {},
+      reauth
+        ? 'The bank is back. Sign in to apply what you did while it was offline.'
+        : 'Sign in to enter the city. One account for every district — your balance follows you everywhere.',
+    ),
+    status,
     el('div', { class: 'tabs' }, tabLogin, tabReg),
     el('label', {}, 'Username', user),
-    el('label', {}, 'Password', pass),
+    el('label', {}, 'Password', el('span', { class: 'login-pass' }, pass, eye)),
     err,
     submit,
-    required ? null : el('button', { type: 'button', class: 'btn ghost', onclick: close }, 'Not now'),
+    required ? null : el('button', { type: 'button', class: 'btn ghost', onclick: close }, reauth ? 'Later' : 'Not now'),
+    el('small', { class: 'login-foot' }, 'Your password is sent only to the bank. This device keeps a salted hash of it so you can still sign in if the bank is down.'),
   );
-  const overlay = el('div', { id: 'city-login', class: 'city-login' }, form);
+  const overlay = el('div', { id: 'city-login', class: 'city-login' + (required ? ' required' : '') }, form);
   document.body.appendChild(overlay);
-  user.focus();
+  if (required) lockPage(true);
+  (user.value ? pass : user).focus();
+  paintStatus(state.bankUp);
+  probe();
 
   function close() {
     overlay.remove();
+    if (required) lockPage(false);
   }
+
   async function onSubmit(e) {
     e.preventDefault();
     err.textContent = '';
+    const name = user.value.trim();
     submit.disabled = true;
     try {
       if (mode === 'register') {
         if (pass.value.length < 6) throw new BankError('Password needs at least 6 characters');
-        await City.register(user.value.trim(), pass.value);
+        await City.register(name, pass.value);
       } else {
-        await City.login(user.value.trim(), pass.value);
+        try {
+          await City.login(name, pass.value);
+        } catch (ex) {
+          if (!(ex instanceof BankDown)) throw ex;
+          // the bank is not there: fall back to the login saved on this device, or refuse
+          const local = await City.loginOffline(name, pass.value);
+          if (!local) {
+            paintStatus(false);
+            throw new BankError(
+              City.hasLocalLogin(name)
+                ? 'The bank is unreachable and that password does not match the login saved on this device.'
+                : 'The bank is unreachable, and this device has no saved login for “' + name + '”. Connect to the bank once first.',
+            );
+          }
+          close();
+          City.toast('Bank unreachable — signed in offline. Safe Mode is on.', 'warn');
+          return;
+        }
       }
       close();
       City.toast('Welcome, ' + state.session.username + '.', 'ok');
@@ -745,7 +1158,7 @@ function buildLogin({ required = false } = {}) {
 
 state.session = typeof localStorage !== 'undefined' ? loadSession() : null;
 state.account = state.session ? readJSON(KEY.account, null) : null;
-state.mode = state.session ? 'online' : 'anon';
+state.mode = state.session ? (state.session.offline ? 'safe' : 'online') : 'anon';
 
 City.ready = (async () => {
   if (state.session) await City.refresh();

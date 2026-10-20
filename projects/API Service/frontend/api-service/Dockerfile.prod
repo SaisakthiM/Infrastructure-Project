@@ -1,12 +1,18 @@
-FROM node:24-bookworm-slim AS builder
+# Builds the API Service SPA and (re)publishes it into the shared `api-service-dist` volume on EVERY start.
+#
+# Why this exists: a named volume is only filled from an image the first time it is created. If the build
+# container just sits on files baked into the image, later rebuilds never reach the volume and nginx keeps
+# serving the old page forever (the "I added the services but they are not deployed" symptom).
+# This image ships the build in /out and copies it over /dist each time the container runs.
+
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
-COPY *.json .
-RUN npm install --legacy-peer-deps
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund --legacy-peer-depsl; fi
 COPY . .
-RUN npm run build
+# --base makes asset URLs /api-service/assets/… (the router basename is /api-service, nginx serves it there)
+RUN npx vite build --base=/api-service/ --outDir /out --emptyOutDir
 
-
-
-FROM alpine:latest
-COPY --from=builder /app/dist /dist
-CMD ["sh", "-c", "cp -r /dist/. /output/ && echo 'Done'"]
+FROM busybox:1.36
+COPY --from=build /out /out
+CMD ["sh", "-c", "rm -rf /dist/* /dist/.[!.]* 2>/dev/null; cp -a /out/. /dist/ && date -u +%Y-%m-%dT%H:%M:%SZ > /dist/build.txt && echo 'api-service: published' && ls /dist"]

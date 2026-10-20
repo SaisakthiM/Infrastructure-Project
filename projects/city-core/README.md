@@ -6,7 +6,9 @@ Static files, no build step, served by the gateway at `/city-core/`.
 |---|---|
 | `city-core.js` | Bank client (`City.spend / earn / login`), one session per origin, **Safe Mode**, HUD, login overlay, `City.api()` for district backends |
 | `city-3d.js` | three.js kit: `createStage`, orbit/parallax camera, hover + click picking, skyline/robot loaders, towers, labels |
-| `city.css` | Glass UI, HUD, forms, tables, toasts |
+| `city.css` | Glass UI, HUD, forms, tables, toasts, login gate |
+| `city-gate.js` + `city-gate.css` | One line that makes ANY page (the city home…) ask for the bank login first — see below |
+| `city-skin.js` + `city-skin.css` | 3D backdrop + glass theme for apps we don't rebuild (Whisper, Notes) — see `SKIN.md` |
 | `vendor/three/` | three r160 + GLTF/Draco/Orbit/SkeletonUtils (self-hosted, no CDN) |
 | `models/` | `robot.glb` (your city robot), `city.glb` (your skyline), `Fox.glb` |
 | `textures/` | Earth day / night lights / clouds (three.js examples) |
@@ -42,3 +44,22 @@ Bank unreachable -> chip turns amber. You can still spend money you already hold
 - The bank lets any logged-in user deposit any amount into their own account, so this economy is **trust-based**, not tamper-proof. The district rules above keep honest play consistent; real enforcement needs a server-side ledger/treasury in the bank.
 - The activity ledger (`City.ledger()`) is per browser; the bank has no transaction-history endpoint.
 - A tab closed between "backend approved" and "bank credited" (selling shares, treating a patient, claiming creator earnings, rent) loses that one payout.
+
+
+## Login gate, local vault, bank fallbacks (new)
+
+- **Gate.** `City.mountHud()` now defaults to `requireLogin: true`: the page is blurred and inert until somebody signs in
+  (non-dismissible; re-opens on logout or token expiry). For a page that is not a district, add one line:
+  `<script type="module" src="/city-core/city-gate.js"></script>` (it brings its own scoped CSS).
+- **Local vault.** After each successful login this device stores the username, the bank token, the last balance and a
+  salted PBKDF2-SHA256 verifier (150k iterations) of the password — **never the password**. Needs a secure context
+  (https or localhost). HUD menu → *Forget this device* wipes it.
+- **Bank down?**
+  - known person → signs in against the verifier, Safe Mode on (spend from the cached balance at one service, earnings
+    queued). When the bank answers again the session is upgraded silently if the tab kept the password in memory,
+    otherwise a banner asks for one more sign-in; the queue is then applied.
+  - unknown person / new account → refused ("the city is closed until the bank is back") with a Retry button.
+- **Fallback bank URLs.** Tried in order, first answer is remembered: `window.CITY_BANK_BASE`, `window.CITY_BANK_BASES`,
+  `/bank/api`, and on localhost `http://localhost:8080/api`. Money-moving calls (`withdraw`/`deposit`) never fail over
+  (a retry elsewhere after a timeout could charge twice); reads, login and register do.
+- An HTML error page from the gateway (nginx 403/404/502) now counts as "bank down" instead of logging you out.

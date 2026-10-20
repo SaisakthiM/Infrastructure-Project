@@ -1,0 +1,77 @@
+/* city-gate.css — just the sign-in gate + toasts, scoped so it can sit on any page (React home, Vite apps…) without restyling it. */
+.city-login, #city-toasts, .city-toast {
+  --accent: #00f0c8; --glass-strong: rgba(8, 13, 25, 0.9); --line: rgba(255, 255, 255, 0.12);
+  --line-accent: color-mix(in srgb, var(--accent) 45%, transparent); --text: #eef2f8; --muted: #8d9bb0;
+  --ok: #34d399; --warn: #fbbf24; --bad: #f87171;
+  --font-ui: 'DM Mono', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+  --font-display: 'Syne', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-ui); color: var(--text); box-sizing: border-box;
+}
+.city-login *, .city-login *::before, .city-login *::after { box-sizing: border-box; }
+.city-login .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06); color: var(--text);
+  font: 600 13px var(--font-ui); text-decoration: none; cursor: pointer;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.city-login .btn:hover { background: rgba(255, 255, 255, 0.11); border-color: var(--line-accent); transform: translateY(-1px); }
+.city-login .btn:active { transform: translateY(0); }
+.city-login .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.city-login .btn.primary {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #3b82f6));
+  color: #04070f; border-color: transparent; box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.city-login .btn.primary:hover { box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 60%, transparent); }
+.city-login .btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.city-login .btn.ghost { background: transparent; }
+.city-login .btn.sm { padding: 6px 11px; font-size: 12px; }
+.city-login .btn.block { width: 100%; }
+.city-login .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.city-login .tabs-row { display: flex; gap: 6px; padding: 6px; }
+.city-login .tabs-row button, .city-login .tabs .tab {
+  flex: 1; padding: 8px 12px; border-radius: 9px; border: 1px solid transparent; background: transparent;
+  color: var(--muted); font: 600 12px var(--font-ui); cursor: pointer;
+}
+.city-login .tabs-row button.on, .city-login .tabs .tab.on { color: var(--text); background: rgba(255, 255, 255, 0.08); border-color: var(--line-accent); }
+@keyframes city-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+#city-toasts { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: grid; gap: 8px; max-width: min(380px, calc(100vw - 32px)); }
+.city-toast {
+  padding: 11px 14px; border-radius: 10px; font-size: 13px; background: var(--glass-strong); border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); animation: city-in 0.25s ease-out; transition: opacity 0.5s, transform 0.5s;
+}
+.city-toast.ok { border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+.city-toast.warn { border-color: color-mix(in srgb, var(--warn) 60%, transparent); }
+.city-toast.bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
+.city-toast.out { opacity: 0; transform: translateY(8px); }
+@keyframes city-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.city-login { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; background: rgba(3, 5, 12, 0.72); backdrop-filter: blur(10px); }
+.city-login .login-card { width: min(380px, 100%); padding: 26px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line-accent); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); display: grid; gap: 4px; }
+.city-login .login-card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 24px; }
+.city-login .login-card p { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.city-login .login-card label { display: block; margin-top: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.city-login .login-card input { display: block; width: 100%; margin-top: 6px; padding: 11px 12px; background: rgba(4, 8, 18, 0.8); color: var(--text); border: 1px solid var(--line); border-radius: 9px; font: 500 14px var(--font-ui); }
+.city-login .login-card input:focus { outline: none; border-color: var(--accent); }
+.city-login .login-card .tabs { display: flex; gap: 6px; margin: 6px 0; }
+.city-login .login-card .btn { margin-top: 10px; }
+.city-login .login-logo { font-size: 30px; color: var(--accent); text-shadow: 0 0 20px var(--accent); }
+.city-login .login-err { min-height: 18px; margin-top: 6px; color: var(--bad); font-size: 12px; }
+html.city-locked body > *:not(#city-login):not(#city-toasts) { filter: blur(7px) brightness(0.55); transition: filter 0.3s; }
+html.city-locked { overflow: hidden; }
+.city-login.required { background: rgba(3, 5, 12, 0.86); }
+.city-login .login-status { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.city-login .login-status .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+.city-login .login-status.checking .dot { animation: city-pulse 1s infinite; }
+.city-login .login-status.up { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.city-login .login-status.up .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.city-login .login-status.down { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.city-login .login-status.down .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.city-login .login-status > span { flex: 1; min-width: 0; line-height: 1.35; }
+.city-login .login-retry { flex: none; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--line-accent); background: transparent; color: var(--text); font: 600 11px var(--font-ui); cursor: pointer; }
+.city-login .login-retry[hidden] { display: none; }
+.city-login .login-pass { position: relative; display: block; }
+.city-login .login-pass input { padding-right: 40px; }
+.city-login .login-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-35%); width: 30px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.city-login .login-eye:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.city-login .login-foot { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.city-login .login-card .tabs .tab:disabled { opacity: 0.4; cursor: not-allowed; }

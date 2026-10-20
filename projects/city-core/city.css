@@ -213,3 +213,26 @@ label.field { display: block; margin-bottom: 14px; font-size: 11px; letter-spaci
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ───────── login gate (required sign-in), bank status, offline notices ───────── */
+html.city-locked body > *:not(#city-login):not(#city-toasts) { filter: blur(7px) brightness(0.55); transition: filter 0.3s; }
+html.city-locked { overflow: hidden; }
+.city-login.required { background: rgba(3, 5, 12, 0.86); }
+
+.login-status { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.login-status .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+.login-status.checking .dot { animation: city-pulse 1s infinite; }
+.login-status.up { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.login-status.up .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.login-status.down { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.login-status.down .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.login-status > span { flex: 1; min-width: 0; line-height: 1.35; }
+.login-retry { flex: none; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--line-accent); background: transparent; color: var(--text); font: 600 11px var(--font-ui); cursor: pointer; }
+.login-retry[hidden] { display: none; }
+.login-pass { position: relative; display: block; }
+.login-pass input { padding-right: 40px; }
+.login-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-35%); width: 30px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.login-eye:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.login-foot { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.login-card .tabs .tab:disabled { opacity: 0.4; cursor: not-allowed; }
+.hud-banner-btn { margin-left: 8px; padding: 2px 10px; border-radius: 6px; border: 1px solid rgba(26, 18, 3, 0.5); background: rgba(26, 18, 3, 0.12); color: inherit; font: 700 12px var(--font-ui); cursor: pointer; }

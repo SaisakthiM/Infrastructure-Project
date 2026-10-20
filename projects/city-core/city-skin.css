@@ -1,0 +1,123 @@
+/* city-skin.css — the Mini City glass look for apps we do not rebuild (Whisper, Notes).
+ *
+ * Two layers, on purpose:
+ *   1. BASE   — written with :where(), i.e. zero specificity. It only fills in what the app left unstyled
+ *               (fonts, colors, scrollbars, bare inputs…), so the app's own classes — chat bubbles, note colors,
+ *               status badges — always win and keep meaning what they meant.
+ *   2. GLASS  — normal specificity, only for structural chrome (header, nav, sidebar, dialogs, menus, cards):
+ *               translucent panels so the 3D scene behind shows through. Inline style="" colors still win.
+ * Everything is scoped to html.city-skin; ?skin=off or removing the one <script> line brings the old UI back.
+ */
+
+html.city-skin {
+  --accent: #25d6a3;
+  --cs-bg: #060913;
+  --cs-glass: rgba(9, 15, 28, 0.6);
+  --cs-glass-strong: rgba(8, 13, 25, 0.88);
+  --cs-line: rgba(255, 255, 255, 0.12);
+  --cs-line-accent: color-mix(in srgb, var(--accent) 45%, transparent);
+  --cs-text: #eef2f8;
+  --cs-muted: #8d9bb0;
+  --cs-radius: 16px;
+  --cs-font-ui: 'DM Mono', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+  --cs-font-display: 'Syne', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html.city-skin-notes {
+  --accent: #e8b44f;
+  --cs-glass: rgba(20, 15, 8, 0.6);
+  --cs-glass-strong: rgba(16, 12, 7, 0.9);
+}
+
+/* the canvas lives BEHIND the app: negative z-index inside the root stacking context.
+   html paints the colour, body must stay transparent or it would hide the scene. */
+html.city-skin { background: var(--cs-bg) !important; }
+html.city-skin body { background: transparent !important; color: var(--cs-text); min-height: 100vh; }
+html.city-skin .city-skin-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1 !important; pointer-events: none; }
+html.city-skin:not(.city-skin-3d) { background: radial-gradient(1200px 700px at 70% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%), var(--cs-bg) !important; }
+html.city-skin :is(#root, #app, #__next) { position: relative; background: transparent !important; }
+
+/* ───────── BASE (zero specificity) ───────── */
+:where(html.city-skin) body { font-family: var(--cs-font-ui); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+:where(html.city-skin) :where(h1, h2, h3, h4, h5, h6) { font-family: var(--cs-font-display); letter-spacing: -0.02em; color: var(--cs-text); }
+:where(html.city-skin) :where(a) { color: var(--accent); text-underline-offset: 3px; }
+:where(html.city-skin) :where(small, time, .muted, figcaption) { color: var(--cs-muted); }
+:where(html.city-skin) ::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); color: #fff; }
+:where(html.city-skin) :where(hr) { border: 0; border-top: 1px solid var(--cs-line); }
+:where(html.city-skin) :where(code, pre, kbd) { font-family: var(--cs-font-ui); background: rgba(255, 255, 255, 0.07); border-radius: 6px; }
+
+:where(html.city-skin) :where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), textarea, select) {
+  background: rgba(4, 8, 18, 0.62); color: var(--cs-text); border: 1px solid var(--cs-line); border-radius: 10px;
+  font-family: var(--cs-font-ui); caret-color: var(--accent);
+}
+:where(html.city-skin) :where(input, textarea, select)::placeholder { color: var(--cs-muted); opacity: 1; }
+:where(html.city-skin) :where(input, textarea, select):focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+:where(html.city-skin) :where(input[type=checkbox], input[type=radio], input[type=range]) { accent-color: var(--accent); }
+:where(html.city-skin) :where(button:not([class]), input[type=button], input[type=submit]) {
+  background: rgba(255, 255, 255, 0.07); color: var(--cs-text); border: 1px solid var(--cs-line); border-radius: 10px;
+  padding: 8px 14px; font: 600 13px var(--cs-font-ui); cursor: pointer;
+}
+:where(html.city-skin) :where(button:not([class]):hover, input[type=button]:hover, input[type=submit]:hover) { background: rgba(255, 255, 255, 0.12); border-color: var(--cs-line-accent); }
+:where(html.city-skin) :where(table) { border-collapse: collapse; }
+:where(html.city-skin) :where(th) { color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+:where(html.city-skin) :where(th, td) { border-color: var(--cs-line); }
+
+html.city-skin * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+html.city-skin *::-webkit-scrollbar { width: 8px; height: 8px; }
+html.city-skin *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
+html.city-skin *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 60%, transparent); }
+
+/* ───────── GLASS (structural chrome only) ───────── */
+html.city-skin :is(
+  body > header, body > nav, #root > header, #root > nav, #app > header, #app > nav,
+  aside, dialog, [role=dialog], [role=menu], [role=listbox],
+  [class*="sidebar" i], [class*="navbar" i], [class*="topbar" i], [class*="toolbar" i], [class*="modal" i], [class*="drawer" i],
+  .MuiAppBar-root, .MuiDrawer-paper, .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .MuiCard-root, .MuiAccordion-root
+) {
+  background-color: var(--cs-glass);
+  background-image: none;
+  border-color: var(--cs-line);
+  color: var(--cs-text);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+/* things that float over content need to stay readable */
+html.city-skin :is(dialog, [role=dialog], [role=menu], [role=listbox], .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper) { background-color: var(--cs-glass-strong); }
+html.city-skin :is(.MuiAppBar-root, .MuiDrawer-paper) { border-radius: 0; }
+html.city-skin :is(.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .MuiCard-root, dialog) { border-radius: var(--cs-radius); border: 1px solid var(--cs-line); }
+html.city-skin dialog::backdrop { background: rgba(3, 5, 12, 0.6); backdrop-filter: blur(6px); }
+html.city-skin .MuiBackdrop-root:not(.MuiBackdrop-invisible) { background-color: rgba(3, 5, 12, 0.6); backdrop-filter: blur(6px); }
+
+/* cards (Notes grid, list items…): glass unless the app colored them inline */
+html.city-skin :is([class*="card" i], [class*="note-item" i], [class*="note_item" i], [class*="noteitem" i], article):not(.MuiCard-root):not(.MuiPaper-root) {
+  background-color: var(--cs-glass);
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+html.city-skin :is([class*="card" i], [class*="note-item" i], [class*="note_item" i], [class*="noteitem" i], article):not(.MuiCard-root):not(.MuiPaper-root):hover {
+  transform: translateY(-2px);
+  border-color: var(--cs-line-accent);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), 0 0 24px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* ───────── MUI details (only matter when the app uses MUI; harmless otherwise) ───────── */
+html.city-skin .MuiDivider-root { border-color: var(--cs-line); }
+html.city-skin .MuiOutlinedInput-notchedOutline { border-color: var(--cs-line); }
+html.city-skin .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: var(--cs-line-accent); }
+html.city-skin .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline { border-color: var(--accent); }
+html.city-skin .MuiListItemButton-root.Mui-selected { background-color: color-mix(in srgb, var(--accent) 16%, transparent); }
+html.city-skin .MuiListItemButton-root:hover { background-color: rgba(255, 255, 255, 0.06); }
+html.city-skin .MuiTooltip-tooltip { background-color: var(--cs-glass-strong); border: 1px solid var(--cs-line-accent); font-family: var(--cs-font-ui); }
+html.city-skin .MuiBadge-badge { box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+
+/* ───────── motion + small screens ───────── */
+@keyframes cs-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+html.city-skin-3d :is(#root, #app, #__next) > * { animation: cs-in 0.5s ease-out both; }
+@media (max-width: 760px) {
+  html.city-skin :is(aside, dialog, [role=dialog], .MuiAppBar-root, .MuiDrawer-paper, .MuiDialog-paper, .MuiCard-root) { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.city-skin *, html.city-skin *::before, html.city-skin *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

@@ -11,7 +11,7 @@ export type CitySnapshot = {
 export type CityResult = { ok: boolean; message?: string; balance?: number | null }
 
 export type CityApi = {
-  mountHud: (opts: { service: string; title?: string; accent?: string }) => void
+  mountHud: (opts: { service: string; title?: string; accent?: string; requireLogin?: boolean }) => void
   snapshot: () => CitySnapshot
   on: (fn: (s: CitySnapshot) => void) => () => void
   spend: (service: string, amount: number, reason?: string) => Promise<CityResult>
