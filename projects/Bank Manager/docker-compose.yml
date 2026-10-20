@@ -22,18 +22,38 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/bank
       SPRING_DATASOURCE_USERNAME: bankmanagement
       SPRING_DATASOURCE_PASSWORD: bankmanagement@2008
+      # origins allowed to call the bank directly (localhost on any port is in the default list as well)
+      BANK_CORS_ORIGINS: "http://localhost,http://localhost:*,http://127.0.0.1,http://127.0.0.1:*,http://[::1]:*"
     ports:
       - "8080:8080"
     networks:
       - bank-network
 
+  # One-shot: builds the UI and copies it into the bank-build volume, then exits.
   frontend_build:
     build:
       context: "./frontend"
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: bank_frontend_build
+    command: ["sh", "-c", "rm -rf /out/* && cp -r /dist/. /out/ && echo bank UI published"]
     volumes:
-      - bank-build:/dist
+      - bank-build:/out
+    networks:
+      - bank-network
+
+  # Local web server so http://localhost:3000/ works (UI + /bank/api proxy). Before this there was
+  # nothing listening on localhost for the bank UI, which is why the browser said "connection refused".
+  web:
+    image: nginx:1.27-alpine
+    container_name: bank_web
+    depends_on:
+      - backend
+      - frontend_build
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - bank-build:/usr/share/nginx/html:ro
     networks:
       - bank-network
 

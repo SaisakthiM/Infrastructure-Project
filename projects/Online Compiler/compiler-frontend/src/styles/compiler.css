@@ -1,0 +1,33 @@
+/* CodeFlow — glass IDE over the compiler-rack scene (city.css supplies tokens, .glass, .btn, .pill, .field) */
+#root { position: relative; z-index: 10; pointer-events: none; min-height: 100vh; }
+#root * { pointer-events: auto; }
+.cf-login { min-height: 100vh; display: grid; place-items: center; padding: 84px 16px 24px; }
+.cf-login .glass { width: min(420px, 100%); }
+.cf-brand { display: flex; align-items: center; gap: 10px; font: 800 24px var(--font-display); }
+.cf-brand i { font-style: normal; color: var(--accent); text-shadow: 0 0 18px var(--accent); }
+.cf-note { font-size: 12px; margin: 10px 0 0; min-height: 18px; }
+.cf-app { height: 100vh; padding: 70px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.cf-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; flex: none; }
+.cf-langs { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.cf-lang { display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--muted); font: 600 12px var(--font-ui); cursor: pointer; white-space: nowrap; }
+.cf-lang:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.cf-lang.on { color: var(--text); background: rgba(255,255,255,.09); border-color: var(--line-accent); }
+.cf-lang i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+.cf-main { flex: 1; min-height: 0; }
+.cf-pane { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.cf-pane .hd { flex: none; padding: 10px 14px; }
+.cf-editor { flex: 1; display: flex; min-height: 0; font: 13px/1.65 var(--font-ui); }
+.cf-gutter { width: 46px; flex: none; overflow: hidden; text-align: right; padding: 12px 8px 12px 0; color: rgba(255,255,255,.25); border-right: 1px solid var(--line); user-select: none; white-space: pre; }
+.cf-editor textarea { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--text); padding: 12px 14px; font: inherit; white-space: pre; overflow: auto; tab-size: 4; }
+.cf-out { flex: 1; margin: 0; padding: 14px; overflow: auto; font: 13px/1.6 var(--font-ui); white-space: pre-wrap; word-break: break-word; }
+.cf-out.err { color: var(--bad); }
+.cf-status { display: flex; justify-content: space-between; padding: 6px 12px; font-size: 11px; color: var(--muted); flex: none; }
+.cf-handle { width: 10px; display: grid; place-items: center; cursor: col-resize; }
+.cf-handle::after { content: ""; width: 3px; height: 40px; border-radius: 3px; background: var(--line); }
+.cf-handle:hover::after { background: var(--accent); }
+.cf-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(3,6,12,.6); backdrop-filter: blur(4px); padding: 16px; }
+.cf-modal .glass { width: min(760px, 100%); max-height: 80vh; display: flex; flex-direction: column; }
+.cf-hist { overflow: auto; }
+.cf-hist button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
+.cf-hist button:hover { background: rgba(255,255,255,.05); }
+.cf-hist code { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

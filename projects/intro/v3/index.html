@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Saisakthi M — Backend Systems Engineer</title>
     <!-- figma:head-end -->
+      <!-- city entry gate: /city asks for the bank login first; the shared token is then used by every district -->
+    <script type="module">
+      const entry = "/city-core/city-entry.js";
+      import(/* @vite-ignore */ entry).catch((e) => console.warn("[city] entry gate unavailable", e));
+    </script>
   </head>
   <body>
     <!-- figma:body-start -->

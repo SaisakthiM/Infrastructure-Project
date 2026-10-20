@@ -1,0 +1,35 @@
+/* Quiz Arena — only what city.css does not already give us */
+#root { position: relative; z-index: 10; pointer-events: none; }
+#root > * { pointer-events: auto; }
+.qa-wrap { min-height: 100vh; padding: 84px 18px 32px; display: grid; place-items: center; pointer-events: none; }
+.qa-wrap > * { pointer-events: auto; }
+.qa-card { width: min(640px, 100%); }
+.qa-title { font-size: clamp(34px, 6vw, 54px); margin: 6px 0 8px; }
+.qa-sub { color: var(--muted); margin: 0 0 22px; }
+.qa-diff { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+.qa-diff .glass { text-align: center; padding: 14px 8px; }
+.qa-diff b { display: block; font: 800 28px var(--font-display); }
+.qa-diff small { color: var(--muted); letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+.qa-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-size: 12px; color: var(--muted); }
+.qa-bar { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
+.qa-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #4aa3ff); transition: width .45s ease; }
+.qa-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.qa-q { font: 700 clamp(19px, 3vw, 25px)/1.35 var(--font-display); margin: 0 0 18px; letter-spacing: -.01em; }
+.qa-opts { display: grid; gap: 10px; }
+.qa-opt {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04);
+  color: var(--text); font: 500 14px var(--font-ui); transition: transform .15s, border-color .15s, background .15s;
+}
+.qa-opt:hover:not(:disabled) { transform: translateX(3px); border-color: var(--line-accent); background: rgba(255,255,255,.08); }
+.qa-opt:disabled { cursor: default; }
+.qa-opt .k { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.08); color: var(--muted); font-size: 12px; }
+.qa-opt.good { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.qa-opt.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.qa-opt .t { flex: 1; }
+.qa-ring { width: 150px; height: 150px; margin: 0 auto 14px; position: relative; }
+.qa-ring svg { transform: rotate(-90deg); }
+.qa-ring .n { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font: 800 32px var(--font-display); }
+.qa-ring .n small { display: block; font: 500 11px var(--font-ui); color: var(--muted); }
+.qa-rows > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.qa-rows > div:last-child { border-bottom: 0; }

@@ -13,6 +13,11 @@
     <meta property="og:description" content="Guide a robot through Saisakthi M&#39;s interactive 3D portfolio world, then walk the full city of live backend systems, realtime products, and platform engineering.">
     <script type="module" crossorigin src="/assets/index-XThP7e8t.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-jUIBOR0u.css">
+      <!-- city entry gate: /city asks for the bank login first; the shared token is then used by every district -->
+    <script type="module">
+      const entry = "/city-core/city-entry.js";
+      import(/* @vite-ignore */ entry).catch((e) => console.warn("[city] entry gate unavailable", e));
+    </script>
   </head>
   <body>
     

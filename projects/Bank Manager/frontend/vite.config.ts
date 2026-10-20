@@ -29,4 +29,15 @@ export default defineConfig(({ command }) => ({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  // `npm run dev` (http://localhost:5173): same-origin /bank/api -> the bank container on :8080
+  server: {
+    host: true,
+    proxy: {
+      '/bank/api': {
+        target: process.env.BANK_API_TARGET || 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/bank\/api/, '/api'),
+      },
+    },
+  },
 }))
