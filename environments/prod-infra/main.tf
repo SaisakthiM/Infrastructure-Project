@@ -156,36 +156,36 @@ module "node_exporter" {
   ]
 }
 
-# # ---------------------------------------------------------------------------
-# # n8n
-# # ---------------------------------------------------------------------------
-# resource "docker_volume" "n8n_data" {
-#   name = "gateway_n8n-data"
-# }
+# ---------------------------------------------------------------------------
+# n8n
+# ---------------------------------------------------------------------------
+resource "docker_volume" "n8n_data" {
+  name = "gateway_n8n-data"
+}
 
-# resource "docker_container" "n8n" {
-#   # --- resource optimization pass ---
-#   memory = 512   # MB, hard ceiling
-#   cpus   = "0.5"
-#   name  = "n8n"
-#   image = "n8nio/n8n:latest"
-#   # depends_on = [module.gateway] removed -- module.gateway lives in
-#   # prod-gateway now, a separate state. n8n just needs "gateway-net" to
-#   # already exist, which terragrunt's "dependencies" block on prod-gateway
-#   # guarantees at apply time.
+resource "docker_container" "n8n" {
+  # --- resource optimization pass ---
+  memory = 512   # MB, hard ceiling
+  cpus   = "0.5"
+  name  = "n8n"
+  image = "n8nio/n8n:latest"
+  # depends_on = [module.gateway] removed -- module.gateway lives in
+  # prod-gateway now, a separate state. n8n just needs "gateway-net" to
+  # already exist, which terragrunt's "dependencies" block on prod-gateway
+  # guarantees at apply time.
 
-#   env = [for k, v in var.n8n_env : "${k}=${v}"]
+  env = [for k, v in var.n8n_env : "${k}=${v}"]
 
-#   mounts {
-#     source = docker_volume.n8n_data.name
-#     target = "/home/node/.n8n"
-#     type   = "volume"
-#   }
+  mounts {
+    source = docker_volume.n8n_data.name
+    target = "/home/node/.n8n"
+    type   = "volume"
+  }
 
-#   networks_advanced {
-#     name = "gateway-net"
-#   }
-# }
+  networks_advanced {
+    name = "gateway-net"
+  }
+}
 
 # # ---------------------------------------------------------------------------
 # # Jenkins + agent
