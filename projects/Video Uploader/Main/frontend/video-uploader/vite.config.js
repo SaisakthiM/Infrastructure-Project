@@ -11,4 +11,12 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.js'],
     include: ['src/**/*.test.{js,jsx}'],
   },
+  build: {
+    rollupOptions: {
+      external: [
+        '/city-core/city-core.js',
+        '/city-core/city-3d.js',
+      ],
+    },
+  },
 })
