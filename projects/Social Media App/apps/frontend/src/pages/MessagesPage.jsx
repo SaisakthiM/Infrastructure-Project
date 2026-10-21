@@ -27,7 +27,7 @@ function ConvItem({ conv, active, onClick, me }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-sm font-semibold truncate">{other?.profile_name || other?.username}</p>
-          {last && <p className="text-[11px] text-white/25 flex-shrink-0">{timeAgo(last.created_at)}</p>}
+          {last && <p className="text-mini text-white/25 flex-shrink-0">{timeAgo(last.created_at)}</p>}
         </div>
         {last && (
           <p className={`text-xs truncate mt-0.5 ${conv.unread_count > 0 ? 'text-white font-medium' : 'text-white/40'}`}>
@@ -36,7 +36,7 @@ function ConvItem({ conv, active, onClick, me }) {
         )}
       </div>
       {conv.unread_count > 0 && (
-        <span className="flex-shrink-0 bg-violet-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+        <span className="flex-shrink-0 bg-violet-500 text-white text-note font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
           {conv.unread_count}
         </span>
       )}
@@ -120,7 +120,7 @@ function ChatPanel({ convId, me, onBack }) {
                 }`}>
                   {msg.content}
                 </div>
-                <p className="text-[10px] text-white/20 px-1">{timeAgo(msg.created_at)}</p>
+                <p className="text-note text-white/20 px-1">{timeAgo(msg.created_at)}</p>
               </div>
             </div>
           );
@@ -193,7 +193,7 @@ export default function MessagesPage() {
       {/* Conversations list */}
       <div className={`${active ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-white/8 flex-shrink-0`}>
         <div className="px-4 py-4 border-b border-white/8">
-          <h1 className="text-lg font-bold mb-3">Messages</h1>
+          <h2 className="display mb-3">Messages</h2>
           {/* New conversation search */}
           <div className="relative">
             <IoSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
@@ -205,7 +205,7 @@ export default function MessagesPage() {
             />
           </div>
           {searchResults.length > 0 && (
-            <div className="mt-2 bg-[#1a1a1a] border border-white/8 rounded-xl overflow-hidden">
+            <div className="glass solid shadow-city3 mt-2 overflow-hidden">
               {searchResults.map((u) => (
                 <button
                   key={u.id}
@@ -215,7 +215,7 @@ export default function MessagesPage() {
                   <Avatar user={u} size="sm" />
                   <div className="text-left">
                     <p className="text-xs font-semibold">{u.profile_name || u.username}</p>
-                    <p className="text-[11px] text-white/40">@{u.username}</p>
+                    <p className="text-mini text-white/40">@{u.username}</p>
                   </div>
                 </button>
               ))}
@@ -247,7 +247,7 @@ export default function MessagesPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center text-white/20">
             <div className="text-center">
-              <p className="text-5xl mb-3">💬</p>
+              <p className="text-2xl mb-3">💬</p>
               <p className="text-sm font-medium">Select a conversation</p>
               <p className="text-xs mt-1">or search for someone to message</p>
             </div>

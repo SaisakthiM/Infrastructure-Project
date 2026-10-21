@@ -12,7 +12,7 @@
  *   <script type="module" src="/city-core/city-skin.js"></script>
  *
  * The theme is picked from the URL (/whisper… -> whisper, /notes… -> notes). To force one, or to tune it,
- * set this BEFORE the script:   window.CITY_SKIN = { theme: 'notes', accent: '#e6b450' }
+ * set this BEFORE the script:   window.CITY_SKIN = { theme: 'whisper', accent: '#0f7a8c' }
  * Opt out for a session with ?skin=off — handy when comparing against the old UI.
  */
 
@@ -20,15 +20,15 @@ const BASE = new URL('.', import.meta.url).href; // …/city-core/
 
 const THEMES = {
   whisper: {
-    accent: '#25d6a3',
-    sky: [0x08161c, 0x03070b],
-    fog: 0x050c10,
+    accent: '#0f7a8c',
+    sky: [0xf7f5f0, 0xe3dfd4],
+    fog: 0xedeae1,
     camera: { pos: [0, 3.4, 13], look: [0, 3.2, -4] },
   },
   notes: {
-    accent: '#e8b44f',
-    sky: [0x16120a, 0x070504],
-    fog: 0x0a0806,
+    accent: '#8a6b2f',
+    sky: [0xf7f5f0, 0xe3dfd4],
+    fog: 0xedeae1,
     camera: { pos: [0, 3.6, 12.5], look: [0, 3.4, -4] },
   },
 };
@@ -54,10 +54,6 @@ function ensureImportMap() {
 
 function injectCss() {
   if (document.getElementById('city-skin-css')) return;
-  const fonts = document.createElement('link');
-  fonts.rel = 'stylesheet';
-  fonts.href = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap';
-  document.head.appendChild(fonts);
   const link = document.createElement('link');
   link.id = 'city-skin-css';
   link.rel = 'stylesheet';
@@ -93,7 +89,7 @@ export function mountSkin(options = {}) {
       if (cancelled) return;
       stage = kit.createStage(document.body, {
         camera: theme.camera,
-        fog: { color: theme.fog, density: 0.018 },
+        fog: { color: theme.fog, density: 0.014 },
         parallax: 1.1,
         pixelRatioMax: 1.5,
       });
@@ -110,7 +106,7 @@ export function mountSkin(options = {}) {
       offPointer = () => window.removeEventListener('pointermove', onMove);
 
       kit.skyDome(stage, theme.sky[0], theme.sky[1]);
-      kit.floor(stage, { size: 90, color: 0x070b10 });
+      kit.floor(stage, { size: 90, color: 0xedeae1 });
       (name === 'notes' ? buildNotes : buildWhisper)(kit, stage, theme);
       kit.loadSkyline(stage, { span: 170, z: -85, tint: 0.4 });
       root.classList.add('city-skin-3d');
@@ -131,19 +127,19 @@ export function mountSkin(options = {}) {
   return state.dispose;
 }
 
-/* ───────────────────────── Whisper: a night city made of conversations ───────────────────────── */
+/* ───────────────────────── Whisper: a plaza of conversations ───────────────────────── */
 
 function buildWhisper(kit, stage, theme) {
   const { THREE } = kit;
   const accent = new THREE.Color(theme.accent);
-  const other = new THREE.Color(0x6aa8ff);
+  const other = new THREE.Color(0xa9a29a);
 
-  kit.groundGrid(stage, { color: accent.getHex(), opacity: 0.14, size: 100, divisions: 70 });
-  kit.particles(stage, { count: 220, color: accent.getHex(), area: [60, 18, 40], size: 0.12, opacity: 0.55, drift: 0.12 });
+  kit.groundGrid(stage, { color: 0x121212, opacity: 0.09, size: 100, divisions: 70 });
+  kit.particles(stage, { count: 200, color: 0xa29a88, area: [60, 18, 40], size: 0.12, opacity: 0.4, drift: 0.12 });
 
-  const lamp = new THREE.PointLight(accent.getHex(), 40, 40);
+  const lamp = new THREE.PointLight(0xfff3dc, 10, 30);
   lamp.position.set(0, 6, 4);
-  const cool = new THREE.PointLight(other.getHex(), 25, 40);
+  const cool = new THREE.PointLight(other.getHex(), 6, 30);
   cool.position.set(-10, 4, -2);
   stage.scene.add(lamp, cool);
 
@@ -157,10 +153,10 @@ function buildWhisper(kit, stage, theme) {
     const mat = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: 0.55,
+      emissiveIntensity: 0.05,
       transparent: true,
-      opacity: 0.5,
-      roughness: 0.3,
+      opacity: 0.85,
+      roughness: 0.8,
     });
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, len, 6, 14), mat);
     body.rotation.z = Math.PI / 2;
@@ -179,7 +175,7 @@ function buildWhisper(kit, stage, theme) {
 
   // "typing…" dots
   const dots = [0, 1, 2].map((k) => {
-    const d = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), kit.glowMat(accent.getHex(), 2));
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), kit.glowMat(accent.getHex(), 2.4));
     d.position.set(-0.5 + k * 0.5, 1.2, -3);
     stage.scene.add(d);
     return d;
@@ -192,7 +188,7 @@ function buildWhisper(kit, stage, theme) {
   const rings = [0, 1, 2].map((k) => {
     const r = new THREE.Mesh(
       new THREE.TorusGeometry(1, 0.02, 8, 64),
-      new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.6 }),
+      new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.35 }),
     );
     r.rotation.x = Math.PI / 2;
     r.position.set(11, 9.4, -14);
@@ -229,22 +225,22 @@ function buildWhisper(kit, stage, theme) {
   });
 }
 
-/* ───────────────────────── Notes: a desk at night, pages drifting in lamplight ───────────────────────── */
+/* ───────────────────────── Notes: pages drifting over a drafting table ───────────────────────── */
 
 function buildNotes(kit, stage, theme) {
   const { THREE } = kit;
   const accent = new THREE.Color(theme.accent);
 
-  kit.groundGrid(stage, { color: accent.getHex(), opacity: 0.1, size: 100, divisions: 60 });
-  kit.particles(stage, { count: 160, color: 0xffd58a, area: [50, 14, 36], size: 0.14, opacity: 0.7, drift: 0.07 }); // fireflies
+  kit.groundGrid(stage, { color: 0x121212, opacity: 0.08, size: 100, divisions: 60 });
+  kit.particles(stage, { count: 150, color: 0xa29a88, area: [50, 14, 36], size: 0.13, opacity: 0.42, drift: 0.07 }); // dust in the light
 
-  const lamp = new THREE.PointLight(0xffc477, 70, 45);
+  const lamp = new THREE.PointLight(0xffe6bd, 14, 40);
   lamp.position.set(-7, 7, 2);
-  const fill = new THREE.PointLight(0x7aa7ff, 14, 40);
+  const fill = new THREE.PointLight(0xdfe7ea, 5, 40);
   fill.position.set(10, 5, -4);
   stage.scene.add(lamp, fill);
 
-  const inks = [0xffe9a8, 0xbfe3ff, 0xd9f2c4, 0xffd0d9, 0xe6d6ff];
+  const inks = [0xf6f0e0, 0xe6ecf2, 0xe6efe2, 0xf2e6e6, 0xeae6f2];
   const pages = [];
   const group = new THREE.Group();
   stage.scene.add(group);
@@ -256,9 +252,9 @@ function buildNotes(kit, stage, theme) {
     const g = c.getContext('2d');
     g.fillStyle = '#' + new THREE.Color(ink).getHexString();
     g.fillRect(0, 0, 256, 340);
-    g.fillStyle = 'rgba(30,25,15,0.55)';
+    g.fillStyle = 'rgba(18,18,18,0.68)';
     g.fillRect(18, 22, 120, 12); // title
-    g.fillStyle = 'rgba(30,25,15,0.28)';
+    g.fillStyle = 'rgba(18,18,18,0.34)';
     for (let y = 58; y < 316; y += 22) g.fillRect(18, y, 200 - ((y * 7) % 70), 6);
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -267,7 +263,7 @@ function buildNotes(kit, stage, theme) {
 
   for (let i = 0; i < 16; i += 1) {
     const ink = inks[i % inks.length];
-    const mat = new THREE.MeshStandardMaterial({ map: sheetTexture(ink), roughness: 0.9, emissive: ink, emissiveIntensity: 0.12 });
+    const mat = new THREE.MeshStandardMaterial({ map: sheetTexture(ink), roughness: 0.92 });
     const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 0.04), mat);
     const pin = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), kit.glowMat(accent.getHex(), 1.8));
     pin.position.set(0, 0.88, 0.05);
@@ -288,7 +284,7 @@ function buildNotes(kit, stage, theme) {
       p.rotation.y += u.spin * dt * m;
       p.rotation.z = Math.sin(t * 0.3 + u.phase) * 0.12 * m;
     });
-    lamp.intensity = 70 + Math.sin(t * 2.3) * 3 * m; // candle-ish flicker
+    lamp.intensity = 14 + Math.sin(t * 2.3) * 0.8 * m; // lamp breathing
   });
 
   kit.loadRobot(stage, { position: [9, 0, -1], rotationY: -0.7, scale: 0.9, clip: 'Idle', tint: accent.getHex() }).then((r) => {

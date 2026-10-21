@@ -73,7 +73,7 @@ export default function RightPanel() {
         </div>
       )}
 
-      <p className="text-[11px] text-white/15 leading-relaxed">
+      <p className="text-mini text-white/15 leading-relaxed">
         © 2025 Nexus · Built with React + Django
       </p>
     </div>

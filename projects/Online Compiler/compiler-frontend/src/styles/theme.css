@@ -1,81 +1,79 @@
+/* theme.css — shadcn/Radix token bridge for the Mini City.
+ *
+ * Every value here is sourced from the city design system (/city-core/city.css) so a district's
+ * Tailwind utilities (`bg-background`, `text-muted-foreground`, `border-border`…) resolve to the same
+ * paper + district accent the rest of the city uses.
+ *
+ * IMPORTANT — the names that city.css owns are deliberately NOT re-declared here:
+ *   --accent, --muted, --radius, --text, --bg, --line, --font-ui, --font-display
+ * This block only maps shadcn's names onto those tokens; it never carries a literal of its own except
+ * where city has no equivalent (--surface*). The old dark values here are what previously made a light
+ * shadcn theme silently override the city theme.
+ */
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-size: 15px;
-  --background: #080b14;
-  --foreground: #dde4f0;
-  --card: #0e1423;
-  --card-foreground: #dde4f0;
-  --popover: #0e1423;
-  --popover-foreground: #dde4f0;
-  --primary: #22d3ee;
-  --primary-foreground: #080b14;
-  --secondary: #172035;
-  --secondary-foreground: #dde4f0;
-  --muted: #111827;
-  --muted-foreground: #5a6478;
-  --accent: #22d3ee;
-  --accent-foreground: #080b14;
-  --destructive: #f87171;
-  --destructive-foreground: #080b14;
-  --border: rgba(255, 255, 255, 0.07);
-  --input: #172035;
-  --input-background: #172035;
-  --switch-background: #2d3a52;
+  color-scheme: light;
+
+  --font-size: 16px;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #22d3ee;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.5rem;
-  --sidebar: #0e1423;
-  --sidebar-foreground: #dde4f0;
-  --sidebar-primary: #22d3ee;
-  --sidebar-primary-foreground: #080b14;
-  --sidebar-accent: #172035;
-  --sidebar-accent-foreground: #dde4f0;
-  --sidebar-border: rgba(255, 255, 255, 0.07);
-  --sidebar-ring: #22d3ee;
+
+  /* surfaces (shadcn-only names; city has no equivalent) — ink washes on paper */
+  --surface: var(--glass-hover);
+  --surface-strong: color-mix(in srgb, var(--ink) 8%, transparent);
+
+  /* alias, not a token: Tailwind's @theme below emits --font-mono itself, and `--font-mono: var(--font-mono)`
+     would be a self-reference that invalidates city.css's mono for the whole app. Read city's through here. */
+  --city-font-mono: var(--font-mono);
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--glass-strong);
+  --card-foreground: var(--text);
+  --popover: var(--glass-strong);
+  --popover-foreground: var(--text);
+
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --secondary: var(--bg-raised);
+  --secondary-foreground: var(--text);
+
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--accent-ink);
+
+  --destructive: var(--bad);
+  --destructive-foreground: var(--paper);
+  --destructive-foreground-contrast: var(--paper);
+
+  --border: var(--line);
+  --input: var(--line-strong);
+  --input-background: var(--paper-raised);
+  --switch-background: var(--line-strong);
+  --ring: var(--accent);
+
+  /* series palette for charts: the registry set — accent, moss, ochre, brick, ink. All read on paper. */
+  --chart-1: var(--accent);
+  --chart-2: var(--ok);
+  --chart-3: var(--warn);
+  --chart-4: var(--bad);
+  --chart-5: color-mix(in srgb, var(--accent) 45%, var(--ink));
+
+  --sidebar: var(--bg-raised);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--accent-ink);
+  --sidebar-accent: var(--surface);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
 }
 
+/* A `.dark` root is still emitted by shadcn toggles; the city renders one state only, so it maps to the same paper surfaces. */
 .dark {
-  --background: #080b14;
-  --foreground: #dde4f0;
-  --card: #0e1423;
-  --card-foreground: #dde4f0;
-  --popover: #0e1423;
-  --popover-foreground: #dde4f0;
-  --primary: #22d3ee;
-  --primary-foreground: #080b14;
-  --secondary: #172035;
-  --secondary-foreground: #dde4f0;
-  --muted: #111827;
-  --muted-foreground: #5a6478;
-  --accent: #22d3ee;
-  --accent-foreground: #080b14;
-  --destructive: #f87171;
-  --destructive-foreground: #080b14;
-  --border: rgba(255, 255, 255, 0.07);
-  --input: #172035;
-  --ring: #22d3ee;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #0e1423;
-  --sidebar-foreground: #dde4f0;
-  --sidebar-primary: #22d3ee;
-  --sidebar-primary-foreground: #080b14;
-  --sidebar-accent: #172035;
-  --sidebar-accent-foreground: #dde4f0;
-  --sidebar-border: rgba(255, 255, 255, 0.07);
-  --sidebar-ring: #22d3ee;
+  --surface: var(--glass-hover);
+  --surface-strong: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 @theme inline {
@@ -89,8 +87,10 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
+  /* shadcn `bg-muted` is a surface; city's --muted is a text colour. Keep them apart on purpose. */
+  --color-muted: var(--surface);
   --color-muted-foreground: var(--muted-foreground);
+  /* shadcn `bg-accent` becomes the district accent — intentional, one accent per district. */
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -105,10 +105,13 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+
+  /* city.css owns --radius and it is 0 — the paper registry has no rounded corners. */
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: var(--radius);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -117,65 +120,63 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--city-font-mono);
+  --font-serif: var(--font-display);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/30;
   }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
 
   html {
     font-size: var(--font-size);
+    -webkit-text-size-adjust: 100%;
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+  /* the city owns the page background and body colour; a component must not paint over it */
+  body {
+    @apply text-foreground;
+    background: transparent;
+    font-family: var(--font-ui);
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
   }
 
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+  /* Display type is city.css's job (.display, .glass .hd); these are only defaults for bare elements.
+     The width axis does the work, so weight stays at 500. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-variation-settings: 'wdth' 80;
+    font-weight: 500;
+    letter-spacing: var(--disp-track);
+    line-height: 1.05;
   }
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+  h4 { font-size: var(--text-lg); }
 
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h4 {
+  p, label, input, select, textarea {
+    font-family: var(--font-ui);
     font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    line-height: 1.6;
+  }
+  label { font-weight: var(--font-weight-medium); color: var(--muted-foreground); }
+
+  /* button captions are signage: mono, uppercase, tracked */
+  button, .btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 
-  label {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
+  /* money, ids and counters read as columns */
+  table, .tabular, [data-numeric] { font-variant-numeric: tabular-nums; }
 
-  button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  input {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-normal);
-    line-height: 1.5;
-  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
 }

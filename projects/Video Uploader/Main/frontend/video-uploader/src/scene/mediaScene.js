@@ -1,36 +1,39 @@
-// The Media District gallery: every uploaded file hangs as a glowing frame on an arc around the viewer,
+// The Media District gallery: every uploaded file hangs as a framed plate on an arc around the viewer,
 // with a pillar below it that grows with its views. Images show their real picture.
 import { formatBytes, KIND_ICON } from '../lib/format'
 import { streamUrl } from '../lib/api'
 
-const KIND_COLOR = { video: 0xd6537a, image: 0x4a9fd6, audio: 0xe0a93b, doc: 0x72b66f, other: 0x8892a6 }
+/* muted media-kind set that reads on paper — taken from the city palette, not hand-typed */
+const KIND_COLOR = { video: 'media', image: 'api', audio: 'warn', doc: 'document', other: 'dust' }
 
 export function buildMediaScene({ stage, three, onSelect }) {
-  const { THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, canvasPanel, labelSprite, loadRobot, loadSkyline } = three
+  const { THREE, PALETTE, MODEL, skyDome, floor, groundGrid, particles, glowMat, canvasPanel, labelSprite, loadRobot, loadSkyline } = three
+  const kindColor = (kind) => PALETTE[KIND_COLOR[kind]] ?? MODEL.dust
   const group = new THREE.Group()
   stage.scene.add(group)
   const offs = []
   const loader = new THREE.TextureLoader()
   let disposed = false
 
-  skyDome(stage, 0x1a0a16, 0x07050c)
-  floor(stage, { size: 80, color: 0x0d0a12 })
-  groundGrid(stage, { color: PALETTE.media, opacity: 0.18, size: 100, divisions: 100 })
-  particles(stage, { count: 220, color: PALETTE.media, area: [60, 14, 40], size: 0.15, drift: 0.12 })
+  skyDome(stage, MODEL.skyTop, MODEL.skyLow)
+  floor(stage, { size: 80, color: MODEL.ground })
+  groundGrid(stage, { color: PALETTE.ink, opacity: 0.09, size: 100, divisions: 100 })
+  particles(stage, { count: 160, color: MODEL.dust, area: [60, 14, 40], size: 0.15, drift: 0.12, opacity: 0.4 })
 
-  const pink = new THREE.PointLight(PALETTE.media, 55, 34)
-  pink.position.set(-7, 6, 3)
-  const blue = new THREE.PointLight(0x4a9fd6, 40, 30)
-  blue.position.set(8, 5, 2)
-  stage.scene.add(pink, blue)
+  // daylight maquette: the stage already carries hemisphere + key sun, so these are soft accents only
+  const key = new THREE.PointLight(0xfff3dc, 1.5, 34)
+  key.position.set(-7, 6, 3)
+  const fill = new THREE.PointLight(0xffe6bd, 1.2, 30)
+  fill.position.set(8, 5, 2)
+  stage.scene.add(key, fill)
 
   // idle hero: a spinning film reel on the stage floor when there is nothing to show
   const reel = new THREE.Group()
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.18, 32), glowMat(PALETTE.media, 0.9))
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.18, 32), glowMat(PALETTE.media, 0.25))
   disc.rotation.x = Math.PI / 2
   reel.add(disc)
   for (let i = 0; i < 6; i += 1) {
-    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.22, 16), new THREE.MeshBasicMaterial({ color: 0x07050c }))
+    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.22, 16), new THREE.MeshBasicMaterial({ color: PALETTE.ink }))
     const a = (i / 6) * Math.PI * 2
     hole.position.set(Math.cos(a) * 0.65, Math.sin(a) * 0.65, 0)
     hole.rotation.x = Math.PI / 2
@@ -79,18 +82,18 @@ export function buildMediaScene({ stage, three, onSelect }) {
 
   function makeFrame(file, index, total) {
     const g = new THREE.Group()
-    const color = KIND_COLOR[file.kind] || KIND_COLOR.other
+    const color = kindColor(file.kind)
     const W = 2.6
     const H = 1.7
 
-    const back = new THREE.Mesh(new THREE.BoxGeometry(W + 0.22, H + 0.22, 0.12), new THREE.MeshStandardMaterial({ color: 0x120d18, roughness: 0.5, metalness: 0.5 }))
-    const border = new THREE.Mesh(new THREE.BoxGeometry(W + 0.3, H + 0.3, 0.06), glowMat(color, 1.1))
+    const back = new THREE.Mesh(new THREE.BoxGeometry(W + 0.22, H + 0.22, 0.12), new THREE.MeshStandardMaterial({ color: MODEL.body, roughness: 0.85, metalness: 0.05 }))
+    const border = new THREE.Mesh(new THREE.BoxGeometry(W + 0.3, H + 0.3, 0.06), glowMat(color, 0.3))
     border.position.z = -0.05
     g.add(border, back)
 
     let face
     if (file.kind === 'image') {
-      face = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ color: 0x222222, toneMapped: false }))
+      face = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ color: PALETTE.paper, toneMapped: false }))
       loader.load(
         streamUrl(file.name),
         (tex) => {
@@ -116,19 +119,22 @@ export function buildMediaScene({ stage, three, onSelect }) {
         transparent: false,
         draw: (ctx, w, h) => {
           const grad = ctx.createLinearGradient(0, 0, w, h)
-          grad.addColorStop(0, '#1b1424')
-          grad.addColorStop(1, '#0b0810')
+          grad.addColorStop(0, '#fbfaf7')
+          grad.addColorStop(1, '#efece4')
           ctx.fillStyle = grad
           ctx.fillRect(0, 0, w, h)
+          ctx.strokeStyle = 'rgba(18,18,18,.3)'
+          ctx.lineWidth = 4
+          ctx.strokeRect(2, 2, w - 4, h - 4)
           ctx.font = '88px sans-serif'
           ctx.textAlign = 'left'
           ctx.textBaseline = 'alphabetic'
           ctx.fillText(KIND_ICON[file.kind] || KIND_ICON.other, 28, 120)
-          ctx.fillStyle = '#f1f5f9'
-          ctx.font = '600 30px "DM Mono", monospace'
+          ctx.fillStyle = '#121212'
+          ctx.font = "500 30px Archivo, ui-sans-serif, system-ui, sans-serif"
           wrap(ctx, file.name, 28, 190, w - 56, 38, 3)
-          ctx.fillStyle = '#8d9bb0'
-          ctx.font = '24px "DM Mono", monospace'
+          ctx.fillStyle = 'rgba(18,18,18,.56)'
+          ctx.font = "500 24px 'JetBrains Mono', ui-monospace, monospace"
           ctx.fillText(`${file.kind} · ${formatBytes(file.size)}`, 28, h - 28)
         },
       })
@@ -139,7 +145,7 @@ export function buildMediaScene({ stage, three, onSelect }) {
 
     // views pillar
     const h = 0.25 + Math.min(Math.log2(1 + file.views) * 0.28, 2.2)
-    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.28, h, 0.28), glowMat(color, 1.6))
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.28, h, 0.28), glowMat(color, 0.3))
     pillar.position.set(0, -H / 2 - 0.35 - h / 2, 0)
     g.add(pillar)
     const tag = labelSprite(`👁 ${file.views}   ♥ ${file.likes}`, { size: 0.34 })

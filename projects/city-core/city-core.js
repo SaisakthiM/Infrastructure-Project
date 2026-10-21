@@ -15,8 +15,26 @@
  *
  * No dependencies, no build step. Plain ES module:
  *      import City from '/city-core/city-core.js';
- *      City.mountHud({ service: 'grocery', title: 'Grocery Store', accent: '#72b66f' });
+ *      City.mountHud({ service: 'grocery', title: 'Grocery Store' });   // accent + district code come from DISTRICTS
  */
+
+/* The city registry: ward code and accent per district. One list, so a district is the same colour and the same
+   code in the HUD, the panels, the 3D roof plates and the home page. Keep in sync with city-3d.js PALETTE + THEME.md. */
+export const DISTRICTS = {
+  bank: { code: 'D-01', accent: '#0f6e9c' },
+  hospital: { code: 'D-02', accent: '#2b7e72' },
+  grocery: { code: 'D-03', accent: '#4c7c3f' },
+  housing: { code: 'D-04', accent: '#966e35' },
+  blog: { code: 'D-05', accent: '#6e4a79' },
+  social: { code: 'D-06', accent: '#4a5aa6' },
+  video: { code: 'D-07', accent: '#8d4850' },
+  media: { code: 'D-07', accent: '#8d4850' }, // the video district boots with service "media"
+  api: { code: 'D-08', accent: '#3d4e66' },
+  document: { code: 'D-09', accent: '#6e7042' },
+  compiler: { code: 'D-10', accent: '#4a4f55' },
+  whisper: { code: 'D-11', accent: '#0f7a8c' },
+  police: { code: 'D-12', accent: '#9a4a32' },
+};
 
 const KEY = {
   session: 'city.session',
@@ -867,12 +885,14 @@ const City = {
   },
 
   /** requireLogin defaults to true: every district asks for credentials first. Pass false for a public page. */
-  mountHud({ service, title, accent = '#00f0c8', home = '/', requireLogin = true } = {}) {
+  mountHud({ service, title, accent, home = '/', requireLogin = true } = {}) {
     state.service = service;
     if (typeof document === 'undefined') return;
-    document.documentElement.style.setProperty('--accent', accent);
+    const district = DISTRICTS[service] || {};
+    document.documentElement.style.setProperty('--accent', accent || district.accent || '#0f6e9c');
+    document.documentElement.style.colorScheme = 'light';
     document.body.classList.add('city-body');
-    if (!document.getElementById('city-hud')) buildHud({ service, title, home });
+    if (!document.getElementById('city-hud')) buildHud({ service, title, code: district.code, home });
     if (requireLogin) City.requireLogin();
   },
 };
@@ -894,7 +914,7 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-function buildHud({ service, title, home }) {
+function buildHud({ service, title, code, home }) {
   const balance = el('span', { class: 'hud-balance', id: 'city-balance' }, '₹–');
   const chip = el('span', { class: 'hud-chip', id: 'city-chip' }, 'LOGGED OUT');
   const userBtn = el('button', { class: 'hud-user', type: 'button', 'aria-label': 'Account menu' }, '?');
@@ -930,6 +950,7 @@ function buildHud({ service, title, home }) {
       'div',
       { class: 'hud-left' },
       el('a', { class: 'hud-back', href: home }, '← City'),
+      code && el('span', { class: 'hud-code' }, code),
       el('span', { class: 'hud-dot' }),
       el('span', { class: 'hud-title' }, title || service || 'District'),
     ),
@@ -962,6 +983,7 @@ function buildHud({ service, title, home }) {
     const [text, cls] = labels[s.mode] || labels.anon;
     chip.textContent = text;
     chip.className = 'hud-chip ' + cls;
+    balance.className = 'hud-balance' + (s.mode === 'online' && s.balance != null ? ' live' : '');
     userBtn.textContent = s.username ? s.username[0].toUpperCase() : '?';
     userBtn.title = s.username || 'Log in';
 

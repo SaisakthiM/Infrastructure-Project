@@ -46,9 +46,9 @@ export default function MediaDistrict() {
     loadCity().then((c) => {
       if (cancelled) return
       setCity(c)
-      c.City.mountHud({ service: 'media', title: 'Media District', accent: '#d6537a' })
+      c.City.mountHud({ service: 'media', title: 'Media District', accent: '#8d4850' })
       off = c.City.on(setSnap)
-      stage = c.three.createStage(document.body, { camera: { pos: [0, 4.2, 9], look: [0, 4.2, -6] }, fog: { color: 0x07050c, density: 0.014 }, parallax: 1.1 })
+      stage = c.three.createStage(document.body, { camera: { pos: [0, 4.2, 9], look: [0, 4.2, -6] }, fog: { color: 0xedeae1, density: 0.014 }, parallax: 1.1 })
       if (stage.ok) {
         sceneRef.current = buildMediaScene({ stage, three: c.three, onSelect: (file) => openFile(file) })
       }
@@ -183,7 +183,7 @@ export default function MediaDistrict() {
                     <div className="name">{f.name}</div>
                     <small>{formatBytes(f.size)} · {timeAgo(f.modified)} · {f.creator}</small>
                   </div>
-                  <small>👁 {f.views} ♥ {f.likes}</small>
+                  <small className="counts">👁 {f.views} ♥ {f.likes}</small>
                 </div>
               ))}
             </div>

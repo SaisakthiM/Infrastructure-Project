@@ -49,12 +49,11 @@ type ImportEntry struct {
 // ─── prod-docker catalog ──────────────────────────────────────────────────
 
 var dockerVolumeCatalog = []ImportEntry{
-	{EnvDocker, "docker_volume.notes_dist", KindVolume, "gateway_notes-dist"},
 	{EnvDocker, "docker_volume.bank_dist", KindVolume, "gateway_bank-dist"},
-	{EnvDocker, "docker_volume.quiz_dist", KindVolume, "gateway_quiz-dist"},
 	{EnvDocker, "docker_volume.video_dist", KindVolume, "gateway_video-dist"},
 	{EnvDocker, "docker_volume.api_dist", KindVolume, "gateway_api-dist"},
 	{EnvDocker, "docker_volume.whisper_dist", KindVolume, "gateway_whisper-dist"},
+	{EnvDocker, "docker_volume.compiler_dist", KindVolume, "gateway_compiler-dist"},
 	{EnvDocker, "docker_volume.notes_pgdata", KindVolume, "gateway_notes-pgdata"},
 	{EnvDocker, "docker_volume.notes_static", KindVolume, "gateway_notes-static"},
 	{EnvDocker, "docker_volume.notes_media", KindVolume, "gateway_notes-media"},
@@ -75,14 +74,13 @@ var dockerVolumeCatalog = []ImportEntry{
 // prod-docker/main.tf, not via the docker_app module.
 var dockerContainerCatalog = []ImportEntry{
 	{EnvDocker, "docker_container.notes_postgres", KindContainer, "notes-postgres"},
-	{EnvDocker, "docker_container.notes_frontend_build", KindContainer, "notes-frontend-build"},
 	{EnvDocker, "docker_container.whisper-postgres", KindContainer, "gateway_whisper-pgdata"},
 	{EnvDocker, "docker_container.whisper_minio", KindContainer, "whisper-minio"},
 	{EnvDocker, "docker_container.whisper_frontend_build", KindContainer, "whisper-frontend-build"},
 	{EnvDocker, "docker_container.bank_postgres", KindContainer, "bank-postgres"},
 	{EnvDocker, "docker_container.bank_frontend_build", KindContainer, "bank-frontend-build"},
-	{EnvDocker, "docker_container.quiz_frontend_build", KindContainer, "quiz-frontend-build"},
 	{EnvDocker, "docker_container.compiler_db", KindContainer, "compiler-db"},
+	{EnvDocker, "docker_container.compiler_frontend_build", KindContainer, "compiler-frontend-build"},
 	{EnvDocker, "docker_container.video_frontend_build", KindContainer, "video-frontend-build"},
 	{EnvDocker, "docker_container.blog_db", KindContainer, "blog-db"},
 	{EnvDocker, "docker_container.blog_minio", KindContainer, "blog-minio"},
@@ -96,7 +94,6 @@ var dockerContainerCatalog = []ImportEntry{
 // dockerAppContainerCatalog: docker_container.app resource created by each
 // instance of "../../modules/docker_app" inside prod-docker/main.tf.
 var dockerAppContainerCatalog = []ImportEntry{
-	{EnvDocker, "module.notes_backend.docker_container.app", KindContainer, "notes-backend"},
 	{EnvDocker, "module.whisper_backend.docker_container.app", KindContainer, "whisper_backend"}, // underscore, not a typo
 	{EnvDocker, "module.bank_backend.docker_container.app", KindContainer, "bank-backend"},
 	{EnvDocker, "module.compiler_server.docker_container.app", KindContainer, "compiler-server"},
@@ -105,6 +102,8 @@ var dockerAppContainerCatalog = []ImportEntry{
 	{EnvDocker, "module.blog_website.docker_container.app", KindContainer, "blog-website"},
 	{EnvDocker, "module.api_service_backend.docker_container.app", KindContainer, "api-service-backend"},
 	{EnvDocker, "module.doc_backend.docker_container.app", KindContainer, "doc-backend"},
+	{EnvDocker, "module.grocery_backend.docker_container.app", KindContainer, "grocery-backend"},
+	{EnvDocker, "module.housing_backend.docker_container.app", KindContainer, "housing-backend"},
 }
 
 // ─── prod-infra catalog ────────────────────────────────────────────────────

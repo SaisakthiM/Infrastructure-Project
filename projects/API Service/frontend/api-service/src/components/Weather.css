@@ -1,30 +1,33 @@
-/* shared by Weather and GeoCod — dark glass over the 3D globe */
+/* shared by Weather and GeoCod — paper registry panels over the daylight globe */
 .wrapper { min-height: 100vh; padding: 130px 20px 40px; display: flex; justify-content: flex-start; position: relative; z-index: 10; pointer-events: none; }
 .container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 18px; pointer-events: auto;
-  background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 26px; backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0,0,0,.45); }
-.container h1 { font-family: var(--font-display); font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--e3); }
+.container h1 { font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-size: 2rem; font-weight: 500; letter-spacing: var(--disp-track); line-height: 1.05; margin: 0; }
 .container p { margin: 0; color: var(--muted); font-size: 13px; }
 form { display: grid; gap: 14px; }
 .field { display: grid; gap: 6px; }
-.field label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.field input { padding: 10px 12px; background: rgba(4,8,18,.7); color: var(--text); border: 1px solid var(--line); border-radius: 9px; font: 500 14px var(--font-ui); }
-.field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
-#sub_button { padding: 11px 16px; border: 0; border-radius: 10px; cursor: pointer; font: 700 13px var(--font-ui); color: #04070f;
-  background: linear-gradient(135deg, #7db7ee, #4a7fb5); }
-#sub_button:hover { filter: brightness(1.1); }
-.response-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: rgba(255,255,255,.03); min-height: 90px; }
+.field label { font: 500 10px/1.4 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.field input { padding: 10px 12px; background: var(--paper-raised); color: var(--text); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); font: 400 14px/1.4 var(--font-ui); }
+.field input::placeholder { color: rgba(18, 18, 18, 0.38); }
+.field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+#sub_button { padding: 11px 15px; border: 1px solid var(--accent); border-radius: var(--radius-sm); cursor: pointer; background: var(--accent); color: var(--accent-ink);
+  font: 500 11px/1.2 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; transition: background .14s; }
+#sub_button:hover { background: color-mix(in srgb, var(--accent) 82%, #000); }
+#sub_button:active { transform: translateY(1px); }
+.response-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; background: var(--glass-hover); min-height: 90px; }
 .response-card.active { border-color: var(--line-accent); }
 .response-placeholder { text-align: center; }
-.response-error { color: var(--bad) !important; }
+.response-error { color: var(--bad); }
 .response-header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-.response-location { font-weight: 700; }
+.response-location { font-weight: 650; }
 .response-desc { color: var(--muted); text-transform: capitalize; }
 .response-stats { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
 .response-stats .stat { display: grid; justify-items: center; gap: 2px; padding: 0; }
 .stat-icon { font-size: 20px; }
-.stat-value { font: 800 18px var(--font-display); }
-.stat-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stat-value { font: 500 20px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.stat-label { font: 500 10px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .stat-divider { width: 1px; align-self: stretch; background: var(--line); }
 .status-msg { padding: 140px 24px; color: var(--muted); position: relative; z-index: 10; }
 .error-page { padding: 140px 24px; position: relative; z-index: 10; }
-.error-page h2 { font: 800 56px var(--font-display); margin: 0; }
+.error-page h2 { font: 500 52px/1.05 var(--font-display); font-variation-settings: 'wdth' 80; letter-spacing: var(--disp-track); margin: 0; }
+@media (prefers-reduced-motion: reduce) { #sub_button:active { transform: none; } }

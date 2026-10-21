@@ -37,7 +37,7 @@ export function Markets() {
 
   return (
     <div className="page">
-      <div className="glass accent" style={{ maxWidth: 720 }}>
+      <div className="glass accent narrow-720">
         <div className="hd">
           <span>Markets</span>
           <small>real-world data · delayed</small>

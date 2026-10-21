@@ -12,7 +12,7 @@ export type GlobeMarker = {
 
 type Handle = { mesh: ThreeKit; off: () => void; phase: number }
 
-/** An Earth with day/night textures, clouds, an atmosphere glow and named layers of markers. */
+/** An Earth with day/night textures, clouds and a soft atmosphere rim, kept in daylight so it sits with the maquette. */
 export function createGlobe(three: ThreeKit, stage: ThreeKit, opts: { radius?: number; spin?: boolean } = {}) {
   const { THREE, ASSETS } = three
   const radius: number = opts.radius ?? 5
@@ -31,7 +31,7 @@ export function createGlobe(three: ThreeKit, stage: ThreeKit, opts: { radius?: n
       map: earthTex,
       emissiveMap: lightsTex,
       emissive: new THREE.Color(0xffc477),
-      emissiveIntensity: 0.45,
+      emissiveIntensity: 0.1,
       roughness: 0.9,
       metalness: 0.05,
     }),
@@ -51,10 +51,10 @@ export function createGlobe(three: ThreeKit, stage: ThreeKit, opts: { radius?: n
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       fog: false,
-      uniforms: { c: { value: new THREE.Color(0x4aa3ff) } },
+      uniforms: { c: { value: new THREE.Color(0xa8c4dd) } },
       vertexShader: 'varying vec3 n; void main(){ n = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader:
-        'uniform vec3 c; varying vec3 n; void main(){ float i = pow(max(0.0, 0.72 - dot(n, vec3(0.0, 0.0, 1.0))), 3.0); gl_FragColor = vec4(c, 1.0) * i * 1.4; }',
+        'uniform vec3 c; varying vec3 n; void main(){ float i = pow(max(0.0, 0.72 - dot(n, vec3(0.0, 0.0, 1.0))), 3.0); gl_FragColor = vec4(c, 1.0) * i * 0.35; }',
     }),
   )
 

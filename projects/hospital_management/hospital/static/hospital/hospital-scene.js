@@ -1,7 +1,7 @@
 // The 3D ward behind every hospital page.
 import {
   createStage, THREE, PALETTE, skyDome, groundGrid, floor, particles, glowMat, glassMat,
-  canvasPanel, labelSprite, loadRobot, loadSkyline, smooth,
+  labelSprite, loadRobot, loadSkyline, smooth,
 } from '/city-core/city-3d.js';
 
 const stats = JSON.parse(document.getElementById('scene-data')?.textContent || '{}');
@@ -9,7 +9,7 @@ const page = document.body.dataset.page || 'dashboard';
 
 const stage = createStage(document.body, {
   camera: { pos: [3, 5.5, 17], look: [4, 3.2, 0] },
-  fog: { color: 0x050b16, density: 0.017 },
+  fog: { color: 0xedeae1, density: 0.01 },
   parallax: 0.7,
 });
 
@@ -17,27 +17,27 @@ if (stage.ok) build();
 
 async function build() {
   const { scene } = stage;
-  skyDome(stage, 0x0a1a2e, 0x050b16);
-  floor(stage, { size: 90, color: 0x08111c });
-  groundGrid(stage, { color: PALETTE.hospital, opacity: 0.2 });
-  particles(stage, { count: 260, color: PALETTE.hospital, area: [70, 18, 50], drift: 0.12 });
+  skyDome(stage, 0xf7f5f0, 0xe3dfd4);
+  floor(stage, { size: 90, color: 0xedeae1 });
+  groundGrid(stage, { color: 0x121212, opacity: 0.08 });
+  particles(stage, { count: 260, color: 0xa29a88, area: [70, 18, 50], drift: 0.12, opacity: 0.4 });
 
-  const cyan = new THREE.PointLight(PALETTE.hospital, 40, 30);
-  cyan.position.set(-6, 6, 4);
-  const teal = new THREE.PointLight(0x00f0c8, 30, 26);
-  teal.position.set(10, 4, -2);
-  scene.add(cyan, teal);
+  const warm = new THREE.PointLight(0xfff6e4, 10, 30);
+  warm.position.set(-6, 6, 4);
+  const fill = new THREE.PointLight(0xf2efe8, 8, 26);
+  fill.position.set(10, 4, -2);
+  scene.add(warm, fill);
 
-  /* medical pad with a glowing cross, right side of the screen so content stays clear */
+  /* landing pad with a matte teal cross, right side of the screen so content stays clear */
   const pad = new THREE.Group();
   pad.position.set(7, 0, 1);
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.4, 0.35, 48), new THREE.MeshStandardMaterial({ color: 0x0d1b2b, roughness: 0.4, metalness: 0.6 }));
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.4, 0.35, 48), new THREE.MeshStandardMaterial({ color: 0xdcd6c9, roughness: 0.85, metalness: 0.08 }));
   disc.position.y = 0.18;
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(4.1, 0.06, 12, 64), glowMat(PALETTE.hospital, 2.4));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(4.1, 0.06, 12, 64), glowMat(PALETTE.hospital, 1.6));
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.38;
-  const crossA = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.7), glowMat(0x00f0c8, 1.8));
-  const crossB = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 2.4), glowMat(0x00f0c8, 1.8));
+  const crossA = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.7), glowMat(PALETTE.hospital, 1.4));
+  const crossB = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 2.4), glowMat(PALETTE.hospital, 1.4));
   crossA.position.y = crossB.position.y = 0.4;
   pad.add(disc, ring, crossA, crossB);
   scene.add(pad);
@@ -46,9 +46,9 @@ async function build() {
   const helix = new THREE.Group();
   helix.position.set(-10, 0, -7);
   const ball = new THREE.SphereGeometry(0.2, 12, 10);
-  const a = glowMat(PALETTE.hospital, 1.6);
-  const b = glowMat(0x0ea5e9, 1.6);
-  const rungMat = new THREE.MeshBasicMaterial({ color: PALETTE.hospital, transparent: true, opacity: 0.4 });
+  const a = glowMat(PALETTE.hospital, 1.1);
+  const b = glowMat(0x8a857a, 1.1);
+  const rungMat = new THREE.MeshBasicMaterial({ color: PALETTE.hospital, transparent: true, opacity: 0.32 });
   for (let i = 0; i < 44; i += 1) {
     const t = i * 0.38;
     const y = i * 0.3;
@@ -74,7 +74,7 @@ async function build() {
   const ecgPts = new Float32Array(N * 3);
   const ecgGeo = new THREE.BufferGeometry();
   ecgGeo.setAttribute('position', new THREE.BufferAttribute(ecgPts, 3));
-  const ecg = new THREE.Line(ecgGeo, new THREE.LineBasicMaterial({ color: 0x00f0c8 }));
+  const ecg = new THREE.Line(ecgGeo, new THREE.LineBasicMaterial({ color: PALETTE.hospital }));
   ecg.position.set(-2, 9.2, -9);
   scene.add(ecg);
   const wave = (x) => {
@@ -89,16 +89,16 @@ async function build() {
   /* stat towers */
   const labels = [
     ['Doctors', stats.doctors ?? 0, PALETTE.hospital, -3],
-    ['Patients', stats.patients ?? 0, 0x00f0c8, 0],
-    ['Waiting', stats.pending ?? 0, 0xd8b44b, 3],
+    ['Patients', stats.patients ?? 0, 0x8a857a, 0],
+    ['Waiting', stats.pending ?? 0, PALETTE.warn, 3],
   ];
   const towers = labels.map(([name, count, color, x]) => {
     const g = new THREE.Group();
     g.position.set(x, 0, -6);
     const target = 1.2 + Math.min(count, 24) * 0.32;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1, 24), glassMat(color, 0.5));
-    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1, 12), glowMat(color, 2));
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.1, 24), glowMat(color, 2.4));
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1, 12), glowMat(color, 1.4));
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.1, 24), glowMat(color, 1.8));
     g.add(body, core, cap);
     const label = labelSprite(`${name} ${count}`, { size: 0.8 });
     g.add(label);

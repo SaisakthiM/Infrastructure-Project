@@ -11,12 +11,12 @@ export default function App() {
 
   useEffect(() => {
     document.title = isCity
-      ? "Saisakthi City — Interactive 3D Portfolio"
-      : "Saisakthi M — Backend Systems Engineer";
+      ? "Mini City — Walk the registry"
+      : "Mini City — Saisakthi M, Backend Systems Engineer";
   }, [isCity]);
 
   return (
-    <Suspense fallback={<div style={{ width: "100%", height: "100%", background: "#101820" }} />}>
+    <Suspense fallback={<div style={{ width: "100%", height: "100%", background: "#f4f2ed" }} />}>
       {isCity ? <City key="city" /> : <Home key="home" />}
     </Suspense>
   );

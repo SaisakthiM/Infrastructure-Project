@@ -5,6 +5,7 @@ import "./styles/index.css";
 import "./styles/bank.css";
 
 // The bank is the city's identity provider: HUD + vault scene, but no second gate (its own sign-in IS the city login).
-startCity({ service: "bank", title: "City Bank", accent: "#d8b44b", scene: "vault", requireLogin: false });
+// No accent here on purpose: D-01 petrol #0f6e9c comes from the city registry (city-core.js DISTRICTS).
+startCity({ service: "bank", title: "City Bank", scene: "vault", requireLogin: false });
 
 createRoot(document.getElementById("root")!).render(<App />);

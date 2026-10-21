@@ -5,35 +5,21 @@ import { roomAPI, authAPI, mediaAPI } from "../services/api";
 import { formatDistanceToNow } from "date-fns";
 import { Search, Plus, X, LogOut, Camera, Users } from "lucide-react";
 
-const AVATAR_COLORS = [
-  ["#00A884", "#025144"],
-  ["#5B8AF0", "#2B4BA0"],
-  ["#E05C8A", "#8B1A4A"],
-  ["#F5A623", "#A05000"],
-  ["#8B5CF6", "#4C1D95"],
-  ["#06B6D4", "#0E7490"],
-];
-
-function avatarColors(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[Math.abs(hash)];
-}
-
+/* Avatars are initials plates, the way a registry row is stamped: an accent wash, a hairline
+   of accent, ink-mono initial. The old six-colour rainbow per user is gone — one district,
+   one accent. See city-core/THEME.md. */
 function Avatar({ name, photoUrl, size = 44 }: { name: string; photoUrl?: string | null; size?: number }) {
-  const [from, to] = avatarColors(name);
   return (
     <div
-      className="rounded-full flex items-center justify-center font-semibold text-white overflow-hidden shrink-0"
+      className="wa-avatar"
       style={{
         width: size,
         height: size,
-        background: photoUrl ? undefined : `linear-gradient(135deg, ${from}, ${to})`,
-        fontSize: size * 0.38,
+        fontSize: size * (photoUrl ? 1 : 0.38),
       }}
     >
       {photoUrl ? (
-        <img src={mediaAPI.resolveUrl(photoUrl)} alt={name} className="w-full h-full object-cover" />
+        <img src={mediaAPI.resolveUrl(photoUrl)} alt={name} />
       ) : (
         name.charAt(0).toUpperCase()
       )}
@@ -171,9 +157,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
           className="flex items-center gap-3 hover:opacity-85 transition-opacity"
         >
           <Avatar name={user?.username || "U"} photoUrl={localAvatar} size={40} />
-          <span className="font-bold text-lg tracking-tight" style={{ color: "#E9EDEF" }}>
-            Whisper
-          </span>
+          <span className="wa-title wa-title-md">Whisper</span>
         </button>
         <div className="flex items-center gap-1">
           <button
@@ -185,7 +169,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
           </button>
           <button
             onClick={() => { logout(); onLogout(); }}
-            className="wa-icon-btn hover:text-red-400"
+            className="wa-icon-btn wa-icon-btn-danger"
             title="Logout"
           >
             <LogOut className="w-5 h-5" />
@@ -194,10 +178,16 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
       </div>
 
       {/* Search */}
-      <div className="pl-[14px] pr-[12px] pt-[20px] pb-[12px]" style={{ background: "#111B21" }}>
+      <div
+        className="pl-[14px] pr-[12px] pt-[20px] pb-[12px]"
+        style={{ background: "var(--paper-raised)", borderBottom: "1px solid var(--line)" }}
+      >
         <div className="relative flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8696A0" }} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+              style={{ color: "var(--muted)" }}
+            />
             <input
               type="text"
               placeholder="Search or start new chat"
@@ -246,13 +236,16 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
       <div className="flex-1 overflow-y-auto min-h-0 wa-scrollbar">
         {!isSearching && filteredRooms.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,168,132,0.1)" }}>
-              <svg className="w-8 h-8" style={{ color: "#00A884" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-16 h-16 flex items-center justify-center"
+              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-line)", color: "var(--accent)" }}
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <p className="text-sm" style={{ color: "#8696A0" }}>No chats yet</p>
-            <p className="text-xs text-center px-6" style={{ color: "#8696A0", opacity: 0.7 }}>Search for a user above to start a conversation</p>
+            <p className="text-sm wa-empty">No chats yet</p>
+            <p className="text-xs text-center px-6 wa-empty">Search for a user above to start a conversation</p>
           </div>
         )}
 
@@ -266,14 +259,15 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
             <Avatar name={room.name} size={48} />
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
-                <span className="font-medium truncate" style={{ color: "#E9EDEF" }}>
-                  {room.name}
-                </span>
-                <span className="text-[11px] shrink-0 ml-2" style={{ color: "#8696A0" }}>
+                <span className="font-medium truncate">{room.name}</span>
+                <span
+                  className="text-[11px] shrink-0 ml-2"
+                  style={{ fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--muted)" }}
+                >
                   {formatDistanceToNow(new Date(room.created_at), { addSuffix: false })}
                 </span>
               </div>
-              <p className="text-sm truncate mt-0.5" style={{ color: "#8696A0" }}>
+              <p className="text-sm truncate mt-0.5 wa-sub">
                 Tap to open chat
               </p>
             </div>
@@ -289,7 +283,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
                 <Avatar name={room.name} size={48} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium truncate" style={{ color: "#E9EDEF" }}>{room.name}</span>
+                    <span className="font-medium truncate">{room.name}</span>
                     <button
                       onClick={() => handleJoinRoom(room)}
                       className="wa-btn-xs shrink-0 ml-2"
@@ -297,7 +291,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
                       Join
                     </button>
                   </div>
-                  <p className="text-xs mt-0.5" style={{ color: "#8696A0" }}>
+                  <p className="text-xs mt-0.5 wa-sub">
                     {room.member_count} member{room.member_count === 1 ? "" : "s"}
                   </p>
                 </div>
@@ -319,8 +313,8 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
               >
                 <Avatar name={u.username} photoUrl={u.profile_photo_url} size={48} />
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="font-medium truncate" style={{ color: "#E9EDEF" }}>{u.username}</p>
-                  <p className="text-sm mt-0.5" style={{ color: "#8696A0" }}>Tap to start chat</p>
+                  <p className="font-medium truncate">{u.username}</p>
+                  <p className="text-sm mt-0.5 wa-sub">Tap to start chat</p>
                 </div>
               </motion.button>
             ))}
@@ -329,7 +323,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
 
         {isSearching && globalUsers.length === 0 && discoveredRooms.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm" style={{ color: "#8696A0" }}>No results for "{searchTerm}"</p>
+            <p className="text-sm wa-empty">No results for "{searchTerm}"</p>
           </div>
         )}
       </div>
@@ -342,7 +336,7 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowProfile(false)}
-            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            className="wa-scrim fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.92, y: 16 }}
@@ -351,24 +345,25 @@ export default function ChatList({ selectedRoomId, onRoomSelect, onLogout }: Pro
               onClick={(e) => e.stopPropagation()}
               className="wa-modal w-full max-w-sm p-6 text-center"
             >
-              <h3 className="text-base font-semibold mb-5" style={{ color: "#E9EDEF" }}>
-                Profile
-              </h3>
+              <h3 className="wa-title wa-title-md mb-5">Profile</h3>
               <div
                 className="relative inline-block cursor-pointer group mb-4"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Avatar name={user?.username || "U"} photoUrl={localAvatar} size={88} />
-                <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="w-5 h-5 text-white mb-1" />
-                  <span className="text-white text-[10px] font-medium">Change</span>
+                <div
+                  className="absolute inset-0 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: "color-mix(in srgb, var(--ink) 62%, transparent)" }}
+                >
+                  <Camera className="w-5 h-5 mb-1" style={{ color: "var(--paper)" }} />
+                  <span className="text-[10px] font-medium" style={{ color: "var(--paper)", fontFamily: "var(--font-mono)" }}>Change</span>
                 </div>
               </div>
               <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-              <p className="text-lg font-semibold mt-1" style={{ color: "#E9EDEF" }}>
+              <p className="text-lg font-semibold mt-1">
                 {user?.username}
               </p>
-              <p className="text-xs mt-1 mb-6" style={{ color: "#8696A0" }}>
+              <p className="text-xs mt-1 mb-6 wa-empty">
                 Available
               </p>
               <button onClick={() => setShowProfile(false)} className="wa-btn-primary w-full">

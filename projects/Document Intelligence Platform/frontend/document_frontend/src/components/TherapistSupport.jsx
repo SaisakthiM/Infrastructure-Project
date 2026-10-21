@@ -36,114 +36,42 @@ export function TherapistSupport() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#090d16',
-      color: '#e2e8f0',
-      fontFamily: 'system-ui, sans-serif',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      {/* Top Header */}
-      <div style={{
-        padding: '16px 24px',
-        background: '#0f172a',
-        borderBottom: '1px solid #1e293b',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '24px' }}>🌿</span>
+    <div className="therapist-shell">
+      <header className="therapist-head">
+        <div className="therapist-id">
+          <span className="therapist-icon" aria-hidden="true">🌿</span>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#38bdf8' }}>AI Wellness & Therapist Support</h2>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>Compassionate AI Companion for Citizens</p>
+            <h2 className="therapist-title">AI Wellness &amp; Therapist Support</h2>
+            <p className="therapist-sub">Compassionate AI companion for citizens</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Link to="/library" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>← Document Library</Link>
-          <Link to="/" style={{ color: '#38bdf8', textDecoration: 'none', fontSize: '0.85rem' }}>Home</Link>
-        </div>
-      </div>
+        <nav className="therapist-nav">
+          <Link to="/library" className="lib-btn-link">← Document Library</Link>
+          <Link to="/" className="lib-btn-link">Home</Link>
+        </nav>
+      </header>
 
-      {/* Chat Container */}
-      <div style={{
-        flex: 1,
-        maxWidth: '800px',
-        width: '100%',
-        margin: '0 auto',
-        padding: '24px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        overflowY: 'auto'
-      }}>
-        {messages.map(m => (
+      <div className="therapist-log">
+        {messages.map((m) => (
           <div
             key={m.id}
-            style={{
-              alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '80%',
-              background: m.sender === 'user' ? '#0284c7' : '#1e293b',
-              color: '#f8fafc',
-              padding: '14px 18px',
-              borderRadius: m.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-              lineHeight: 1.5,
-              fontSize: '0.92rem',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
+            className={`therapist-bubble therapist-bubble--${m.sender === 'user' ? 'user' : 'bot'}`}
           >
             {m.text}
           </div>
         ))}
-        {isTyping && (
-          <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
-            AI Therapist is typing...
-          </div>
-        )}
+        {isTyping && <p className="therapist-typing">AI Therapist is typing…</p>}
       </div>
 
-      {/* Input Bar */}
-      <form onSubmit={handleSend} style={{
-        padding: '16px 24px',
-        background: '#0f172a',
-        borderTop: '1px solid #1e293b',
-        display: 'flex',
-        gap: '12px',
-        maxWidth: '800px',
-        width: '100%',
-        margin: '0 auto'
-      }}>
+      <form className="therapist-form" onSubmit={handleSend}>
         <input
+          className="chat-input"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Share your thoughts or questions freely..."
-          style={{
-            flex: 1,
-            background: '#1e293b',
-            border: '1px solid #334155',
-            borderRadius: '999px',
-            padding: '12px 20px',
-            color: '#fff',
-            outline: 'none',
-            fontSize: '0.9rem'
-          }}
         />
-        <button
-          type="submit"
-          style={{
-            background: '#0ea5e9',
-            border: 'none',
-            color: '#fff',
-            padding: '12px 24px',
-            borderRadius: '999px',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          Send
-        </button>
+        <button className="chat-send" type="submit" aria-label="Send">↑</button>
       </form>
     </div>
   );

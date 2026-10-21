@@ -34,7 +34,7 @@ export function Exchange() {
         off = City.on((s) => setLoggedIn(s.loggedIn))
         const stage = three.createStage(document.body, {
           camera: { pos: [0, 7, 19], look: [0, 3, 0] },
-          fog: { color: 0x040a10, density: 0.012 },
+          fog: { color: 0xedeae1, density: 0.012 },
         })
         if (!stage.ok) return
         stage.orbit({ target: [0, 3, 0], min: 9, max: 34, maxPolar: Math.PI * 0.49 })
@@ -159,7 +159,7 @@ export function Exchange() {
           <div className="hd">Mini City Exchange <small>prices tick every 5 s</small></div>
           <div className="bd">
             {quotes.map((q) => (
-              <div key={q.symbol} className="list-row" onClick={() => setSelected(q.symbol)} style={q.symbol === selected ? { background: 'rgba(255,255,255,.06)' } : undefined}>
+              <div key={q.symbol} className="list-row" onClick={() => setSelected(q.symbol)} style={q.symbol === selected ? { background: 'var(--accent-soft)' } : undefined}>
                 <span><strong>{q.symbol}</strong> <span className="muted">{q.name}</span></span>
                 <span>
                   {fmtMoney(q.price)} <span className={q.change >= 0 ? 'up' : 'down'}>{fmtPct(q.change)}</span>

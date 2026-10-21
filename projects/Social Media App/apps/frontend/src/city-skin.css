@@ -1,19 +1,260 @@
-/* Nexus Social · city skin — keeps all Tailwind classes intact, just overrides the dark backgrounds and borders */
-html, body { background: transparent !important; }
-#root { position: relative; z-index: 10; }
-.bg-\[#060913\], .bg-\[#0a0a0a\] { background: transparent !important; }
-/* Sidebar */
-aside { background: rgba(8,6,18,.88) !important; border-right-color: rgba(155,123,255,.18) !important; backdrop-filter: blur(14px); }
-/* Post cards, modals, drawers */
-.bg-\[#0f0f0f\], .bg-\[#111\], .bg-\[#111111\], .bg-\[#1a1a1a\], .bg-\[#161616\], .bg-\[#18181b\],
-.bg-zinc-900, .bg-zinc-950, .bg-neutral-900, .bg-neutral-950 {
-  background: var(--glass) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-color: rgba(155,123,255,.18) !important;
+/* Nexus Social · city skin
+ *
+ * Narrow on purpose. tailwind.config.js already retargets the zinc/neutral/gray/slate and
+ * violet/purple/fuchsia/indigo scales onto the paper registry, so the only thing left for CSS to do is
+ * (a) neutralise hard-coded arbitrary hexes and white-on-black utilities the components still carry,
+ * (b) make structural chrome translucent so the district maquette shows through, and
+ * (c) square off every Tailwind corner radius.
+ * Add to this file only when a new hard-coded class appears — the goal is for it to shrink over time.
+ * No token is defined here; /city-core/city.css owns them.
+ */
+
+html,
+body {
+  background: transparent !important;
 }
-/* Accent: violet/fuchsia -> city accent */
-.from-violet-400, .to-fuchsia-400 { color: var(--accent) !important; }
-.bg-violet-500 { background: var(--accent) !important; }
-.text-violet-400, .hover\:text-violet-400:hover { color: var(--accent) !important; }
-.border-violet-500 { border-color: var(--accent) !important; }
-/* Inputs */
-input[class*="bg-"], textarea[class*="bg-"] { background: rgba(255,255,255,.05) !important; color: #e2e8f0 !important; }
+
+#root {
+  position: relative;
+  z-index: 10;
+}
+
+/* ───────── surfaces: the old black page/chrome fills are now paper ─────────
+   #0d0d0d  page ground on boot + auth screens   #0a0a0a  sidebar / mobile nav
+   #111     cards, drawers, modals, media tiles  #1a1a1a  dropdowns, popovers   */
+.bg-\[\#0d0d0d\],
+.bg-\[\#0a0a0a\],
+.bg-\[\#0a0a0a\]\/95 {
+  background-color: var(--glass) !important;
+}
+
+.bg-\[\#111\],
+.bg-\[\#111111\],
+.bg-\[\#060913\],
+.bg-\[\#161616\],
+.bg-\[\#18181b\],
+.bg-zinc-900,
+.bg-zinc-950,
+.bg-neutral-900,
+.bg-neutral-950 {
+  background-color: var(--glass) !important;
+  backdrop-filter: blur(14px) saturate(1.04);
+  -webkit-backdrop-filter: blur(14px) saturate(1.04);
+}
+
+/* raised chrome: menus and popovers float, so they get a solid sheet and an ink shadow */
+.bg-\[\#1a1a1a\] {
+  background-color: var(--glass-strong) !important;
+  box-shadow: var(--e3) !important;
+}
+
+/* ───────── structural chrome: glass over the 3D scene ───────── */
+aside,
+header {
+  background-color: var(--glass) !important;
+  border-color: var(--line) !important;
+  backdrop-filter: blur(14px) saturate(1.04);
+  -webkit-backdrop-filter: blur(14px) saturate(1.04);
+}
+
+/* ───────── media wells ─────────
+   photo/video letterboxing and full-screen story viewers legitimately stay ink:
+   it is the same #121212 the registry uses for structure, with paper type on top. */
+.bg-black {
+  background-color: var(--ink) !important;
+}
+
+/* dialog scrims: an ink wash, not a black room */
+.bg-black\/40,
+.bg-black\/50,
+.bg-black\/60,
+.bg-black\/70,
+.bg-black\/80 {
+  background-color: color-mix(in srgb, var(--ink) 42%, transparent) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ───────── type ─────────
+   every `text-white*` the components carry was written against a black page. On paper it is ink —
+   but the /NN steps carried the hierarchy (heading vs caption vs disabled), so each step is mapped to
+   its own ink tint instead of collapsing them all to one flat colour. */
+[class*='text-white'] {
+  color: var(--text) !important;
+}
+
+.text-white\/90 { color: color-mix(in srgb, var(--ink) 92%, transparent) !important; }
+.text-white\/80 { color: var(--text-dim) !important; }
+.text-white\/70 { color: color-mix(in srgb, var(--ink) 82%, transparent) !important; }
+.text-white\/60 { color: var(--text-dim) !important; }
+.text-white\/50 { color: color-mix(in srgb, var(--ink) 62%, transparent) !important; }
+.text-white\/40 { color: var(--muted) !important; }
+.text-white\/30 { color: color-mix(in srgb, var(--ink) 48%, transparent) !important; }
+.text-white\/25,
+.text-white\/20,
+.text-white\/15 { color: color-mix(in srgb, var(--ink) 38%, transparent) !important; }
+
+[class*='bg-violet'][class*='text-white'],
+[class*='bg-fuchsia'][class*='text-white'],
+[class*='bg-indigo'][class*='text-white'],
+[class*='bg-purple'][class*='text-white'],
+[class*='bg-brand'][class*='text-white'] {
+  color: var(--accent-ink) !important;
+}
+
+/* …unless the text sits on an ink well or under a scrim, where paper type is the correct inverse */
+.bg-black [class*='text-white'],
+[class*='bg-black/'] [class*='text-white'] {
+  color: var(--paper) !important;
+}
+
+/* Archivo loads 400..700 and the registry stops at 600 — the width axis does the heavy lifting,
+   so the extra-heavy Tailwind weights are clamped instead of synthesised. */
+[class*='font-black'],
+.font-extrabold,
+.font-bold {
+  font-weight: 600 !important;
+}
+.font-semibold {
+  font-weight: 500 !important;
+}
+
+/* ───────── hairlines and fills ───────── */
+[class*='border-white'] {
+  border-color: var(--line) !important;
+}
+
+[class*='divide-white'] > * + * {
+  border-color: var(--line) !important;
+}
+
+/* `bg-white/NN` were subtle light-on-dark fills; the paper equivalent is a faint ink wash.
+   The steps stay distinct so a progress track does not read like a hover fill. */
+[class*='bg-white/'] {
+  background-color: color-mix(in srgb, var(--ink) 5%, transparent) !important;
+}
+.bg-white\/8 {
+  background-color: color-mix(in srgb, var(--ink) 6.5%, transparent) !important;
+}
+.bg-white\/10,
+.bg-white\/12 {
+  background-color: color-mix(in srgb, var(--ink) 8%, transparent) !important;
+}
+.bg-white\/20 {
+  background-color: color-mix(in srgb, var(--ink) 14%, transparent) !important;
+}
+.bg-white\/30,
+.bg-white\/40 {
+  background-color: color-mix(in srgb, var(--ink) 24%, transparent) !important;
+}
+
+/* ghost placeholders were white-on-black; on paper they are a faint ink tint */
+[class*='placeholder-white']::placeholder {
+  color: color-mix(in srgb, var(--ink) 38%, transparent) !important;
+  opacity: 1;
+}
+
+.bg-white {
+  background-color: var(--paper-raised) !important;
+}
+
+/* on an ink well the washes invert back to paper */
+.bg-black [class*='border-white'],
+[class*='bg-black/'] [class*='border-white'] {
+  border-color: color-mix(in srgb, var(--paper) 30%, transparent) !important;
+}
+
+.bg-black [class*='bg-white'],
+[class*='bg-black/'] [class*='bg-white'] {
+  background-color: color-mix(in srgb, var(--paper) 85%, transparent) !important;
+}
+
+/* arbitrary dark rules used as avatar / badge rings */
+[class*='border-[#0'],
+[class*='ring-offset-[#0'] {
+  border-color: var(--paper) !important;
+  --tw-ring-offset-color: var(--paper) !important;
+}
+
+/* ───────── shadows: elevation is ink, never glow ───────── */
+.shadow,
+.shadow-md,
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl {
+  box-shadow: var(--e3) !important;
+}
+
+/* ───────── corners: a printed register is square (circles stay circles) ───────── */
+.rounded,
+.rounded-sm,
+.rounded-md,
+.rounded-lg,
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl,
+.rounded-t-3xl,
+.rounded-b-3xl,
+.rounded-bl-sm,
+.rounded-br-sm,
+.rounded-tl-sm,
+.rounded-tr-sm,
+.rounded-city,
+.rounded-city-sm {
+  border-radius: 0 !important;
+}
+
+/* ───────── inputs ───────── */
+input,
+textarea,
+select {
+  background-color: var(--paper-raised) !important;
+  color: var(--text) !important;
+  border-color: var(--line-strong) !important;
+  border-radius: 0 !important;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--ink) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--ink) 38%, transparent) !important;
+  opacity: 1;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+@media (max-width: 760px) {
+  aside,
+  header {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .bg-\[\#111\],
+  .bg-\[\#111111\],
+  .bg-\[\#0d0d0d\],
+  .bg-\[\#0a0a0a\],
+  .bg-zinc-900,
+  .bg-zinc-950,
+  .bg-neutral-900,
+  .bg-neutral-950,
+  aside,
+  header {
+    background-color: var(--paper-raised) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

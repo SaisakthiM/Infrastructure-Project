@@ -1,16 +1,16 @@
 {% extends "blog/layout.html" %}
 {% block title %}Delete Post — Inkwell{% endblock %}
 {% block content %}
-<div style="max-width:500px;margin:1.5rem auto;">
-  <div class="glass" style="padding:2rem;border-radius:18px;border-color:var(--bad);">
-    <span class="tag" style="border-color:var(--bad);color:var(--bad);">Danger zone</span>
-    <h1 class="display" style="font-size:1.8rem;margin:.7rem 0 .9rem;">Delete post</h1>
-    <p style="color:#b0bac8;line-height:1.6;margin-bottom:1.4rem;">Are you sure you want to delete <strong style="color:var(--text);">"{{ post.title }}"</strong>? This cannot be undone.</p>
+<div class="narrow-xs">
+  <div class="glass card-shell is-danger">
+    <span class="tag danger">Danger zone</span>
+    <h1 class="display confirm-title">Delete post</h1>
+    <p class="confirm-copy">Are you sure you want to delete <strong>"{{ post.title }}"</strong>? This cannot be undone.</p>
     <hr class="divider">
-    <form method="post" style="display:flex;gap:.8rem;margin-top:1rem;">
+    <form method="post" class="form-row">
       {% csrf_token %}
-      <button type="submit" class="btn-primary" style="background:var(--bad);flex:1;">Yes, delete</button>
-      <a href="{% url 'post_detail' post.pk %}" class="btn-secondary" style="flex:1;">Cancel</a>
+      <button type="submit" class="btn-primary danger">Yes, delete</button>
+      <a href="{% url 'post_detail' post.pk %}" class="btn-secondary">Cancel</a>
     </form>
   </div>
 </div>

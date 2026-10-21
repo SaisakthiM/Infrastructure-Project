@@ -11,7 +11,7 @@ type Tower = {
   base: number
 }
 
-/** One glowing tower per listed company: taller = pricier, green = up, red = down. Click a tower to trade it. */
+/** One paper-white tower per listed company on the market floor: taller = pricier, moss = up, brick = down. Click a tower to trade it. */
 export function buildExchangeScene({
   stage,
   three,
@@ -23,18 +23,19 @@ export function buildExchangeScene({
 }) {
   const { THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, labelSprite } = three
 
-  skyDome(stage, 0x03121a, 0x040a10)
-  floor(stage, { size: 70, color: 0x07131a })
-  groundGrid(stage, { color: PALETTE.exchange, opacity: 0.2, size: 80, divisions: 80 })
-  particles(stage, { count: 180, color: PALETTE.exchange, area: [50, 16, 40], size: 0.13, drift: 0.14 })
+  skyDome(stage, 0xf7f5f0, 0xe3dfd4)
+  floor(stage, { size: 70, color: 0xedeae1 })
+  groundGrid(stage, { color: 0x121212, opacity: 0.08, size: 80, divisions: 80 })
+  particles(stage, { count: 180, color: 0xa29a88, area: [50, 16, 40], size: 0.13, opacity: 0.4, drift: 0.14 })
 
-  const teal = new THREE.PointLight(PALETTE.exchange, 60, 36)
-  teal.position.set(0, 9, 6)
-  stage.scene.add(teal)
+  // daylight: the old night-point-light was 60; a maquette only needs a soft warm fill
+  const fill = new THREE.PointLight(0xfff3dc, 14, 36)
+  fill.position.set(0, 9, 6)
+  stage.scene.add(fill)
 
   const towers = new Map<string, Tower>()
   const offs: Array<() => void> = []
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.05, 10, 48), glowMat(0xffffff, 2.5))
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.05, 10, 48), glowMat(PALETTE.exchange, 0.6))
   ring.rotation.x = Math.PI / 2
   ring.position.y = 0.06
   ring.visible = false
@@ -66,8 +67,8 @@ export function buildExchangeScene({
         if (!t) {
           const group = new THREE.Group()
           group.position.set((i - (n - 1) / 2) * 3.4, 0, 0)
-          const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1, 1.8), glowMat(PALETTE.up, 0.9, { transparent: true, opacity: 0.88 }))
-          const cap = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.1, 1.95), glowMat(PALETTE.up, 2.4))
+          const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1, 1.8), glowMat(PALETTE.up, 0.35, { transparent: true, opacity: 0.88, roughness: 0.7 }))
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.1, 1.95), glowMat(PALETTE.up, 0.9))
           group.add(body, cap)
           stage.scene.add(group)
           t = { group, body, cap, label: null, current: 0.2, target: 1, base: 0 }

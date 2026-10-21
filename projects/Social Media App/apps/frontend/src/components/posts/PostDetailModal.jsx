@@ -25,7 +25,7 @@ export default function PostDetailModal({ post: initialPost, onClose }) {
         onClick={onClose}
       >
         <motion.div
-          className="bg-[#111] border border-white/10 rounded-2xl overflow-hidden max-w-3xl w-full max-h-[90vh] flex flex-col md:flex-row"
+          className="glass overflow-hidden max-w-3xl w-full max-h-[90vh] flex flex-col md:flex-row"
           initial={{ scale: 0.94, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.94, opacity: 0 }}

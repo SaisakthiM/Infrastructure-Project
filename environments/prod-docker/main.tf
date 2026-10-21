@@ -28,11 +28,7 @@ provider "docker" {
 # backup), remove the blocks and apply to delete them.
 # ---------------------------------------------------------------------------
 
-resource "docker_volume" "notes_dist" { name = "gateway_notes-dist" }
-
 resource "docker_volume" "bank_dist" { name = "gateway_bank-dist" }
-
-resource "docker_volume" "quiz_dist" { name = "gateway_quiz-dist" }
 
 resource "docker_volume" "video_dist" { name = "gateway_video-dist" }
 
@@ -142,22 +138,6 @@ resource "docker_image" "blog_website" {
 #   }
 # }
 
-resource "docker_image" "quiz_frontend_build" {
-  name         = "quiz-frontend-build:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Quiz App/quiz-app")
-    dockerfile = "Dockerfile.prod"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Quiz App/quiz-app", "**") :
-      filesha256("${var.projects_dir}/Quiz App/quiz-app/${f}")
-      if !can(regex("(\\.git|node_modules|dist)", f))
-    ]))
-  }
-}
-
 # resource "docker_image" "video_backend" {
 #   name         = "video-uploader-backend:latest"
 #   keep_locally = true
@@ -186,38 +166,6 @@ resource "docker_image" "video_frontend_build" {
       for f in fileset("${var.projects_dir}/Video Uploader/Main/frontend/video-uploader", "**") :
       filesha256("${var.projects_dir}/Video Uploader/Main/frontend/video-uploader/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
-    ]))
-  }
-}
-
-resource "docker_image" "notes_frontend_build" {
-  name         = "notes-frontend-build:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Notes App/frontend/notes_app_frontend")
-    dockerfile = "Dockerfile.prod"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Notes App/frontend/notes_app_frontend", "**") :
-      filesha256("${var.projects_dir}/Notes App/frontend/notes_app_frontend/${f}")
-      if !can(regex("(\\.git|node_modules|dist)", f))
-    ]))
-  }
-}
-
-resource "docker_image" "notes_backend" {
-  name         = "notesapp-backend:latest"
-  keep_locally = true
-  build {
-    context    = abspath("${var.projects_dir}/Notes App/backend")
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha = sha256(join("", [
-      for f in fileset("${var.projects_dir}/Notes App/backend", "**") :
-      filesha256("${var.projects_dir}/Notes App/backend/${f}")
-      if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
     ]))
   }
 }
@@ -335,45 +283,6 @@ resource "docker_image" "compiler_frontend" {
   }
 }
 
-module "notes_backend" {
-  # --- resource optimization pass ---
-  # NOTE: modules/docker_app must declare `memory` (number, MB) and
-  # `cpus` (string) variables and forward them to its docker_container
-  # resource for these two lines to actually do anything -- see the
-  # module patch in the chat reply.
-  memory = 384
-  cpus   = "0.4"
-  source        = "../../modules/docker_app"
-  name          = "notes-backend"
-  image         = docker_image.notes_backend.name
-  internal_port = 8000
-  external_port = 0
-  network       = "gateway-net"
-  env = [
-    "DATABASE_NAME=${var.notes_db_name}",
-    "DATABASE_USER=${var.notes_db_user}",
-    "DATABASE_PASSWORD=${var.notes_db_password}",
-    "DATABASE_HOST=${local.shared_pg_host}",
-  ]
-  depends_on = [docker_container.shared_postgres_init]
-}
-
-resource "docker_container" "notes_frontend_build" {
-  # --- resource optimization pass ---
-  memory = 128   # MB, hard ceiling
-  cpus   = "0.2"
-  name                  = "notes-frontend-build"
-  image                 = docker_image.notes_frontend_build.name
-  destroy_grace_seconds = 30
-  must_run              = true
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.notes_dist.name
-    target = "/dist"
-    type   = "volume"
-  }
-}
-
 module "whisper_backend" {
   # --- resource optimization pass ---
   # NOTE: modules/docker_app must declare `memory` (number, MB) and
@@ -466,23 +375,6 @@ resource "docker_container" "bank_frontend_build" {
   }
 }
 
-resource "docker_container" "quiz_frontend_build" {
-  # --- resource optimization pass ---
-  memory = 128   # MB, hard ceiling
-  cpus   = "0.2"
-  name                  = "quiz-frontend-build"
-  image                 = docker_image.quiz_frontend_build.name
-  destroy_grace_seconds = 30
-  must_run              = true
-  networks_advanced { name = "gateway-net" }
-  mounts {
-    source = docker_volume.quiz_dist.name
-    target = "/dist"
-    type   = "volume"
-  }
-}
-
-
 # resource "docker_image" "compiler_db" {
 #   name         = "online_compiler_db:latest"
 #   keep_locally = true
@@ -568,24 +460,24 @@ resource "docker_container" "quiz_frontend_build" {
 #   depends_on = [docker_container.compiler_db]
 # }
 
-# resource "docker_container" "compiler_frontend_build" {
-#   # --- resource optimization pass ---
-#   memory = 128   # MB, hard ceiling
-#   cpus   = "0.2"
-#   name                  = "compiler-frontend-build"
-#   image                 = docker_image.compiler_frontend.name
-#   destroy_grace_seconds = 30
-#   must_run              = true
-#   networks_advanced { name = "gateway-net" }
-#   env = [
-#     "VITE_API_URL=${var.compiler_domain}"
-#   ]
-#   mounts {
-#     source = docker_volume.compiler_dist.name
-#     target = "/dist"
-#     type   = "volume"
-#   }
-# }
+resource "docker_container" "compiler_frontend_build" {
+  # --- resource optimization pass ---
+  memory = 128   # MB, hard ceiling
+  cpus   = "0.2"
+  name                  = "compiler-frontend-build"
+  image                 = docker_image.compiler_frontend.name
+  destroy_grace_seconds = 30
+  must_run              = true
+  networks_advanced { name = "gateway-net" }
+  env = [
+    "VITE_API_URL=${var.compiler_domain}"
+  ]
+  mounts {
+    source = docker_volume.compiler_dist.name
+    target = "/dist"
+    type   = "volume"
+  }
+}
 
 
 

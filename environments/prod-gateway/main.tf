@@ -25,8 +25,8 @@ module "network" {
 
 # ---------------------------------------------------------------------------
 # Static content volumes that are entirely local to gateway: nobody else
-# produces or reads "intro" / "record" content, so unlike notes_dist,
-# bank_dist, etc. (owned by prod-docker) these stay right here next to the
+# produces or reads "intro" / "record" content, so unlike bank_dist,
+# doc_dist, etc. (owned by prod-docker) these stay right here next to the
 # null_resources that populate them and the module that mounts them.
 # ---------------------------------------------------------------------------
 resource "docker_volume" "intro_dist" { name = "gateway_intro-dist" }
@@ -65,8 +65,8 @@ module "gateway" {
   ]
 
   # These volume_name values are PLAIN STRINGS, not docker_volume.X.name
-  # resource references, on purpose -- notes_dist/bank_dist/quiz_dist/
-  # video_dist/api_dist/doc_dist/whisper_dist are all owned and populated by
+  # resource references, on purpose -- bank_dist/video_dist/api_dist/
+  # doc_dist/whisper_dist/compiler_dist are all owned and populated by
   # environments/prod-docker, a completely separate Terraform state. Docker
   # volumes are identified by name at the daemon level, not by which
   # Terraform state created them, so this mount picks up whatever real
@@ -80,9 +80,7 @@ module "gateway" {
   # prod-docker's build containers populate it -- no restart needed once
   # they do, since it's a live filesystem mount.
   named_volumes = [
-    { volume_name = "gateway_notes-dist", container_path = "/apps/notes", read_only = true },
     { volume_name = "gateway_bank-dist", container_path = "/apps/bank", read_only = true },
-    { volume_name = "gateway_quiz-dist", container_path = "/apps/quiz", read_only = true },
     { volume_name = "gateway_video-dist", container_path = "/apps/video", read_only = true },
     { volume_name = "gateway_api-dist", container_path = "/apps/api-service", read_only = true },
     { volume_name = "gateway_doc-dist", container_path = "/apps/document", read_only = true },
@@ -99,20 +97,44 @@ module "gateway" {
 
 # Same-state depends_on, untouched -- gateway and these null_resources live
 # together here, so nothing changes about how they relate to each other.
+# The home page is a Vite app, so it is built here instead of being copied
+# from a local dist/ folder. The old version hashed
+# "${var.projects_dir}/intro/v3/dist/index.html", which made the whole plan
+# fail on a clean checkout where dist/ was never built. node_modules lives in
+# an anonymous volume so the build never writes into your source tree, and the
+# triggers are content hashes rather than timestamp() so a normal apply does
+# not rebuild three.js and a 4 MB model for nothing.
 resource "null_resource" "intro_page" {
   depends_on = [module.gateway]
 
   triggers = {
-    file_sha   = filesha256("${var.projects_dir}/intro/v3/dist/index.html")
-    always_run = timestamp()
+    src_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/intro/v3/src", "**") :
+      filesha256("${var.projects_dir}/intro/v3/src/${f}")
+    ]))
+    asset_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/intro/v3/public", "**") :
+      filesha256("${var.projects_dir}/intro/v3/public/${f}")
+    ]))
+    cfg_sha = sha256(join("", [
+      for f in ["index.html", "package.json", "vite.config.ts", "tsconfig.json"] :
+      filesha256("${var.projects_dir}/intro/v3/${f}")
+    ]))
   }
   provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
     command = <<-EOT
+      set -euo pipefail
+      SRC="${abspath("${var.projects_dir}/intro/v3")}"
+      docker run --rm \
+        -v "$SRC:/app" -v /app/node_modules -w /app \
+        node:24-bookworm-slim \
+        sh -c "npm install --legacy-peer-deps && npm run build"
       docker pull alpine && \
       docker run --rm \
         -v gateway_intro-dist:/dest \
-        -v "${abspath("${var.projects_dir}/intro/v3/dist")}:/src:ro" \
-        alpine sh -c "cp -r /src/. /dest/"
+        -v "$SRC/dist:/src:ro" \
+        alpine sh -c "rm -rf /dest/* && cp -r /src/. /dest/"
     EOT
   }
 }
@@ -166,7 +188,7 @@ resource "null_resource" "city_core_page" {
       docker run --rm \
         -v gateway_city-core-dist:/dest \
         -v "${abspath("${var.projects_dir}/city-core")}:/src:ro" \
-        alpine sh -c "cp -r /src/. /dest/"
+        alpine sh -c "rm -rf /dest/* && cp -r /src/. /dest/"
     EOT
   }
 }

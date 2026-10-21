@@ -7,10 +7,10 @@
     <title>Whisper Chat · Mini City</title>
     <meta name="description" content="Messaging district of the Mini City." />
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
-    <!-- shared city look + three.js (self-hosted by the gateway) -->
+    <!-- shared city look + three.js (self-hosted by the gateway).
+         city.css owns the font loading (Archivo + JetBrains Mono), so this app never links a
+         Google Fonts sheet of its own — an extra link here is how a second typeface sneaks back in.
+         The district accent (#0f7a8c, D-11 Whisper) is resolved at boot by city-app.js from DISTRICTS. -->
     <link rel="stylesheet" href="/city-core/city.css" />
     <script type="importmap">
       { "imports": { "three": "/city-core/vendor/three/three.module.js", "three/addons/": "/city-core/vendor/three/addons/" } }

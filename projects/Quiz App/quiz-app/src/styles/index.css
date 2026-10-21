@@ -1,3 +1,3 @@
-@import './fonts.css';
+/* fonts + tokens come from /city-core/city.css; theme.css bridges them into Tailwind v4 */
 @import './tailwind.css';
 @import './theme.css';

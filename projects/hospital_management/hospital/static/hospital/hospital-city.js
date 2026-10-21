@@ -1,7 +1,7 @@
 // Bank wiring for the hospital pages: HUD, paying for a visit, earning by treating a patient.
 import City from '/city-core/city-core.js';
 
-City.mountHud({ service: 'hospital', title: 'MediCore Hospital', accent: '#9fdded' });
+City.mountHud({ service: 'hospital', title: 'MediCore Hospital' });
 
 const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 const baseHeaders = () => ({ ...City.identityHeaders(), 'X-Requested-With': 'fetch', 'X-CSRFToken': csrf });

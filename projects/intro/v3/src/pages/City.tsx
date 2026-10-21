@@ -5,10 +5,12 @@ import { projects, type Project } from "../data/projects";
 import { Link } from "../lib/router";
 import {
   addBox,
+  addDaylight,
   addStreetLight,
   addTree,
   createSignTexture,
   createWindowTexture,
+  MAQUETTE,
 } from "../lib/scenery";
 
 function addLitWindowGrid(
@@ -20,17 +22,16 @@ function addLitWindowGrid(
   rows = 5,
   columns = 6,
 ) {
+  // daytime glazing: neutral glass carrying a cast of the ward accent
+  const pane = new THREE.Color(color).lerp(new THREE.Color(MAQUETTE.glass), 0.72);
   const litMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color),
-    emissive: new THREE.Color(color),
-    emissiveIntensity: 2.2,
-    roughness: 0.35,
+    color: pane,
+    roughness: 0.42,
+    metalness: 0.08,
   });
   const dimMaterial = new THREE.MeshStandardMaterial({
-    color: 0x243039,
-    emissive: 0x18242b,
-    emissiveIntensity: 0.35,
-    roughness: 0.6,
+    color: MAQUETTE.bodyAlt,
+    roughness: 0.85,
   });
   const windowWidth = Math.min(0.82, (width - 2) / columns * 0.56);
   const windowHeight = Math.min(0.58, (height - 2.5) / rows * 0.5);
@@ -95,16 +96,14 @@ function addBackgroundBuilding(
   const group = new THREE.Group();
   group.position.set(x, 0, z);
   const facade = new THREE.MeshStandardMaterial({
-    color: new THREE.Color().setHSL(0.58 + (seed % 4) * 0.01, 0.08, 0.12 + (seed % 3) * 0.018),
-    roughness: 0.76,
-    metalness: 0.12,
+    color: new THREE.Color().setHSL(0.1 + (seed % 4) * 0.006, 0.1, 0.8 + (seed % 3) * 0.02),
+    roughness: 0.82,
+    metalness: 0.03,
   });
   const windows = new THREE.MeshStandardMaterial({
     map: texture,
-    emissiveMap: texture,
-    emissive: 0x9cc9de,
-    emissiveIntensity: 0.46,
-    roughness: 0.52,
+    roughness: 0.6,
+    metalness: 0.05,
   });
   addBox(group, [width, height, depth], [0, height / 2, 0], facade);
 
@@ -140,9 +139,9 @@ function addBackgroundBuilding(
   group.add(leftSide);
 
   const roofMaterial = new THREE.MeshStandardMaterial({
-    color: 0x25292d,
-    roughness: 0.5,
-    metalness: 0.6,
+    color: MAQUETTE.trim,
+    roughness: 0.72,
+    metalness: 0.2,
   });
   addBox(group, [width * 0.42, 0.6, depth * 0.42], [0, height + 0.3, 0], roofMaterial);
   if (seed % 2 === 0) {
@@ -158,30 +157,31 @@ function createProjectBuilding(project: Project, index: number) {
   const styleIndex = index % 4;
   const accent = new THREE.Color(project.color);
   const concrete = new THREE.MeshStandardMaterial({
-    color: index === 1 ? 0x1b202b : 0x242526,
-    roughness: 0.7,
-    metalness: 0.16,
+    color: index % 2 ? MAQUETTE.bodyAlt : MAQUETTE.body,
+    roughness: 0.85,
+    metalness: 0.02,
   });
   const darkMetal = new THREE.MeshStandardMaterial({
-    color: 0x111417,
-    roughness: 0.32,
-    metalness: 0.78,
+    color: MAQUETTE.trim,
+    roughness: 0.5,
+    metalness: 0.24,
   });
-  const glass = new THREE.MeshPhysicalMaterial({
-    color: accent,
-    roughness: 0.2,
-    metalness: 0.12,
-    transmission: 0.12,
+  const glass = new THREE.MeshStandardMaterial({
+    color: accent.clone().lerp(new THREE.Color(MAQUETTE.glass), 0.45),
+    roughness: 0.34,
+    metalness: 0.06,
     transparent: true,
-    opacity: 0.78,
+    opacity: 0.9,
     emissive: accent,
-    emissiveIntensity: 0.17,
+    emissiveIntensity: 0.05,
   });
+  // the ward colour stays as matte signage, not as a lamp
   const glow = new THREE.MeshStandardMaterial({
     color: accent,
     emissive: accent,
-    emissiveIntensity: 3.2,
-    roughness: 0.3,
+    emissiveIntensity: 0.18,
+    roughness: 0.55,
+    metalness: 0.05,
   });
 
   let buildingWidth = 13;
@@ -257,7 +257,13 @@ function createProjectBuilding(project: Project, index: number) {
     Math.max(5, Math.round(buildingWidth / 2)),
   );
 
-  const signTexture = createSignTexture(project.name, project.district, project.color);
+  const signTexture = createSignTexture(
+    project.name,
+    project.district,
+    project.color,
+    "OPEN " + project.link,
+    project.code,
+  );
   const sign = new THREE.Mesh(
     new THREE.PlaneGeometry(7.8, 2.44),
     new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false }),
@@ -275,7 +281,7 @@ function createProjectBuilding(project: Project, index: number) {
     new THREE.MeshBasicMaterial({
       color: accent,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.45,
     }),
   );
   marker.position.set(0, 0.08, buildingDepth / 2 + 2.5);
@@ -302,8 +308,8 @@ function CityScene({
     if (!mount) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x101820);
-    scene.fog = new THREE.Fog(0x101820, 38, 112);
+    scene.background = new THREE.Color(MAQUETTE.paper);
+    scene.fog = new THREE.Fog(MAQUETTE.skyLow, 46, 168);
 
     const camera = new THREE.PerspectiveCamera(
       66,
@@ -321,7 +327,7 @@ function CityScene({
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mount.appendChild(renderer.domElement);
@@ -333,40 +339,30 @@ function CityScene({
       callbacks.current.onLockChange(false),
     );
 
-    const hemisphere = new THREE.HemisphereLight(0x91b5d1, 0x171714, 2.15);
-    scene.add(hemisphere);
-    const moon = new THREE.DirectionalLight(0xc5dcff, 3.4);
-    moon.position.set(-32, 55, 18);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(2048, 2048);
-    moon.shadow.camera.left = -52;
-    moon.shadow.camera.right = 52;
-    moon.shadow.camera.top = 52;
-    moon.shadow.camera.bottom = -52;
-    scene.add(moon);
-    const sunset = new THREE.DirectionalLight(0xff7650, 2.2);
-    sunset.position.set(45, 18, -52);
-    scene.add(sunset);
+    addDaylight(scene);
+    const fill = new THREE.DirectionalLight(0xdfe7ea, 0.35);
+    fill.position.set(45, 18, -52);
+    scene.add(fill);
 
     const asphalt = new THREE.MeshStandardMaterial({
-      color: 0x1b2024,
-      roughness: 0.94,
-      metalness: 0.04,
+      color: MAQUETTE.road,
+      roughness: 0.96,
+      metalness: 0.02,
     });
     const concrete = new THREE.MeshStandardMaterial({
-      color: 0x626466,
-      roughness: 0.9,
+      color: MAQUETTE.kerb,
+      roughness: 0.92,
     });
-    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xd9c99d });
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: MAQUETTE.marking });
     const plazaMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3d4143,
-      roughness: 0.82,
-      metalness: 0.08,
+      color: MAQUETTE.ground,
+      roughness: 0.88,
+      metalness: 0.02,
     });
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(240, 280),
-      new THREE.MeshStandardMaterial({ color: 0x18231f, roughness: 1 }),
+      new THREE.MeshStandardMaterial({ color: MAQUETTE.ground, roughness: 1 }),
     );
     ground.position.set(0, 0, -30);
     ground.rotation.x = -Math.PI / 2;
@@ -416,9 +412,9 @@ function CityScene({
     const fountainBase = new THREE.Mesh(
       new THREE.CylinderGeometry(4.25, 4.55, 0.55, 64),
       new THREE.MeshStandardMaterial({
-        color: 0x3d4244,
-        roughness: 0.55,
-        metalness: 0.25,
+        color: MAQUETTE.kerb,
+        roughness: 0.7,
+        metalness: 0.1,
       }),
     );
     fountainBase.position.y = 0.35;
@@ -427,22 +423,22 @@ function CityScene({
     const water = new THREE.Mesh(
       new THREE.CylinderGeometry(3.75, 3.75, 0.06, 64),
       new THREE.MeshPhysicalMaterial({
-        color: 0x4a9bb0,
-        roughness: 0.12,
-        metalness: 0.1,
-        transmission: 0.25,
+        color: 0xa8c0c9,
+        roughness: 0.16,
+        metalness: 0.06,
+        transmission: 0.2,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.72,
       }),
     );
     water.position.y = 0.66;
     scene.add(water);
     const sculptureMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff7048,
-      emissive: 0xff3818,
-      emissiveIntensity: 0.85,
-      roughness: 0.28,
-      metalness: 0.7,
+      color: MAQUETTE.accent,
+      emissive: MAQUETTE.accent,
+      emissiveIntensity: 0.2,
+      roughness: 0.45,
+      metalness: 0.15,
     });
     const sculpture = new THREE.Mesh(
       new THREE.TorusKnotGeometry(1.35, 0.18, 140, 16),
@@ -458,7 +454,7 @@ function CityScene({
       return building;
     });
 
-    const windowTexture = createWindowTexture("#a6d1e2");
+    const windowTexture = createWindowTexture("#3d4e66");
     const backgroundLayouts = [
       [-54, -46, 15, 14, 29],
       [53, -47, 17, 15, 36],
@@ -522,14 +518,14 @@ function CityScene({
       const radius = 80 + Math.random() * 65;
       const angle = Math.random() * Math.PI * 2;
       starData[i * 3] = Math.cos(angle) * radius;
-      starData[i * 3 + 1] = 28 + Math.random() * 65;
+      starData[i * 3 + 1] = 4 + Math.random() * 38;
       starData[i * 3 + 2] = Math.sin(angle) * radius;
     }
     starGeometry.setAttribute("position", new THREE.BufferAttribute(starData, 3));
     scene.add(
       new THREE.Points(
         starGeometry,
-        new THREE.PointsMaterial({ color: 0xb9d3e5, size: 0.18, opacity: 0.6, transparent: true }),
+        new THREE.PointsMaterial({ color: MAQUETTE.dust, size: 0.12, opacity: 0.38, transparent: true }),
       ),
     );
 
@@ -700,13 +696,13 @@ export default function City() {
         <div className="city-brand">
           <span className="brand-mark">SM</span>
           <span>
-            Saisakthi City
-            <small>Interactive systems portfolio</small>
+            Mini City
+            <small>Interactive systems registry</small>
           </span>
         </div>
         <div className="city-status">
           <span />
-          All districts online
+          {projects.length} wards · one bank
         </div>
         <nav>
           <Link to="/">Home</Link>
@@ -717,15 +713,16 @@ export default function City() {
 
       {!locked && selected === null && !mapOpen && (
         <section className="welcome-card">
-          <p className="kicker">Welcome to the portfolio district</p>
+          <p className="kicker">Twelve wards, one currency</p>
           <h1>
             Systems you can
             <br />
             <em>walk through.</em>
           </h1>
           <p>
-            Explore a living city where every landmark is a project, every
-            district represents a discipline, and the infrastructure is the story.
+            Every landmark is a live system: the bank that holds your balance, the
+            wards you work in, the shops, studios and services you spend it at.
+            Walk the streets, or arrive at any door from the registry.
           </p>
           <button className="enter-button" onClick={enterCity}>
             Enter the city <ArrowIcon />
@@ -743,7 +740,7 @@ export default function City() {
         <>
           <div className="crosshair"><span /></div>
           <div className="walk-hud">
-            <div className="compass">N <span>•</span> PORTFOLIO DISTRICT</div>
+            <div className="compass">N <span>•</span> MINI CITY</div>
             <div className="walk-controls">WASD move · Shift sprint · ESC release mouse</div>
           </div>
         </>
@@ -764,11 +761,11 @@ export default function City() {
       )}
 
       <aside className="district-list">
-        <p>District directory</p>
+        <p>City registry</p>
         {projects.map((project, index) => (
           <button key={project.name} onClick={() => teleport(index)}>
             <span style={{ backgroundColor: project.color }} />
-            <b>{project.number}</b>
+            <b>{project.code}</b>
             {project.name}
           </button>
         ))}
@@ -781,8 +778,8 @@ export default function City() {
           </button>
           <div className="map-copy">
             <p className="kicker">Fast travel</p>
-            <h2>City directory</h2>
-            <p>Select a district to arrive outside its project entrance.</p>
+            <h2>City registry</h2>
+            <p>Select a ward to arrive outside its entrance.</p>
           </div>
           <div className="map-grid">
             <div className="map-road vertical" />
@@ -795,7 +792,7 @@ export default function City() {
                 onClick={() => teleport(index)}
                 style={{ "--project-color": project.color } as React.CSSProperties}
               >
-                <span>{project.number}</span>
+                <span>{project.code}</span>
                 <b>{project.name}</b>
                 <small>{project.district}</small>
               </button>
@@ -820,18 +817,18 @@ export default function City() {
             <div className="server-stack">
               <i /><i /><i /><i /><i />
             </div>
-            <p>District node / operational</p>
+            <p>{projects[selected].code} · ward node</p>
           </div>
           <div className="project-copy">
-            <p className="kicker">{projects[selected].district}</p>
+            <p className="kicker">
+              {projects[selected].code} · {projects[selected].district}
+            </p>
             <h2>{projects[selected].name}</h2>
             <p className="project-description">{projects[selected].description}</p>
             <div className="project-stack">
               {projects[selected].stack.map((item) => <span key={item}>{item}</span>)}
             </div>
-            <a href={projects[selected].link} target="_blank" rel="noreferrer">
-              Launch project <ArrowIcon />
-            </a>
+            <a href={projects[selected].link}>Open {projects[selected].name}</a>
           </div>
         </section>
       )}

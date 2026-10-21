@@ -39,9 +39,10 @@ function paintChip(snap) {
   if (!chip) {
     chip = document.createElement('div');
     chip.id = 'city-entry-chip';
-    chip.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:2147483000;display:flex;gap:10px;align-items:center;' +
-      'padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(8,13,25,.82);' +
-      'backdrop-filter:blur(10px);color:#eef2f8;font:12px "DM Mono",ui-monospace,monospace';
+    chip.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483000;display:flex;gap:12px;align-items:center;' +
+      'padding:7px 12px;border:1px solid #121212;background:rgba(251,250,247,.95);' +
+      'backdrop-filter:blur(10px);box-shadow:0 8px 24px -14px rgba(18,18,18,.3);color:#121212;' +
+      "font:500 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.06em";
     document.body.appendChild(chip);
   }
   chip.replaceChildren();
@@ -49,7 +50,7 @@ function paintChip(snap) {
   who.textContent = '◈ ' + snap.username + (snap.offline ? ' · safe mode' : snap.balance != null ? ' · ' + City.money(snap.balance) : '');
   const out = document.createElement('button');
   out.textContent = 'Log out';
-  out.style.cssText = 'all:unset;cursor:pointer;color:#8d9bb0;text-decoration:underline';
+  out.style.cssText = 'all:unset;cursor:pointer;color:rgba(18,18,18,.56);text-decoration:underline;text-underline-offset:2px';
   out.onclick = () => City.logout();
   chip.append(who, out);
 }

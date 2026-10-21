@@ -19,7 +19,7 @@ import ReelsPage        from './pages/ReelsPage';
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <Spinner size="lg" />
     </div>
   );
@@ -29,7 +29,7 @@ function ProtectedRoute({ children }) {
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <Spinner size="lg" />
     </div>
   );
@@ -67,12 +67,15 @@ export default function App() {
         <AppRoutes />
         <ToastContainer
           position="bottom-right"
-          theme="dark"
+          theme="light"
           toastStyle={{
-            background: '#1a1a1a',
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: '#fff',
-            borderRadius: '12px',
+            background: 'var(--glass-strong)',
+            border: '1px solid var(--line)',
+            borderLeft: '3px solid var(--muted)',
+            color: 'var(--text)',
+            borderRadius: '0',
+            boxShadow: 'var(--e3)',
+            fontFamily: 'var(--font-ui)',
             fontSize: '14px',
           }}
           autoClose={3000}

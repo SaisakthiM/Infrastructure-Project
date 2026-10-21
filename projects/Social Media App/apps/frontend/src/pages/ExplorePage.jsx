@@ -18,7 +18,7 @@ export default function ExplorePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-6 text-white/90">Explore</h1>
+      <h1 className="display mb-6">Explore</h1>
 
       {loading && posts.length === 0 ? (
         <div className="grid grid-cols-3 gap-1">
@@ -28,7 +28,7 @@ export default function ExplorePage() {
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-24 text-white/30">
-          <p className="text-4xl mb-3">🔭</p>
+          <p className="text-2xl mb-3">🔭</p>
           <p className="font-medium">Nothing to explore yet</p>
         </div>
       ) : (
@@ -40,7 +40,7 @@ export default function ExplorePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: (i % 9) * 0.04 }}
               onClick={() => setSelected(post)}
-              className="relative aspect-square group overflow-hidden bg-[#111]"
+              className="relative aspect-square group overflow-hidden bg-city-ink"
             >
               {post.media?.[0] ? (
                 <img

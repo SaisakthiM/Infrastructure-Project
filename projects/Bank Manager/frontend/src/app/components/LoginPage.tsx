@@ -50,7 +50,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     <main className="bk-center">
       <form className="glass accent" onSubmit={handleSubmit}>
         <div className="bd">
-          <div className="eyebrow">◈ City Bank</div>
+          <div className="row wrap" style={{ gap: 10, marginBottom: 4 }}>
+            <span className="plate">
+              <span className="code">D-01</span>
+              <span className="name">Bank</span>
+            </span>
+            <span className="eyebrow">City treasury</span>
+          </div>
           <h1 className="display" style={{ margin: "4px 0 6px", fontSize: 32 }}>{mode === "login" ? "Welcome back" : "Open an account"}</h1>
           <p className="muted" style={{ margin: "0 0 16px" }}>One account for every district — your balance and sign-in follow you everywhere.</p>
           <div className="tabs-row" style={{ padding: 0, marginBottom: 14 }}>

@@ -1,27 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Nexus Social — app-local CSS only.
+   The city look (colours, type, panels, HUD) comes from /city-core/city.css loaded in index.html.
+   Everything here is behaviour Tailwind cannot express: scrollbars, translucency over the 3D scene,
+   and third-party toast chrome. No token is defined in this file — the registry owns them. */
 
 :root {
-  color-scheme: dark;
+  /* the city renders one theme: ink on paper */
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
+/* Body type/colour is city-body's job; only make sure the app never paints a solid page background,
+   otherwise the district scene behind it is hidden. */
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background-color: #0d0d0d;
-  color: #fff;
+  background-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  position: relative;
+  z-index: 10;
 }
 
 /* Hide scrollbars but keep scrolling */
@@ -33,19 +40,23 @@ body {
   display: none;
 }
 
-/* Thin scrollbar for panels */
+/* Thin scrollbar for panels: an ink hairline thumb, square like everything else */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
-  border-radius: 4px;
+  background: var(--line-strong);
+  border-radius: 0;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.15);
+  background: var(--ink);
 }
 
 /* Story progress animation */
@@ -57,8 +68,39 @@ body {
   animation: story-progress 5s linear forwards;
 }
 
-/* Toast overrides */
+/* Toast overrides — same chrome as .city-toast in city.css: paper sheet, ink rule, accent progress bar */
 .Toastify__toast-container {
   z-index: 9999;
 }
+.Toastify__toast {
+  background: var(--glass-strong);
+  color: var(--text);
+  border: 1px solid var(--ink);
+  border-left: 3px solid var(--muted);
+  border-radius: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--e3);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.Toastify__toast--success { border-left-color: var(--ok); }
+.Toastify__toast--error { border-left-color: var(--bad); }
+.Toastify__toast--warning { border-left-color: var(--warn); }
+.Toastify__toast--info { border-left-color: var(--accent); }
+.Toastify__toast-body,
+.Toastify__close-button {
+  color: inherit;
+}
+.Toastify__progress-bar {
+  background: var(--accent);
+}
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-story-progress { animation-duration: 0.01ms; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .Toastify__toast { background: var(--paper-raised); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

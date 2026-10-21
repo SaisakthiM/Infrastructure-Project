@@ -98,10 +98,10 @@ const questions: Question[] = [
   },
 ];
 
-const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; bars: number; color: string; bg: string }> = {
-  easy: { label: "Easy", bars: 1, color: "#10b981", bg: "bg-emerald-500" },
-  medium: { label: "Medium", bars: 2, color: "#f59e0b", bg: "bg-amber-500" },
-  hard: { label: "Hard", bars: 3, color: "#ef4444", bg: "bg-red-500" },
+const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; bars: number; color: string }> = {
+  easy: { label: "Easy", bars: 1, color: "var(--ok)" },
+  medium: { label: "Medium", bars: 2, color: "var(--warn)" },
+  hard: { label: "Hard", bars: 3, color: "var(--bad)" },
 };
 
 
@@ -200,7 +200,7 @@ function Results({ score, onRestart }: { score: number; onRestart: () => void })
       <div className="bd" style={{ textAlign: "center" }}>
         <div className="qa-ring">
           <svg width="150" height="150" viewBox="0 0 150 150">
-            <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="10" />
+            <circle cx="75" cy="75" r="62" fill="none" stroke="var(--line)" strokeWidth="10" />
             <circle cx="75" cy="75" r="62" fill="none" stroke={verdict.c} strokeWidth="10" strokeLinecap="round"
               strokeDasharray={C} strokeDashoffset={C - (pct / 100) * C} style={{ transition: "stroke-dashoffset 1s ease" }} />
           </svg>

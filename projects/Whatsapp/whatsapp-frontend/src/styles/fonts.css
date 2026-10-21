@@ -1,1 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap');
+/* fonts.css — intentionally empty.
+ *
+ * Type is owned by /city-core/city.css, which loads exactly the two faces the paper registry uses:
+ *   family=Archivo:wdth,wght@75..100,400..700   (--font-ui and --font-display)
+ *   family=JetBrains+Mono:wght@400;500          (--font-mono)
+ *
+ * This file used to @import a second UI sans here. That link is what kept an off-theme typeface
+ * loading on every Whisper page, so it stays removed rather than swapped. See city-core/THEME.md §2.
+ */

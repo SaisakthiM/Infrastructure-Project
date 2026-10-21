@@ -1,15 +1,16 @@
 .home-wrapper { padding-top: 130px; }
 .home-container { max-width: 620px; display: grid; gap: 18px; }
-.hero h1 { font-family: var(--font-display); font-size: 3rem; font-weight: 800; letter-spacing: -0.04em; margin: 8px 0; }
-.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-accent); color: var(--accent); font-size: 11px; letter-spacing: 0.12em; }
+.hero h1 { font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-size: 3rem; font-weight: 500; letter-spacing: var(--disp-track); line-height: 1.05; margin: 8px 0; }
+.badge { display: inline-block; padding: 3px 8px; border-radius: var(--radius); border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent); font: 500 10px/1.5 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
 .subtitle { color: var(--muted); max-width: 52ch; }
 .note-card { display: flex; gap: 12px; padding: 14px 16px; align-items: flex-start; }
-.note-card p { margin: 0; color: #cdd8ea; font-size: 13px; }
-.api-grid { display: grid; gap: 12px; }
-.api-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; transition: transform .15s, border-color .15s; }
-.api-card:hover { transform: translateY(-2px); border-color: var(--line-accent); }
+.note-card p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+.api-grid { display: grid; gap: 0; border: 1px solid var(--line); }
+.api-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; border-bottom: 1px solid var(--line); transition: background .14s, border-color .14s; }
+.api-card:last-child { border-bottom: 0; }
+.api-card:hover { background: var(--wash); border-color: var(--accent-line); }
 .api-card-icon { font-size: 26px; }
 .api-card-content { flex: 1; }
-.api-card-content h2 { margin: 0 0 2px; font-family: var(--font-display); font-size: 18px; }
+.api-card-content h2 { margin: 0 0 2px; font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-weight: 500; font-size: 18px; letter-spacing: var(--disp-track); }
 .api-card-content p { margin: 0; color: var(--muted); font-size: 12.5px; }
 .api-card-arrow { color: var(--accent); font-size: 20px; }

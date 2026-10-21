@@ -47,7 +47,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
     <motion.article
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden"
+      className="glass overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
@@ -74,7 +74,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
                   initial={{ opacity: 0, scale: 0.9, y: -4 }}
                   animate={{ opacity: 1, scale: 1,   y: 0  }}
                   exit={{   opacity: 0, scale: 0.9, y: -4  }}
-                  className="absolute right-0 top-8 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden w-36"
+                  className="glass solid shadow-city3 absolute right-0 top-8 z-10 overflow-hidden w-36"
                 >
                   <button
                     onClick={handleDelete}

@@ -70,7 +70,7 @@ export default function StoriesBar() {
           >
             <IoAdd size={20} className="text-white/50" />
           </button>
-          <span className="text-[10px] text-white/40">Your story</span>
+          <span className="text-note text-white/40">Your story</span>
           <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={uploadStory} />
         </div>
 
@@ -81,12 +81,13 @@ export default function StoriesBar() {
             onClick={() => openStory(i)}
             className="flex flex-col items-center gap-1.5 flex-shrink-0"
           >
-            <div className={`p-[2px] rounded-full ${g.has_unseen ? 'bg-gradient-to-tr from-violet-500 to-fuchsia-500' : 'bg-white/10'}`}>
-              <div className="p-0.5 rounded-full bg-[#0d0d0d]">
+            {/* unseen story = a 2px accent rule around the circle; seen = a hairline */}
+            <div className={`p-[2px] rounded-full ${g.has_unseen ? 'bg-violet-400' : 'bg-white/10'}`}>
+              <div className="p-0.5 rounded-full bg-city-bg">
                 <Avatar user={g.user} size="md" />
               </div>
             </div>
-            <span className="text-[10px] text-white/60 truncate w-14 text-center">{g.user.username}</span>
+            <span className="text-note text-white/60 truncate w-14 text-center">{g.user.username}</span>
           </button>
         ))}
       </div>

@@ -1,7 +1,7 @@
 import { getInitials } from '../../utils';
 
 const sizes = {
-  xs:  'w-6 h-6 text-[10px]',
+  xs:  'w-6 h-6 text-note',
   sm:  'w-8 h-8 text-xs',
   md:  'w-10 h-10 text-sm',
   lg:  'w-14 h-14 text-base',
@@ -11,7 +11,8 @@ const sizes = {
 
 export default function Avatar({ user, size = 'md', className = '', ring = false, onClick }) {
   const sizeClass = sizes[size] || sizes.md;
-  const ringClass = ring ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-[#0d0d0d]' : '';
+  /* an avatar is one of the few circles the registry keeps; its ring is the district accent, offset by paper */
+  const ringClass = ring ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-city-bg' : '';
 
   if (user?.profile_picture) {
     return (
@@ -29,7 +30,7 @@ export default function Avatar({ user, size = 'md', className = '', ring = false
       onClick={onClick}
       className={`
         ${sizeClass} rounded-full flex-shrink-0 flex items-center justify-center
-        bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-bold
+        bg-violet-400 text-white font-medium
         ${ringClass} ${className} ${onClick ? 'cursor-pointer' : ''}
       `}
     >

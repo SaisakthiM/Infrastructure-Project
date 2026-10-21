@@ -7,22 +7,27 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/city-core/city.css">
   <style>
-    :root { --accent: #d9a066; }
+    :root { --accent: #966e35; }
     .housing { display: grid; grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 360px); gap: 16px; align-items: start; }
     .housing .mid { pointer-events: none; min-height: 40vh; }
-    .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; font: 500 10px/1.6 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
     .prop { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
     .prop:last-child { border: 0; }
-    .prop:hover { background: rgba(255,255,255,.04); }
+    .prop:hover { background: var(--glass-hover); }
+    .prop strong { font-weight: 600; }
     .tier { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
     .tier:last-child { border: 0; }
-    .tier small { display: block; color: var(--muted); }
-    .big { font: 800 30px var(--font-display); letter-spacing: -0.03em; }
+    .tier small { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .big { font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-weight: 500; font-size: 30px; line-height: 1.05; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
     .hidden { display: none !important; }
+    .dot-sale { background: var(--ok); }
+    .dot-mine { background: var(--accent); }
+    .dot-other { background: var(--muted); }
+    .tight { margin-top: 4px; }
     @media (max-width: 1100px) { .housing { grid-template-columns: 1fr; } .housing .mid { display: none; } }
   </style>
   <script type="importmap">
@@ -32,19 +37,19 @@
 <body class="city-body">
   <div class="city-ui">
     <div class="housing">
-      <section class="glass accent" aria-label="Neighbourhood">
+      <section class="glass" aria-label="Neighbourhood">
         <div class="hd">Neighbourhood <small id="stats-line">loading…</small></div>
         <div class="bd">
           <div class="legend">
-            <span><i style="background:#3ddc84"></i>for sale</span>
-            <span><i style="background:#f5c542"></i>yours</span>
-            <span><i style="background:#8892a6"></i>neighbours</span>
+            <span><i class="dot-sale"></i>for sale</span>
+            <span><i class="dot-mine"></i>yours</span>
+            <span><i class="dot-other"></i>neighbours</span>
           </div>
         </div>
         <div class="hd">Rent income <small id="rent-note">log in</small></div>
         <div class="bd">
           <div class="big" id="claimable">₹0</div>
-          <p class="muted" id="rent-help" style="margin-top:4px">Properties pay rent every hour, up to 24 hours at a time.</p>
+          <p class="muted tight" id="rent-help">Properties pay rent every hour, up to 24 hours at a time.</p>
           <button class="btn primary block" id="collect" disabled>Collect rent</button>
         </div>
         <div class="hd">My homes <small id="homes-count"></small></div>

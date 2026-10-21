@@ -5,6 +5,6 @@ import "./styles/index.css";
 import "./styles/compiler.css";
 
 // CodeFlow is a district of the Mini City: city HUD + login gate + its own 3D scene.
-startCity({ service: "compiler", title: "CodeFlow Compiler", accent: "#2ee6a6", scene: "compiler" });
+startCity({ service: "compiler", title: "CodeFlow Compiler", accent: "#4a4f55", scene: "compiler" });
 
 createRoot(document.getElementById("root")!).render(<App />);

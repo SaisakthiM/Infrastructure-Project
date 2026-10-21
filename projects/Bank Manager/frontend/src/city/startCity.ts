@@ -3,7 +3,8 @@
 export interface CityOpts {
   service: string;
   title: string;
-  accent: string;
+  /** Omit this: city-app.js resolves the district's ward code + accent from the registry (THEME.md §1). */
+  accent?: string;
   scene: string;
   home?: string;
   requireLogin?: boolean;

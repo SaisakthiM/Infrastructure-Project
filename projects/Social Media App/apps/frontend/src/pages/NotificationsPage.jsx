@@ -28,7 +28,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-6">Notifications</h1>
+      <h1 className="display mb-6">Notifications</h1>
 
       {loading && (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
 
       {!loading && notifs.length === 0 && (
         <div className="text-center py-20 text-white/30">
-          <p className="text-4xl mb-3">🔔</p>
+          <p className="text-2xl mb-3">🔔</p>
           <p className="font-medium">No notifications yet</p>
         </div>
       )}
@@ -55,7 +55,7 @@ export default function NotificationsPage() {
             <Link to={`/profile/${n.sender.username}`} className="flex-shrink-0 relative">
               <Avatar user={n.sender} size="md" />
               {!n.is_read && (
-                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-violet-500 rounded-full border-2 border-[#0d0d0d]" />
+                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-violet-400 rounded-full border-2 border-city-bg" />
               )}
             </Link>
 

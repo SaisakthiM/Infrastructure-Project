@@ -1,11 +1,11 @@
 // FreshMart — 3D market hall wired to the grocery API and the city bank.
 import City from '/city-core/city-core.js';
 import {
-  createStage, THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, labelSprite, loadRobot, loadSkyline,
+  createStage, THREE, PALETTE, MODEL, hex, skyDome, floor, groundGrid, particles, glowMat, labelSprite, loadRobot, loadSkyline,
 } from '/city-core/city-3d.js';
 
 const API = '/grocery/api';
-City.mountHud({ service: 'grocery', title: 'FreshMart Grocery', accent: '#72b66f' });
+City.mountHud({ service: 'grocery', title: 'FreshMart Grocery', accent: '#4c7c3f' });
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -23,7 +23,7 @@ const cart = new Map(); // product id -> qty
 /* ───────────── scene ───────────── */
 const stage = createStage(document.body, {
   camera: { pos: [0, 3.8, 10.5], look: [0, 2.1, -4] },
-  fog: { color: 0x07110c, density: 0.02 },
+  fog: { color: MODEL.ground, density: 0.016 },
   parallax: 0.9,
 });
 
@@ -36,31 +36,32 @@ if (stage.ok) buildStore();
 
 function buildStore() {
   const { scene } = stage;
-  skyDome(stage, 0x0b1a12, 0x050a07);
-  floor(stage, { size: 70, color: 0x0c1511 });
-  groundGrid(stage, { color: PALETTE.grocery, opacity: 0.16, size: 90, divisions: 90 });
-  particles(stage, { count: 160, color: PALETTE.grocery, area: [40, 10, 30], size: 0.14, drift: 0.1 });
+  skyDome(stage, MODEL.skyTop, MODEL.skyLow);
+  floor(stage, { size: 70, color: MODEL.ground });
+  groundGrid(stage, { color: PALETTE.ink, opacity: 0.09, size: 90, divisions: 90 });
+  particles(stage, { count: 130, color: MODEL.dust, area: [40, 10, 30], size: 0.14, drift: 0.1, opacity: 0.4 });
 
-  const warm = new THREE.PointLight(0xffe2b0, 60, 40);
+  // daylight maquette: createStage already adds hemisphere + key sun, so these stay soft accents
+  const warm = new THREE.PointLight(0xfff3dc, 2, 40);
   warm.position.set(0, 7, 2);
-  const green = new THREE.PointLight(PALETTE.grocery, 35, 30);
-  green.position.set(-8, 4, -3);
-  scene.add(warm, green);
+  const side = new THREE.PointLight(0xffe6bd, 1.2, 30);
+  side.position.set(-8, 4, -3);
+  scene.add(warm, side);
 
   // back wall + sign
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(24, 8, 0.4), new THREE.MeshStandardMaterial({ color: 0x101a15, roughness: 0.8 }));
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(24, 8, 0.4), new THREE.MeshStandardMaterial({ color: MODEL.body, roughness: 0.85, metalness: 0.05 }));
   wall.position.set(0, 4, -7.5);
   scene.add(wall);
-  const sign = labelSprite('FRESHMART', { size: 1.6, color: '#b9f0b4', bg: 'rgba(8,16,11,0.85)', font: '800 54px Syne, sans-serif' });
+  const sign = labelSprite('FRESHMART', { size: 1.6, font: '500 54px Archivo, ui-sans-serif, system-ui, sans-serif' });
   sign.position.set(0, 7.1, -7.2);
   scene.add(sign);
 
   // three shelf levels
-  const metal = new THREE.MeshStandardMaterial({ color: 0x1d2a23, roughness: 0.5, metalness: 0.6 });
+  const metal = new THREE.MeshStandardMaterial({ color: MODEL.steel, roughness: 0.5, metalness: 0.6 });
   [0.35, 1.75, 3.15].forEach((y) => {
     const board = new THREE.Mesh(new THREE.BoxGeometry(17, 0.14, 1.9), metal);
     board.position.set(0, y, -5);
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(17, 0.04, 0.05), glowMat(PALETTE.grocery, 2));
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(17, 0.04, 0.05), glowMat(PALETTE.grocery, 0.3));
     strip.position.set(0, y + 0.1, -4.03);
     scene.add(board, strip);
   });
@@ -105,9 +106,9 @@ function makeItem(p) {
     m.position.y = 0.16;
     g.add(m);
   } else if (/milk/.test(n)) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.6, 0.34), mat(0xf4f7fb));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.6, 0.34), mat(PALETTE.paper));
     b.position.y = 0.3;
-    const c = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.16, 0.36), mat(0x3b82f6));
+    const c = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.16, 0.36), mat(PALETTE.api));
     c.position.y = 0.45;
     g.add(b, c);
   } else if (/bread/.test(n)) {
@@ -133,7 +134,7 @@ function makeItem(p) {
   } else if (/drink|cola|soda/.test(n)) {
     const b = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.55, 16), mat(0xc4252f, 0.35));
     b.position.y = 0.28;
-    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 12), mat(0xdddddd, 0.3));
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 12), mat(MODEL.trim, 0.3));
     c.position.y = 0.58;
     g.add(b, c);
   } else {
@@ -183,7 +184,8 @@ function renderShelves() {
     }
     const label = labelSprite(`${p.emoji} ${p.name} · ₹${p.price}${p.stock === 0 ? ' · SOLD OUT' : ''}`, {
       size: 0.5,
-      color: p.stock === 0 ? '#f87171' : '#f1f5f9',
+      // ink on paper, brick for a sold-out slot — both are city state colours, matched to PALETTE
+      color: p.stock === 0 ? hex(PALETTE.down) : hex(PALETTE.ink),
     });
     label.position.y = 1.1;
     group.add(label);
@@ -265,7 +267,7 @@ function renderBasket() {
     minus.onclick = () => addToCart(id, -1);
     plus.onclick = () => addToCart(id, 1);
     q.append(minus, el('span', null, String(qty)), plus);
-    row.append(q, el('span', null, City.money(p.price * qty)));
+    row.append(q, el('span', 'amount', City.money(p.price * qty)));
     box.append(row);
   });
   const total = cartTotal();
@@ -357,7 +359,7 @@ function spawnCrates(n) {
     return;
   }
   for (let i = 0; i < n; i += 1) {
-    const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), glowMat(0x72b66f, 1.4, { roughness: 0.6 }));
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), glowMat(PALETTE.grocery, 0.3, { roughness: 0.6 }));
     const a = (i / n) * Math.PI * 2;
     crate.position.set(Math.cos(a) * 4.5, 0.25, 2.5 + Math.sin(a) * 1.8);
     palletGroup.add(crate);

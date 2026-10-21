@@ -1,21 +1,20 @@
 <!doctype html>
-<html lang="<!-- figma:lang -->">
+<html lang="en">
   <head>
-    <!-- figma:head-start -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Saisakthi M — Backend Systems Engineer</title>
-    <!-- figma:head-end -->
-      <!-- city entry gate: /city asks for the bank login first; the shared token is then used by every district -->
+    <title>Mini City — Saisakthi M, Backend Systems Engineer</title>
+    <meta name="description" content="A walkable registry of twelve deployed services: one bank, one login, one currency." />
+    <!-- one theme for the whole city: tokens, plate and HUD styles come from the shared core -->
+    <link rel="stylesheet" href="/city-core/city.css" />
+    <!-- city entry gate: /city asks for the bank login first; the shared token is then used by every district -->
     <script type="module">
       const entry = "/city-core/city-entry.js";
       import(/* @vite-ignore */ entry).catch((e) => console.warn("[city] entry gate unavailable", e));
     </script>
   </head>
   <body>
-    <!-- figma:body-start -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- figma:body-end -->
   </body>
 </html>

@@ -3,12 +3,12 @@
  *   shared city.css look (loaded here if the page did not), HUD with the citizen + balance, the login gate
  *   (the bank session is shared by the whole origin), and the district's themed 3D scene behind the UI.
  *
- *   const { City, stage } = await startCityApp({ service: 'quiz', title: 'Quiz Arena', accent: '#9b7bff', scene: 'quiz' });
+ *   const { City, stage } = await startCityApp({ service: 'blog', title: 'Inkwell', scene: 'blog' });
  *
  * React / Vite apps call it through a variable import (const url = '/city-core/city-app.js'; import(url))
  * so the bundler leaves it alone — see each app's src/city/startCity.
  */
-import City from './city-core.js';
+import City, { DISTRICTS } from './city-core.js';
 import { mountScene } from './city-scenes.js';
 
 function ensureCss() {
@@ -20,8 +20,9 @@ function ensureCss() {
   document.head.appendChild(l);
 }
 
-export async function startCityApp({ service, title, accent = '#00f0c8', scene = 'vault', home = '/city', requireLogin = true, backdrop = true } = {}) {
+export async function startCityApp({ service, title, accent, scene = 'vault', home = '/city', requireLogin = true, backdrop = true } = {}) {
   if (window.__cityApp) return window.__cityApp;
+  accent = accent || DISTRICTS[service]?.accent || '#0f6e9c';
   ensureCss();
   const go = () => City.mountHud({ service, title, accent, home, requireLogin });
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go, { once: true });

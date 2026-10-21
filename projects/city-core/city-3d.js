@@ -32,18 +32,43 @@ export const ASSETS = {
   lights: '/city-core/textures/earth_lights_2048.png',
 };
 
+/* Canonical district accents — one muted, cohesive set. Every app, scene and the 3D home read accents
+   from here so a district is the same colour everywhere. Keep these in sync with intro/v3/src/data/projects.ts. */
 export const PALETTE = {
-  bg: 0x060913,
-  bank: 0xc9a227,
-  hospital: 0x9fdded,
-  media: 0xd6537a,
-  api: 0x4a7fb5,
-  grocery: 0x72b66f,
-  housing: 0xb08968,
-  exchange: 0x00f0c8,
-  up: 0x34d399,
-  down: 0xf87171,
-  ink: 0xf1f5f9,
+  bg: 0xf4f2ed,
+  ink: 0x121212,
+  paper: 0xf4f2ed,
+  model: 0xe7e3d9,
+  up: 0x3f7139,
+  down: 0xa33a2e,
+  warn: 0xa9741b,
+  bank: 0x0f6e9c,
+  hospital: 0x2b7e72,
+  media: 0x8d4850,
+  api: 0x3d4e66,
+  grocery: 0x4c7c3f,
+  housing: 0x966e35,
+  whisper: 0x0f7a8c,
+  document: 0x6e7042,
+  blog: 0x6e4a79,
+  social: 0x4a5aa6,
+  compiler: 0x4a4f55,
+  police: 0x9a4a32,
+  exchange: 0x3d4e66,
+};
+
+/* daylight maquette: matte off-whites the buildings are painted in, ink for anything structural */
+export const MODEL = {
+  body: 0xe8e4da,
+  bodyAlt: 0xdcd6c9,
+  trim: 0xb9b3a5,
+  glass: 0xa9a29a,
+  ground: 0xedeae1,
+  skyTop: 0xf7f5f0,
+  skyLow: 0xe3dfd4,
+  dust: 0xa29a88,
+  steel: 0x8a857a,
+  off: 0xb9b4a8,
 };
 
 export const ease = {
@@ -91,7 +116,7 @@ export function createStage(container = document.body, opts = {}) {
 
   const cfg = {
     camera: { fov: 55, pos: [0, 6, 18], look: [0, 3, 0], ...(opts.camera || {}) },
-    fog: { color: PALETTE.bg, density: 0.016, ...(opts.fog || {}) },
+    fog: { color: PALETTE.bg, density: 0.011, ...(opts.fog || {}) },
     parallax: opts.parallax ?? 0.6,
     exposure: opts.exposure ?? 1.05,
     pixelRatioMax: opts.pixelRatioMax ?? 1.75,
@@ -125,8 +150,8 @@ export function createStage(container = document.body, opts = {}) {
   camera.position.copy(basePos);
 
   if (opts.lights !== false) {
-    scene.add(new THREE.HemisphereLight(0x8fb4ff, 0x1a1a2e, 0.9));
-    const key = new THREE.DirectionalLight(0xfff1d6, 1.4);
+    scene.add(new THREE.HemisphereLight(0xf2efe8, 0xc9c3b6, 1.15));
+    const key = new THREE.DirectionalLight(0xfff6e4, 1.7);
     key.position.set(14, 24, 10);
     scene.add(key);
   }
@@ -190,7 +215,7 @@ export function createStage(container = document.body, opts = {}) {
         if (!('emissiveIntensity' in mat)) return;
         if (on) {
           if (mat.userData._ei === undefined) mat.userData._ei = mat.emissiveIntensity;
-          mat.emissiveIntensity = mat.userData._ei * 1.9 + 0.35;
+          mat.emissiveIntensity = mat.userData._ei * 1.5 + 0.18;
         } else if (mat.userData._ei !== undefined) {
           mat.emissiveIntensity = mat.userData._ei;
         }
@@ -380,44 +405,46 @@ export function createStage(container = document.body, opts = {}) {
 
 /* ───────────────────────── materials + textures ───────────────────────── */
 
-export function glowMat(color, intensity = 1.6, extra = {}) {
+/** Accent material for the paper city. Call sites still pass the old night intensities;
+   they are clamped to a matte finish so nothing glows on a daylight maquette. */
+export function glowMat(color, intensity = 0.8, extra = {}) {
   return new THREE.MeshStandardMaterial({
     color,
     emissive: color,
-    emissiveIntensity: intensity,
-    roughness: 0.4,
-    metalness: 0.1,
+    emissiveIntensity: Math.min(0.3, Math.max(0, intensity) * 0.14),
+    roughness: 0.62,
+    metalness: 0.04,
     ...extra,
   });
 }
 
-export function glassMat(color = 0x0a1c2e, opacity = 0.55) {
+export function glassMat(color = MODEL.glass, opacity = 0.5) {
   return new THREE.MeshPhysicalMaterial({
     color,
     metalness: 0.2,
-    roughness: 0.08,
+    roughness: 0.22,
     transparent: true,
     opacity,
-    clearcoat: 1,
+    clearcoat: 0.6,
     emissive: color,
-    emissiveIntensity: 0.25,
+    emissiveIntensity: 0.06,
   });
 }
 
-export function windowTexture(color = '#9cc9de', seed = 1) {
+export function windowTexture(color = '#a9a29a', seed = 1) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 512;
   const g = c.getContext('2d');
-  g.fillStyle = '#10151b';
+  g.fillStyle = '#e8e4da';
   g.fillRect(0, 0, 256, 512);
   let s = seed * 9301 + 49297;
   const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   for (let y = 16; y < 500; y += 40) {
     for (let x = 14; x < 244; x += 36) {
       const lit = rnd() > 0.34;
-      g.fillStyle = lit ? color : '#1c242b';
-      g.globalAlpha = lit ? 0.6 + rnd() * 0.4 : 0.6;
+      g.fillStyle = lit ? color : '#c9c3b6';
+      g.globalAlpha = lit ? 0.55 + rnd() * 0.35 : 0.9;
       g.fillRect(x, y, 20, 24);
     }
   }
@@ -450,7 +477,7 @@ export function canvasPanel({ width = 1024, height = 512, world = [6, 3], draw, 
   return { mesh, canvas, ctx, texture, redraw };
 }
 
-export function labelSprite(text, { color = '#f1f5f9', bg = 'rgba(6,9,19,0.72)', size = 1.2, font = '600 44px "DM Mono", monospace' } = {}) {
+export function labelSprite(text, { color = '#121212', bg = 'rgba(244,242,237,0.94)', size = 1.2, font = '500 44px Archivo, ui-sans-serif, system-ui, sans-serif' } = {}) {
   const c = document.createElement('canvas');
   const g = c.getContext('2d');
   g.font = font;
@@ -469,6 +496,7 @@ export function labelSprite(text, { color = '#f1f5f9', bg = 'rgba(6,9,19,0.72)',
   g.fill();
   g.fillStyle = color;
   g.textBaseline = 'middle';
+  g.textAlign = 'left';
   g.fillText(text, 28, 46);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -479,7 +507,7 @@ export function labelSprite(text, { color = '#f1f5f9', bg = 'rgba(6,9,19,0.72)',
 
 /* ───────────────────────── procedural scenery ───────────────────────── */
 
-export function skyDome(stage, top = 0x0b1230, bottom = 0x060913) {
+export function skyDome(stage, top = MODEL.skyTop, bottom = MODEL.skyLow) {
   if (!stage.ok) return null;
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
@@ -495,9 +523,9 @@ export function skyDome(stage, top = 0x0b1230, bottom = 0x060913) {
   return dome;
 }
 
-export function groundGrid(stage, { size = 160, divisions = 80, color = 0x00f0c8, y = 0, opacity = 0.22 } = {}) {
+export function groundGrid(stage, { size = 160, divisions = 80, color = PALETTE.ink, y = 0, opacity = 0.09 } = {}) {
   if (!stage.ok) return null;
-  const grid = new THREE.GridHelper(size, divisions, color, 0x12202e);
+  const grid = new THREE.GridHelper(size, divisions, color, color);
   grid.position.y = y;
   grid.material.transparent = true;
   grid.material.opacity = opacity;
@@ -505,10 +533,10 @@ export function groundGrid(stage, { size = 160, divisions = 80, color = 0x00f0c8
   return grid;
 }
 
-export function floor(stage, { size = 120, color = 0x0b111b, y = 0 } = {}) {
+export function floor(stage, { size = 120, color = MODEL.ground, y = 0 } = {}) {
   const m = new THREE.Mesh(
     new THREE.CircleGeometry(size, 64),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.2 }),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 }),
   );
   m.rotation.x = -Math.PI / 2;
   m.position.y = y;
@@ -516,7 +544,7 @@ export function floor(stage, { size = 120, color = 0x0b111b, y = 0 } = {}) {
   return m;
 }
 
-export function particles(stage, { count = 400, color = 0x00f0c8, area = [60, 30, 60], size = 0.18, opacity = 0.6, drift = 0.15 } = {}) {
+export function particles(stage, { count = 400, color = MODEL.dust, area = [60, 30, 60], size = 0.16, opacity = 0.4, drift = 0.15 } = {}) {
   if (!stage.ok) return null;
   const pos = new Float32Array(count * 3);
   for (let i = 0; i < count; i += 1) {
@@ -544,25 +572,25 @@ export function particles(stage, { count = 400, color = 0x00f0c8, area = [60, 30
 }
 
 /** a glowing tower: used for stats, stocks, houses-as-skyscrapers… */
-export function tower({ w = 2, h = 6, d = 2, color = 0x4a7fb5, seed = 1, glow = 0.8 } = {}) {
+export function tower({ w = 2, h = 6, d = 2, color = PALETTE.bank, seed = 1, glow = 0.8 } = {}) {
   const g = new THREE.Group();
   const tex = windowTexture('#' + new THREE.Color(color).getHexString(), seed);
   tex.repeat.set(Math.max(1, Math.round(w / 1.2)), Math.max(1, Math.round(h / 2.2)));
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
     new THREE.MeshStandardMaterial({
-      color: 0x131a24,
+      color: MODEL.body,
       map: tex,
       emissiveMap: tex,
       emissive: new THREE.Color(color),
-      emissiveIntensity: glow,
-      roughness: 0.5,
-      metalness: 0.3,
+      emissiveIntensity: Math.min(0.25, glow * 0.14),
+      roughness: 0.72,
+      metalness: 0.02,
     }),
   );
   body.position.y = h / 2;
   g.add(body);
-  const cap = new THREE.Mesh(new THREE.BoxGeometry(w * 1.04, 0.14, d * 1.04), glowMat(color, 2.2));
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(w * 1.04, 0.14, d * 1.04), glowMat(color, 1.1));
   cap.position.y = h + 0.07;
   g.add(cap);
   g.userData.body = body;
@@ -570,12 +598,12 @@ export function tower({ w = 2, h = 6, d = 2, color = 0x4a7fb5, seed = 1, glow = 
   return g;
 }
 
-export function streetLight(color = 0xffb75e) {
+export function streetLight(color = 0xd8b477) {
   const g = new THREE.Group();
-  const metal = new THREE.MeshStandardMaterial({ color: 0x292d31, roughness: 0.4, metalness: 0.8 });
+  const metal = new THREE.MeshStandardMaterial({ color: MODEL.steel, roughness: 0.55, metalness: 0.5 });
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 4.6, 8), metal);
   pole.position.y = 2.3;
-  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), glowMat(color, 4));
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), glowMat(color, 2));
   lamp.position.set(0, 4.7, 0);
   g.add(pole, lamp);
   return g;

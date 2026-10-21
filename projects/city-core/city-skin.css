@@ -1,73 +1,85 @@
-/* city-skin.css — the Mini City glass look for apps we do not rebuild (Whisper, Notes).
+/* city-skin.css — the Mini City paper look for apps we do not rebuild (Whisper, Notes).
  *
  * Two layers, on purpose:
  *   1. BASE   — written with :where(), i.e. zero specificity. It only fills in what the app left unstyled
  *               (fonts, colors, scrollbars, bare inputs…), so the app's own classes — chat bubbles, note colors,
  *               status badges — always win and keep meaning what they meant.
- *   2. GLASS  — normal specificity, only for structural chrome (header, nav, sidebar, dialogs, menus, cards):
- *               translucent panels so the 3D scene behind shows through. Inline style="" colors still win.
+ *   2. PAPER  — normal specificity, only for structural chrome (header, nav, sidebar, dialogs, menus, cards):
+ *               paper panels over the daylight maquette, so the 3D scene behind stays legible. Inline style="" colors still win.
  * Everything is scoped to html.city-skin; ?skin=off or removing the one <script> line brings the old UI back.
+ * Tokens mirror city.css — see THEME.md.
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 html.city-skin {
-  --accent: #25d6a3;
-  --cs-bg: #060913;
-  --cs-glass: rgba(9, 15, 28, 0.6);
-  --cs-glass-strong: rgba(8, 13, 25, 0.88);
-  --cs-line: rgba(255, 255, 255, 0.12);
-  --cs-line-accent: color-mix(in srgb, var(--accent) 45%, transparent);
-  --cs-text: #eef2f8;
-  --cs-muted: #8d9bb0;
-  --cs-radius: 16px;
-  --cs-font-ui: 'DM Mono', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
-  --cs-font-display: 'Syne', 'Segoe UI', system-ui, sans-serif;
-  color-scheme: dark;
+  --accent: var(--city-accent, #0f7a8c);
+  --accent-ink: #f8f7f3;
+  --cs-paper: #f4f2ed;
+  --cs-raised: #fbfaf7;
+  --cs-glass: rgba(244, 242, 237, 0.86);
+  --cs-glass-strong: rgba(251, 250, 247, 0.97);
+  --cs-line: rgba(18, 18, 18, 0.15);
+  --cs-line-strong: rgba(18, 18, 18, 0.3);
+  --cs-line-accent: color-mix(in srgb, var(--accent) 38%, transparent);
+  --cs-accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --cs-wash: color-mix(in srgb, var(--accent) 7%, transparent);
+  --cs-text: #121212;
+  --cs-dim: rgba(18, 18, 18, 0.76);
+  --cs-muted: rgba(18, 18, 18, 0.56);
+  --cs-ok: #3f7139;
+  --cs-warn: #a9741b;
+  --cs-bad: #a33a2e;
+  --cs-float: 0 8px 24px -12px rgba(18, 18, 18, 0.28);
+  --cs-radius: 0;
+  --cs-font-ui: 'Archivo', 'Helvetica Neue', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --cs-font-display: 'Archivo', 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
+  --cs-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: light;
 }
-html.city-skin-notes {
-  --accent: #e8b44f;
-  --cs-glass: rgba(20, 15, 8, 0.6);
-  --cs-glass-strong: rgba(16, 12, 7, 0.9);
-}
+html.city-skin-notes { --accent: #8a6b2f; }
 
 /* the canvas lives BEHIND the app: negative z-index inside the root stacking context.
-   html paints the colour, body must stay transparent or it would hide the scene. */
-html.city-skin { background: var(--cs-bg) !important; }
+   html paints the paper, body must stay transparent or it would hide the scene. */
+html.city-skin { background: var(--cs-paper) !important; }
 html.city-skin body { background: transparent !important; color: var(--cs-text); min-height: 100vh; }
 html.city-skin .city-skin-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1 !important; pointer-events: none; }
-html.city-skin:not(.city-skin-3d) { background: radial-gradient(1200px 700px at 70% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%), var(--cs-bg) !important; }
+html.city-skin:not(.city-skin-3d) { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--cs-paper)), var(--cs-paper) 40%), repeating-linear-gradient(90deg, transparent 0 79px, var(--cs-line) 79px 80px) !important; }
 html.city-skin :is(#root, #app, #__next) { position: relative; background: transparent !important; }
 
 /* ───────── BASE (zero specificity) ───────── */
-:where(html.city-skin) body { font-family: var(--cs-font-ui); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-:where(html.city-skin) :where(h1, h2, h3, h4, h5, h6) { font-family: var(--cs-font-display); letter-spacing: -0.02em; color: var(--cs-text); }
+:where(html.city-skin) body { font-family: var(--cs-font-ui); font-size: 14px; line-height: 1.6; letter-spacing: -0.011em; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+:where(html.city-skin) :where(h1, h2, h3, h4, h5, h6) { font-family: var(--cs-font-display); font-variation-settings: 'wdth' 80; font-weight: 500; letter-spacing: -0.035em; line-height: 1.1; color: var(--cs-text); }
 :where(html.city-skin) :where(a) { color: var(--accent); text-underline-offset: 3px; }
 :where(html.city-skin) :where(small, time, .muted, figcaption) { color: var(--cs-muted); }
-:where(html.city-skin) ::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); color: #fff; }
+:where(html.city-skin) ::selection { background: var(--accent); color: var(--accent-ink); }
 :where(html.city-skin) :where(hr) { border: 0; border-top: 1px solid var(--cs-line); }
-:where(html.city-skin) :where(code, pre, kbd) { font-family: var(--cs-font-ui); background: rgba(255, 255, 255, 0.07); border-radius: 6px; }
+:where(html.city-skin) :where(code, pre, kbd) { font-family: var(--cs-font-mono); background: rgba(18, 18, 18, 0.05); }
+:where(html.city-skin) :where(th, td, .num, time, code) { font-variant-numeric: tabular-nums; }
 
 :where(html.city-skin) :where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), textarea, select) {
-  background: rgba(4, 8, 18, 0.62); color: var(--cs-text); border: 1px solid var(--cs-line); border-radius: 10px;
+  background: var(--cs-raised); color: var(--cs-text); border: 1px solid var(--cs-line-strong);
   font-family: var(--cs-font-ui); caret-color: var(--accent);
 }
-:where(html.city-skin) :where(input, textarea, select)::placeholder { color: var(--cs-muted); opacity: 1; }
-:where(html.city-skin) :where(input, textarea, select):focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+:where(html.city-skin) :where(input, textarea, select)::placeholder { color: rgba(18, 18, 18, 0.38); opacity: 1; }
+:where(html.city-skin) :where(input, textarea, select):focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--cs-accent-soft); }
 :where(html.city-skin) :where(input[type=checkbox], input[type=radio], input[type=range]) { accent-color: var(--accent); }
 :where(html.city-skin) :where(button:not([class]), input[type=button], input[type=submit]) {
-  background: rgba(255, 255, 255, 0.07); color: var(--cs-text); border: 1px solid var(--cs-line); border-radius: 10px;
-  padding: 8px 14px; font: 600 13px var(--cs-font-ui); cursor: pointer;
+  background: var(--cs-raised); color: var(--cs-text); border: 1px solid var(--cs-text);
+  padding: 10px 14px; font: 500 11px var(--cs-font-mono); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
 }
-:where(html.city-skin) :where(button:not([class]):hover, input[type=button]:hover, input[type=submit]:hover) { background: rgba(255, 255, 255, 0.12); border-color: var(--cs-line-accent); }
+:where(html.city-skin) :where(button:not([class]):hover, input[type=button]:hover, input[type=submit]:hover) { background: var(--cs-wash); border-color: var(--accent); color: var(--accent); }
 :where(html.city-skin) :where(table) { border-collapse: collapse; }
-:where(html.city-skin) :where(th) { color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+:where(html.city-skin) :where(th) { color: var(--cs-muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; font-weight: 500; font-family: var(--cs-font-mono); border-bottom: 1px solid var(--cs-text); }
 :where(html.city-skin) :where(th, td) { border-color: var(--cs-line); }
+:where(html.city-skin) :where(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-html.city-skin * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+html.city-skin * { scrollbar-width: thin; scrollbar-color: rgba(18, 18, 18, 0.28) transparent; }
 html.city-skin *::-webkit-scrollbar { width: 8px; height: 8px; }
-html.city-skin *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
-html.city-skin *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 60%, transparent); }
+html.city-skin *::-webkit-scrollbar-thumb { background: rgba(18, 18, 18, 0.22); }
+html.city-skin *::-webkit-scrollbar-thumb:hover { background: rgba(18, 18, 18, 0.4); }
 
-/* ───────── GLASS (structural chrome only) ───────── */
+/* ───────── PAPER (structural chrome only) ───────── */
 html.city-skin :is(
   body > header, body > nav, #root > header, #root > nav, #app > header, #app > nav,
   aside, dialog, [role=dialog], [role=menu], [role=listbox],
@@ -78,45 +90,51 @@ html.city-skin :is(
   background-image: none;
   border-color: var(--cs-line);
   color: var(--cs-text);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.04);
+  backdrop-filter: blur(14px) saturate(1.04);
+  box-shadow: 0 1px 0 rgba(18, 18, 18, 0.05);
 }
 /* things that float over content need to stay readable */
-html.city-skin :is(dialog, [role=dialog], [role=menu], [role=listbox], .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper) { background-color: var(--cs-glass-strong); }
+html.city-skin :is(dialog, [role=dialog], [role=menu], [role=listbox], .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper) { background-color: var(--cs-glass-strong); border-color: var(--cs-text); box-shadow: var(--cs-float); }
 html.city-skin :is(.MuiAppBar-root, .MuiDrawer-paper) { border-radius: 0; }
-html.city-skin :is(.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .MuiCard-root, dialog) { border-radius: var(--cs-radius); border: 1px solid var(--cs-line); }
-html.city-skin dialog::backdrop { background: rgba(3, 5, 12, 0.6); backdrop-filter: blur(6px); }
-html.city-skin .MuiBackdrop-root:not(.MuiBackdrop-invisible) { background-color: rgba(3, 5, 12, 0.6); backdrop-filter: blur(6px); }
+html.city-skin :is(.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .MuiCard-root, dialog) { border-radius: 0; border: 1px solid var(--cs-text); }
+html.city-skin dialog::backdrop { background: rgba(244, 242, 237, 0.72); backdrop-filter: blur(6px); }
+html.city-skin .MuiBackdrop-root:not(.MuiBackdrop-invisible) { background-color: rgba(244, 242, 237, 0.72); backdrop-filter: blur(6px); }
 
-/* cards (Notes grid, list items…): glass unless the app colored them inline */
+/* cards (Notes grid, list items…): paper unless the app colored them inline */
 html.city-skin :is([class*="card" i], [class*="note-item" i], [class*="note_item" i], [class*="noteitem" i], article):not(.MuiCard-root):not(.MuiPaper-root) {
   background-color: var(--cs-glass);
   border: 1px solid var(--cs-line);
   border-radius: var(--cs-radius);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
 }
 html.city-skin :is([class*="card" i], [class*="note-item" i], [class*="note_item" i], [class*="noteitem" i], article):not(.MuiCard-root):not(.MuiPaper-root):hover {
-  transform: translateY(-2px);
-  border-color: var(--cs-line-accent);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), 0 0 24px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--cs-line-strong);
+  background-color: var(--cs-raised);
+  box-shadow: var(--cs-float);
 }
 
 /* ───────── MUI details (only matter when the app uses MUI; harmless otherwise) ───────── */
 html.city-skin .MuiDivider-root { border-color: var(--cs-line); }
-html.city-skin .MuiOutlinedInput-notchedOutline { border-color: var(--cs-line); }
+html.city-skin .MuiPaper-root { color: var(--cs-text); }
+html.city-skin .MuiOutlinedInput-notchedOutline { border-color: var(--cs-line-strong); border-radius: 0; }
 html.city-skin .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: var(--cs-line-accent); }
-html.city-skin .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline { border-color: var(--accent); }
-html.city-skin .MuiListItemButton-root.Mui-selected { background-color: color-mix(in srgb, var(--accent) 16%, transparent); }
-html.city-skin .MuiListItemButton-root:hover { background-color: rgba(255, 255, 255, 0.06); }
-html.city-skin .MuiTooltip-tooltip { background-color: var(--cs-glass-strong); border: 1px solid var(--cs-line-accent); font-family: var(--cs-font-ui); }
-html.city-skin .MuiBadge-badge { box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+html.city-skin .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline { border-color: var(--accent); border-width: 1.5px; }
+html.city-skin .MuiListItemButton-root.Mui-selected { background-color: var(--cs-accent-soft); color: var(--accent); }
+html.city-skin .MuiListItemButton-root:hover { background-color: var(--cs-wash); }
+html.city-skin .MuiTooltip-tooltip { background-color: var(--cs-glass-strong); border: 1px solid var(--cs-text); color: var(--cs-text); font-family: var(--cs-font-mono); font-size: 11px; }
+html.city-skin .MuiBadge-badge { border: 1px solid var(--cs-paper); }
+html.city-skin .MuiButton-root { border-radius: 0; font-family: var(--cs-font-mono); letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; font-weight: 500; }
+html.city-skin .MuiButton-containedPrimary { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
 
 /* ───────── motion + small screens ───────── */
-@keyframes cs-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-html.city-skin-3d :is(#root, #app, #__next) > * { animation: cs-in 0.5s ease-out both; }
+@keyframes cs-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+html.city-skin-3d :is(#root, #app, #__next) > * { animation: cs-in 0.32s ease-out both; }
 @media (max-width: 760px) {
   html.city-skin :is(aside, dialog, [role=dialog], .MuiAppBar-root, .MuiDrawer-paper, .MuiDialog-paper, .MuiCard-root) { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.city-skin :is(header, nav, aside, dialog, [role=dialog], [class*="card" i], .MuiAppBar-root, .MuiDrawer-paper, .MuiDialog-paper, .MuiCard-root) { background-color: var(--cs-raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html.city-skin *, html.city-skin *::before, html.city-skin *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

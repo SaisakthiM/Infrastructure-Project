@@ -31,7 +31,8 @@ const formatINR = (n: number) => "₹" + n.toLocaleString("en-IN");
 
 function getCreditLabel(score: number): { label: string; color: string } {
   if (score >= 750) return { label: "Excellent", color: "var(--ok)" };
-  if (score >= 700) return { label: "Good", color: "#84cc16" };
+  // four bands, three registry colours: "Good" is moss pulled toward ochre rather than a fourth hue
+  if (score >= 700) return { label: "Good", color: "color-mix(in srgb, var(--ok) 72%, var(--warn))" };
   if (score >= 650) return { label: "Fair", color: "var(--warn)" };
   return { label: "Poor", color: "var(--bad)" };
 }

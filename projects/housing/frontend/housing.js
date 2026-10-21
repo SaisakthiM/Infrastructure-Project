@@ -1,12 +1,12 @@
 // Housing district — a 3D neighbourhood. Everything with money in it goes through the city bank.
 import City from '/city-core/city-core.js';
 import {
-  createStage, THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, glassMat, tower, streetLight,
+  createStage, THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, glassMat, tower,
   labelSprite, loadRobot, loadSkyline,
 } from '/city-core/city-3d.js';
 
 const API = '/housing/api';
-City.mountHud({ service: 'housing', title: 'Housing District', accent: '#d9a066' });
+City.mountHud({ service: 'housing', title: 'Housing District' });
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -25,20 +25,20 @@ const SPACING = 4.6;
 /* ───────────── 3D ───────────── */
 const stage = createStage(document.body, {
   camera: { pos: [0, 15, 19], look: [0, 0, 0] },
-  fog: { color: 0x0a0807, density: 0.011 },
-  exposure: 1.1,
+  fog: { color: 0xedeae1, density: 0.01 },
+  exposure: 1.05,
 });
 const plotNodes = new Map(); // id -> { group, pad, ring, house, label }
 const offs = [];
 
 if (stage.ok) {
-  skyDome(stage, 0x1a120d, 0x080605);
-  floor(stage, { size: 90, color: 0x0e0b09 });
-  groundGrid(stage, { color: PALETTE.housing, opacity: 0.12, size: 120, divisions: 120 });
-  particles(stage, { count: 160, color: 0xffd9a8, area: [60, 14, 50], size: 0.13, drift: 0.1 });
+  skyDome(stage, 0xf7f5f0, 0xe3dfd4);
+  floor(stage, { size: 90, color: 0xedeae1 });
+  groundGrid(stage, { color: 0x121212, opacity: 0.08, size: 120, divisions: 120 });
+  particles(stage, { count: 130, color: 0xa29a88, area: [60, 14, 50], size: 0.13, drift: 0.1, opacity: 0.4 });
   stage.orbit({ target: [0, 0.5, 0], min: 10, max: 42, maxPolar: Math.PI * 0.47, autoRotate: true, speed: 0.25 });
 
-  const warm = new THREE.PointLight(0xffc891, 70, 50);
+  const warm = new THREE.PointLight(0xfff6e4, 10, 50);
   warm.position.set(0, 12, 6);
   stage.scene.add(warm);
 
@@ -54,47 +54,47 @@ const posOf = (p) => [(p.x - (grid.width - 1) / 2) * SPACING, (p.y - (grid.heigh
 
 function buildHouse(tier) {
   const g = new THREE.Group();
-  const wall = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 });
+  const wall = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8, metalness: 0.02 });
   switch (tier) {
     case 'checkpoint': {
-      const tent = new THREE.Mesh(new THREE.ConeGeometry(1.2, 1.4, 4), wall(0xc2763a));
+      const tent = new THREE.Mesh(new THREE.ConeGeometry(1.2, 1.4, 4), wall(0xdcd6c9));
       tent.rotation.y = Math.PI / 4;
       tent.position.y = 0.7;
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), glowMat(0xffd27a, 4));
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), glowMat(0xf3e9d8, 2));
       lamp.position.set(1.1, 0.6, 1.1);
       g.add(tent, lamp);
       break;
     }
     case 'cottage': {
-      const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.2, 1.8), wall(0xd9c3a0));
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.2, 1.8), wall(0xe8e4da));
       body.position.y = 0.6;
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.75, 1, 4), wall(0x8a3b2e));
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.75, 1, 4), wall(0x8a3b2e)); // clay tiles stay clay
       roof.rotation.y = Math.PI / 4;
       roof.position.y = 1.7;
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.7, 0.05), glowMat(0xffb55a, 1.8));
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.7, 0.05), glowMat(PALETTE.housing, 0.9));
       door.position.set(0, 0.35, 0.92);
       g.add(body, roof, door);
       break;
     }
     case 'apartment': {
-      g.add(tower({ w: 2.2, h: 3.8, d: 2.2, color: 0x8ab4e0, seed: 3, glow: 0.9 }));
+      g.add(tower({ w: 2.2, h: 3.8, d: 2.2, color: PALETTE.housing, seed: 3, glow: 0.6 }));
       break;
     }
     case 'villa': {
-      const base = new THREE.Mesh(new THREE.BoxGeometry(3, 1.1, 1.8), wall(0xe8e2d6));
+      const base = new THREE.Mesh(new THREE.BoxGeometry(3, 1.1, 1.8), wall(0xe8e4da));
       base.position.set(0, 0.55, -0.2);
-      const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 1.4), wall(0xd6cfc1));
+      const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 1.4), wall(0xdcd6c9));
       top.position.set(0.4, 1.55, -0.2);
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.7, 0.05), glassMat(0x3a8fb7, 0.7));
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.7, 0.05), glassMat(0xa9a29a, 0.7));
       glass.position.set(0.4, 1.55, 0.52);
-      const pool = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.8), glowMat(0x2ec4ff, 1.4));
+      const pool = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.8), glowMat(0x7fa8ad, 0.8)); // water stays water
       pool.position.set(-0.4, 0.05, 1.2);
       g.add(base, top, glass, pool);
       break;
     }
     case 'tower': {
-      g.add(tower({ w: 1.8, h: 8, d: 1.8, color: 0x00f0c8, seed: 7, glow: 1.1 }));
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 1.4, 6), glowMat(0xff3b5c, 2));
+      g.add(tower({ w: 1.8, h: 8, d: 1.8, color: PALETTE.housing, seed: 7, glow: 0.7 }));
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 1.4, 6), wall(0x8a857a));
       mast.position.y = 8.9;
       g.add(mast);
       break;
@@ -116,8 +116,8 @@ function disposeTree(obj) {
 }
 
 function ownerColor(p) {
-  if (!p.owner) return 0x3ddc84;
-  return me && p.owner === me.user ? 0xf5c542 : 0x8892a6;
+  if (!p.owner) return PALETTE.up;                                    // for sale — moss
+  return me && p.owner === me.user ? PALETTE.housing : 0x94928d;      // yours — bronze, neighbours — neutral ink-on-paper grey
 }
 
 function renderMap() {
@@ -134,10 +134,10 @@ function renderMap() {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
 
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(3.9, 0.16, 3.9), new THREE.MeshStandardMaterial({ color: 0x15110e, roughness: 0.9 }));
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(3.9, 0.16, 3.9), new THREE.MeshStandardMaterial({ color: 0xe3dfd4, roughness: 0.9 }));
     pad.position.y = 0.08;
     const col = ownerColor(p);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.04, 8, 4), glowMat(col, p.owner ? 1.2 : 2));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.04, 8, 4), glowMat(col, p.owner ? 0.8 : 1.3));
     ring.rotation.set(Math.PI / 2, 0, Math.PI / 4);
     ring.position.y = 0.2;
     group.add(pad, ring);
@@ -148,7 +148,7 @@ function renderMap() {
       group.add(house);
     }
     const text = p.owner ? p.owner : 'FOR SALE';
-    const label = labelSprite(text, { size: 0.55, color: p.owner ? '#f1f5f9' : '#7dffb0' });
+    const label = labelSprite(text, { size: 0.55 });
     label.position.y = p.tier === 'tower' ? 10.2 : p.tier === 'apartment' ? 5.2 : p.tier === 'villa' ? 3.2 : p.tier ? 3 : 1.4;
     group.add(label);
 
@@ -167,7 +167,7 @@ function renderMap() {
 function highlight() {
   plotNodes.forEach((n, id) => {
     n.ring.scale.setScalar(id === selectedId ? 1.12 : 1);
-    n.ring.material.emissiveIntensity = id === selectedId ? 4 : n.p.owner ? 1.2 : 2;
+    n.ring.material.emissiveIntensity = id === selectedId ? 0.3 : n.p.owner ? 0.12 : 0.2;
   });
 }
 
@@ -287,8 +287,7 @@ function renderPlot() {
     body.append(row);
   });
   if (p.tier !== 'checkpoint') {
-    const s = el('button', 'btn danger block', `Sell back for ${City.money(Math.floor((t.price * catalog.sellBackPercent) / 100) + (prop?.accrued ?? 0))}`);
-    s.style.marginTop = '12px';
+    const s = el('button', 'btn danger block mt', `Sell back for ${City.money(Math.floor((t.price * catalog.sellBackPercent) / 100) + (prop?.accrued ?? 0))}`);
     s.onclick = () => act(() => sell(p.id));
     body.append(s);
   }

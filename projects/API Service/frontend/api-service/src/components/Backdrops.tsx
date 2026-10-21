@@ -12,7 +12,7 @@ export function CityHud() {
     loadCity()
       .then(({ City }) => {
         if (cancelled) return
-        City.mountHud({ service: 'api', title: 'API & Markets', accent: '#4a7fb5' })
+        City.mountHud({ service: 'api', title: 'API & Markets', accent: '#3d4e66' })
         off = City.on(() => {})
       })
       .catch(() => {
@@ -40,7 +40,7 @@ export function DistrictNav() {
   )
 }
 
-/** A slowly turning Earth behind the page (Home, Weather, Geocoding). */
+/** A slowly turning Earth behind the page (Home, Weather, Geocoding), lit like the daylight maquette. */
 export function GlobeBackdrop() {
   useEffect(() => {
     let cancelled = false
@@ -50,13 +50,13 @@ export function GlobeBackdrop() {
         if (cancelled) return
         const stage = three.createStage(document.body, {
           camera: { pos: [0, 1.5, 17], look: [0, 0, 0] },
-          fog: { color: 0x04070f, density: 0.004 },
+          fog: { color: 0xedeae1, density: 0.004 },
           parallax: 1.2,
         })
         if (!stage.ok) return
-        three.skyDome(stage, 0x050b1d, 0x03050c)
-        three.particles(stage, { count: 500, color: 0xcfe3ff, area: [120, 70, 120], size: 0.22, opacity: 0.8, drift: 0.02 })
-        const sun = new three.THREE.DirectionalLight(0xfff4e0, 2.1)
+        three.skyDome(stage, 0xf7f5f0, 0xe3dfd4)
+        three.particles(stage, { count: 320, color: 0xa29a88, area: [120, 70, 120], size: 0.14, opacity: 0.4, drift: 0.02 })
+        const sun = new three.THREE.DirectionalLight(0xfff6e4, 1.7)
         sun.position.set(18, 8, 14)
         stage.scene.add(sun)
         const globe = createGlobe(three, stage, { radius: 5.2, spin: true })

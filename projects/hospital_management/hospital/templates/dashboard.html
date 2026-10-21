@@ -7,13 +7,13 @@
 </header>
 
 <section class="stats">
-  <div class="glass stat"><div class="k">Doctors</div><div class="v">{{ doctor_count }}</div><div class="s">on staff</div></div>
-  <div class="glass stat"><div class="k">Patients</div><div class="v">{{ patient_count }}</div><div class="s">registered</div></div>
-  <div class="glass stat"><div class="k">Waiting</div><div class="v">{{ pending_count }}</div><div class="s">{{ completed_count }} treated</div></div>
-  <div class="glass stat"><div class="k">Revenue</div><div class="v">₹{{ revenue }}</div><div class="s">paid via city bank</div></div>
+  <div class="stat"><div class="k">Doctors</div><div class="v">{{ doctor_count }}</div><div class="s">on staff</div></div>
+  <div class="stat"><div class="k">Patients</div><div class="v">{{ patient_count }}</div><div class="s">registered</div></div>
+  <div class="stat"><div class="k">Waiting</div><div class="v">{{ pending_count }}</div><div class="s">{{ completed_count }} treated</div></div>
+  <div class="stat"><div class="k">Revenue</div><div class="v">₹{{ revenue }}</div><div class="s">paid via city bank</div></div>
 </section>
 
-<section class="glass" style="margin-top:16px">
+<section class="glass mt">
   <div class="hd">Waiting room <small>treat a patient to earn the doctor payout</small></div>
   {% if upcoming %}
   <div class="scroll-x"><table class="tbl">
@@ -31,7 +31,7 @@
   {% else %}<div class="empty">Nobody is waiting. Book a visit to get things moving.</div>{% endif %}
 </section>
 
-<section class="btn-row" style="margin-top:16px">
+<section class="btn-row mt">
   <a class="btn" href="{% url 'add_patient' %}">+ Patient</a>
   <a class="btn" href="{% url 'add_doctor' %}">+ Doctor</a>
 </section>

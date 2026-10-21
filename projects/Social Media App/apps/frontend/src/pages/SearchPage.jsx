@@ -73,7 +73,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-5">Search</h1>
+      <h1 className="display mb-5">Search</h1>
 
       {/* Search input */}
       <div className="relative mb-5">

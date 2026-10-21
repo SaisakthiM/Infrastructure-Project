@@ -7,23 +7,29 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/city-core/city.css">
   <style>
-    :root { --accent: #72b66f; }
+    /* tokens come from /city-core/city.css; the grocery accent is set by City.mountHud from the district registry */
     .shop { display: grid; grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px); gap: 16px; align-items: start; }
     .shop .mid { pointer-events: none; min-height: 40vh; }
     .tabs-row { margin: 6px; }
     .line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
     .line:last-child { border: 0; }
     .qty { display: inline-flex; align-items: center; gap: 6px; }
-    .qty button { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text); cursor: pointer; }
-    .total { display: flex; justify-content: space-between; font: 800 20px var(--font-display); padding: 14px 0 6px; }
-    .big { font: 800 40px var(--font-display); letter-spacing: -0.03em; }
-    .timer { height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; margin: 10px 0; }
-    .timer > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent), #00f0c8); transform-origin: left; }
+    .qty button { width: 26px; height: 26px; border: 1px solid var(--line-strong); background: var(--glass-hover); color: var(--text); cursor: pointer; transition: background .14s, border-color .14s; }
+    .qty button:hover { background: var(--wash); border-color: var(--accent-line); }
+    .line .amount, .total .amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .total { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 0 6px; border-top: 1px solid var(--ink); font: 500 11px var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .total #basket-total { font: 500 22px/1 var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--text); font-variant-numeric: tabular-nums; }
+    .big { font: 500 40px/1.05 var(--font-display); font-variation-settings: 'wdth' 78; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+    .timer { height: 8px; border: 1px solid var(--line-strong); background: var(--paper); overflow: hidden; margin: 10px 0; }
+    .timer > i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
     .order { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
     .hidden { display: none !important; }
+    .flush-top { margin-top: 0; }
+    .unit { font-size: 16px; }
+    .clock-out { margin-top: 12px; }
     @media (max-width: 1100px) { .shop { grid-template-columns: 1fr; } .shop .mid { display: none; } }
   </style>
   <script type="importmap">
@@ -41,20 +47,20 @@
           <button data-tab="orders">My orders</button>
         </div>
         <div class="bd" id="tab-shop">
-          <p class="muted" style="margin-top:0">Click anything on the shelves to put it in your basket. Prices are charged to your city bank account.</p>
+          <p class="muted flush-top">Click anything on the shelves to put it in your basket. Prices are charged to your city bank account.</p>
           <div id="cats" class="btn-row"></div>
         </div>
         <div class="bd hidden" id="tab-work">
           <div id="work-idle">
-            <p style="margin-top:0">Restock the shelves. Click the glowing crates on the floor before the clock runs out.</p>
+            <p class="flush-top">Restock the shelves. Click the glowing crates on the floor before the clock runs out.</p>
             <p class="muted" id="work-rules"></p>
             <button class="btn primary block" id="work-start">Start shift</button>
           </div>
           <div id="work-live" class="hidden">
-            <div class="big"><span id="work-count">0</span><span class="muted" style="font-size:16px"> / <span id="work-max">12</span> crates</span></div>
+            <div class="big"><span id="work-count">0</span><span class="muted unit"> / <span id="work-max">12</span> crates</span></div>
             <div class="timer"><i id="work-bar"></i></div>
             <div class="muted"><span id="work-left">30</span>s left</div>
-            <button class="btn block" id="work-end" style="margin-top:12px">Clock out now</button>
+            <button class="btn block clock-out" id="work-end">Clock out now</button>
           </div>
         </div>
         <div class="bd hidden" id="tab-orders"><div id="orders" class="muted">Log in to see your orders.</div></div>

@@ -1,14 +1,15 @@
 # city-core — shared 3D + bank layer for every Mini City district
 
 Static files, no build step, served by the gateway at `/city-core/`.
+Visual contract: **THEME.md** (the paper registry) — every district takes its colour, code and type from there, nowhere else.
 
 | File | What it is |
 |---|---|
 | `city-core.js` | Bank client (`City.spend / earn / login`), one session per origin, **Safe Mode**, HUD, login overlay, `City.api()` for district backends |
 | `city-3d.js` | three.js kit: `createStage`, orbit/parallax camera, hover + click picking, skyline/robot loaders, towers, labels |
-| `city.css` | Glass UI, HUD, forms, tables, toasts, login gate |
+| `city.css` | Paper UI tokens, panels, HUD, forms, tables, toasts, login gate |
 | `city-gate.js` + `city-gate.css` | One line that makes ANY page (the city home…) ask for the bank login first — see below |
-| `city-skin.js` + `city-skin.css` | 3D backdrop + glass theme for apps we don't rebuild (Whisper, Notes) — see `SKIN.md` |
+| `city-skin.js` + `city-skin.css` | 3D backdrop + paper theme for apps we don't rebuild (Whisper, Notes) — see `SKIN.md` |
 | `vendor/three/` | three r160 + GLTF/Draco/Orbit/SkeletonUtils (self-hosted, no CDN) |
 | `models/` | `robot.glb` (your city robot), `city.glb` (your skyline), `Fox.glb` |
 | `textures/` | Earth day / night lights / clouds (three.js examples) |
@@ -24,7 +25,7 @@ Static files, no build step, served by the gateway at `/city-core/`.
 <script type="module">
   import City from '/city-core/city-core.js';
   import { createStage } from '/city-core/city-3d.js';
-  City.mountHud({ service: 'grocery', title: 'Grocery', accent: '#72b66f' });
+  City.mountHud({ service: 'grocery', title: 'Grocery' });   // D-03 + the moss accent come from the registry
   const stage = createStage(document.body);          // stage.ok === false when WebGL is missing
   const paid = await City.spend('grocery', 120, 'Groceries');   // { ok, message, balance }
 </script>

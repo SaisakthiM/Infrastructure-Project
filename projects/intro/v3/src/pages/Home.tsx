@@ -16,10 +16,12 @@ import { projects } from "../data/projects";
 import { Link } from "../lib/router";
 import {
   addBox,
+  addDaylight,
   addStreetLight,
   addTree,
   createSignTexture,
   createWindowTexture,
+  MAQUETTE,
 } from "../lib/scenery";
 import { initAudio, playTone, setSfxEnabled } from "../lib/sfx";
 
@@ -42,11 +44,11 @@ type Zone = {
 };
 
 const zones: Zone[] = [
-  { id: "about", number: "01", name: "About", subtitle: "Who builds the city", color: "#ff7048", pos: [0, 0] },
-  { id: "skills", number: "02", name: "Skills", subtitle: "Engineering stack", color: "#5e9fd1", pos: [-14, -12] },
-  { id: "projects", number: "03", name: "Projects", subtitle: "Featured builds", color: "#d8b44b", pos: [14, -12] },
-  { id: "city", number: "04", name: "The City", subtitle: "Walk the live systems", color: "#9a7cdb", pos: [-16, -26] },
-  { id: "contact", number: "05", name: "Contact", subtitle: "Open to new roles", color: "#72b66f", pos: [12, -26] },
+  { id: "about", number: "01", name: "About", subtitle: "Who builds the city", color: "#0f6e9c", pos: [0, 0] },
+  { id: "skills", number: "02", name: "Skills", subtitle: "Engineering stack", color: "#3d4e66", pos: [-14, -12] },
+  { id: "projects", number: "03", name: "Projects", subtitle: "Featured builds", color: "#6e4a79", pos: [14, -12] },
+  { id: "city", number: "04", name: "The City", subtitle: "Walk the live systems", color: "#2b7e72", pos: [-16, -26] },
+  { id: "contact", number: "05", name: "Contact", subtitle: "Open to new roles", color: "#4c7c3f", pos: [12, -26] },
 ];
 
 const zoneById = (id: ZoneId) => zones.find((zone) => zone.id === id)!;
@@ -138,7 +140,7 @@ function disposeObject(root: THREE.Object3D) {
 }
 
 function zoneSignTexture(zone: Zone) {
-  return createSignTexture(zone.name, zone.subtitle, zone.color, true, `${zone.number} / PRESS E TO ENTER`);
+  return createSignTexture(zone.name, zone.subtitle, zone.color, "PRESS E TO ENTER", `Z-${zone.number}`);
 }
 
 function addRoad(scene: THREE.Scene, from: [number, number], to: [number, number], materials: {
@@ -176,14 +178,13 @@ function addRoad(scene: THREE.Scene, from: [number, number], to: [number, number
 }
 
 function addSkyline(scene: THREE.Scene, texture: THREE.Texture) {
+  // daytime glazing sheet: pale facades, no lit windows at night
   const windows = new THREE.MeshStandardMaterial({
     map: texture,
-    emissiveMap: texture,
-    emissive: 0x9cc9de,
-    emissiveIntensity: 0.46,
-    roughness: 0.52,
+    roughness: 0.6,
+    metalness: 0.05,
   });
-  const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x25292d, roughness: 0.5, metalness: 0.6 });
+  const roofMaterial = new THREE.MeshStandardMaterial({ color: MAQUETTE.trim, roughness: 0.72, metalness: 0.2 });
   const centerZ = -11;
   const count = 36;
 
@@ -201,9 +202,9 @@ function addSkyline(scene: THREE.Scene, texture: THREE.Texture) {
     group.rotation.y = Math.atan2(-x, centerZ - z);
 
     const facade = new THREE.MeshStandardMaterial({
-      color: new THREE.Color().setHSL(0.58 + (i % 4) * 0.01, 0.08, 0.12 + (i % 3) * 0.018),
-      roughness: 0.76,
-      metalness: 0.12,
+      color: new THREE.Color().setHSL(0.1 + (i % 4) * 0.006, 0.1, 0.8 + (i % 3) * 0.02),
+      roughness: 0.82,
+      metalness: 0.03,
     });
     addBox(group, [width, height, depth], [0, height / 2, 0], facade);
 
@@ -232,7 +233,7 @@ function addZonePlatform(zone: Zone) {
 
   const platform = new THREE.Mesh(
     new THREE.CylinderGeometry(4.2, 4.6, 0.4, 48),
-    new THREE.MeshStandardMaterial({ color: 0x242526, roughness: 0.6, metalness: 0.5 }),
+    new THREE.MeshStandardMaterial({ color: MAQUETTE.kerb, roughness: 0.85, metalness: 0.05 }),
   );
   platform.position.y = 0.2;
   platform.receiveShadow = true;
@@ -244,8 +245,9 @@ function addZonePlatform(zone: Zone) {
     new THREE.MeshStandardMaterial({
       color: accent,
       emissive: accent,
-      emissiveIntensity: 2.4,
-      roughness: 0.3,
+      emissiveIntensity: 0.18,
+      roughness: 0.55,
+      metalness: 0.05,
     }),
   );
   ring.rotation.x = Math.PI / 2;
@@ -254,7 +256,7 @@ function addZonePlatform(zone: Zone) {
 
   const marker = new THREE.Mesh(
     new THREE.CylinderGeometry(1.4, 1.4, 0.04, 48),
-    new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18 }),
+    new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.35 }),
   );
   marker.position.y = 0.42;
   group.add(marker);
@@ -264,9 +266,9 @@ function addZonePlatform(zone: Zone) {
     new THREE.MeshStandardMaterial({
       color: accent,
       emissive: accent,
-      emissiveIntensity: 2.6,
-      roughness: 0.25,
-      metalness: 0.7,
+      emissiveIntensity: 0.2,
+      roughness: 0.5,
+      metalness: 0.15,
     }),
   );
   crystal.position.y = 3.2;
@@ -280,7 +282,8 @@ function addZonePlatform(zone: Zone) {
   sign.position.y = 5.3;
   group.add(sign);
 
-  const light = new THREE.PointLight(accent, 2.2, 11);
+  // daylight: the zone light is a soft tint, not a lamp
+  const light = new THREE.PointLight(accent, 0.5, 11);
   light.position.y = 3.5;
   group.add(light);
 
@@ -319,8 +322,8 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
 
     /* renderer / scene / camera */
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x101820);
-    scene.fog = new THREE.FogExp2(0x101820, 0.0165);
+    scene.background = new THREE.Color(MAQUETTE.paper);
+    scene.fog = new THREE.FogExp2(MAQUETTE.skyLow, 0.011);
 
     const camera = new THREE.PerspectiveCamera(58, mount.clientWidth / mount.clientHeight, 0.1, 240);
     camera.position.set(4.5, 4.4, 16);
@@ -330,7 +333,7 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mount.appendChild(renderer.domElement);
@@ -344,39 +347,27 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
     controls.maxDistance = 26;
     controls.target.set(0, 1.4, 8);
 
-    /* lighting — same palette as the city */
-    scene.add(new THREE.HemisphereLight(0x91b5d1, 0x171714, 1.7));
-    const moon = new THREE.DirectionalLight(0xc5dcff, 2.8);
-    moon.position.set(-26, 48, 10);
-    moon.target.position.set(0, 0, -12);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(2048, 2048);
-    moon.shadow.camera.near = 1;
-    moon.shadow.camera.far = 130;
-    moon.shadow.camera.left = -44;
-    moon.shadow.camera.right = 44;
-    moon.shadow.camera.top = 44;
-    moon.shadow.camera.bottom = -44;
-    scene.add(moon, moon.target);
-    const sunset = new THREE.DirectionalLight(0xff7650, 1.6);
-    sunset.position.set(40, 16, -50);
-    scene.add(sunset);
+    /* lighting — the city's flat daylight rig, plus a cool fill */
+    addDaylight(scene, { left: 44, top: 44, mapSize: 2048 });
+    const fill = new THREE.DirectionalLight(0xdfe7ea, 0.35);
+    fill.position.set(45, 18, -52);
+    scene.add(fill);
 
     /* ground + roads */
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(220, 220),
-      new THREE.MeshStandardMaterial({ color: 0x18231f, roughness: 1 }),
+      new THREE.MeshStandardMaterial({ color: MAQUETTE.ground, roughness: 1 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const asphalt = new THREE.MeshStandardMaterial({ color: 0x1b2024, roughness: 0.94, metalness: 0.04 });
-    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xd9c99d });
+    const asphalt = new THREE.MeshStandardMaterial({ color: MAQUETTE.road, roughness: 0.96, metalness: 0.02 });
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: MAQUETTE.marking });
     roads.forEach(([from, to]) => addRoad(scene, from, to, { asphalt, line: lineMaterial }));
 
     /* skyline + scenery */
-    const windowTexture = createWindowTexture("#a6d1e2");
+    const windowTexture = createWindowTexture("#3d4e66");
     addSkyline(scene, windowTexture);
     [
       [-9, 6], [9, 6], [-24, -2], [24, -2], [25, -18], [26, -32], [4, -35], [-7, 17], [8, 18],
@@ -387,7 +378,7 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
       const radius = 85 + Math.random() * 65;
       const angle = Math.random() * Math.PI * 2;
       starData[i * 3] = Math.cos(angle) * radius;
-      starData[i * 3 + 1] = 28 + Math.random() * 65;
+      starData[i * 3 + 1] = 4 + Math.random() * 38;
       starData[i * 3 + 2] = -11 + Math.sin(angle) * radius;
     }
     const starGeometry = new THREE.BufferGeometry();
@@ -395,7 +386,7 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
     scene.add(
       new THREE.Points(
         starGeometry,
-        new THREE.PointsMaterial({ color: 0xb9d3e5, size: 0.18, opacity: 0.6, transparent: true }),
+        new THREE.PointsMaterial({ color: MAQUETTE.dust, size: 0.12, opacity: 0.38, transparent: true }),
       ),
     );
 
@@ -410,8 +401,8 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
 
     // Sign textures use web fonts — rebuild them once the fonts are really available.
     Promise.all([
-      document.fonts.load("700 76px Syne"),
-      document.fonts.load("500 28px 'DM Mono'"),
+      document.fonts.load("500 66px Archivo"),
+      document.fonts.load("400 26px 'JetBrains Mono'"),
     ])
       .catch(() => undefined)
       .then(() => {
@@ -489,13 +480,13 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
       const group = new THREE.Group();
       const body = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16),
-        new THREE.MeshStandardMaterial({ color: 0xff7048, metalness: 0.8, roughness: 0.25 }),
+        new THREE.MeshStandardMaterial({ color: MAQUETTE.accent, metalness: 0.15, roughness: 0.5 }),
       );
       body.position.y = 0.8;
       body.castShadow = true;
       const head = new THREE.Mesh(
         new THREE.SphereGeometry(0.35, 16, 16),
-        new THREE.MeshStandardMaterial({ color: 0xf4f0e7 }),
+        new THREE.MeshStandardMaterial({ color: MAQUETTE.paperRaised }),
       );
       head.position.y = 1.6;
       head.castShadow = true;
@@ -668,7 +659,8 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
       const radarCtx = radar.getContext("2d");
       if (!radarCtx) return;
       radarCtx.clearRect(0, 0, 150, 150);
-      radarCtx.strokeStyle = "rgba(244, 240, 231, 0.16)";
+      // paper radar: roads drawn in ink, not light
+      radarCtx.strokeStyle = "rgba(18, 18, 18, 0.12)";
       radarCtx.lineWidth = 5;
       radarCtx.lineCap = "round";
       roads.forEach(([from, to]) => {
@@ -685,7 +677,7 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
         radarCtx.fillStyle = zone.color;
         radarCtx.fill();
         if (zone.id === nearId) {
-          radarCtx.strokeStyle = "#f4f0e7";
+          radarCtx.strokeStyle = "#121212";
           radarCtx.lineWidth = 1.5;
           radarCtx.stroke();
         }
@@ -694,9 +686,9 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
       const py = radarY(robot.position.z);
       radarCtx.beginPath();
       radarCtx.arc(px, py, 3.6, 0, Math.PI * 2);
-      radarCtx.fillStyle = "#f4f0e7";
+      radarCtx.fillStyle = "#121212";
       radarCtx.fill();
-      radarCtx.strokeStyle = "#ff7048";
+      radarCtx.strokeStyle = "#0f6e9c";
       radarCtx.lineWidth = 2;
       radarCtx.stroke();
       radarCtx.beginPath();
@@ -818,7 +810,7 @@ function HomeScene({ apiRef, radarRef, onProgress, onReady, onNear, onOpen }: Sc
         item.crystal.rotation.y = elapsed * 1.2 + index;
         item.crystal.position.y = 3.2 + Math.sin(elapsed * 2 + index) * 0.15;
         item.ring.rotation.z = elapsed * 0.4 + index * 0.2;
-        item.light.intensity = 2 + Math.sin(elapsed * 3 + index) * 0.7;
+        item.light.intensity = 0.5 + Math.sin(elapsed * 3 + index) * 0.15;
         item.marker.scale.setScalar(1 + Math.sin(elapsed * 2 + index) * 0.1);
       });
 
@@ -1055,7 +1047,7 @@ function ProjectsPanel() {
             rel="noreferrer"
             style={{ "--project-color": project.color } as CSSProperties}
           >
-            <span className="hw-card-number">{project.number}</span>
+            <span className="hw-card-number">{project.code}</span>
             <h3>{project.name}</h3>
             <small>{project.district}</small>
             <p>{project.description}</p>
@@ -1103,7 +1095,7 @@ function CityPanel() {
       <div className="hw-chips hw-district-chips">
         {projects.map((project) => (
           <span key={project.name} style={{ "--project-color": project.color } as CSSProperties}>
-            <i /> {project.number} {project.name}
+            <i /> {project.code} {project.name}
           </span>
         ))}
       </div>

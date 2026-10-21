@@ -1,17 +1,23 @@
-/* hospital district layout (shared look lives in /city-core/city.css) */
-:root { --accent: #9fdded; }
+/* hospital district layout (tokens, .glass, .btn, .tbl and the 3D scene live in /city-core/city.css) */
+/* D-02: the district's own accent override — surgical teal. One line, nothing else re-declared. */
+:root { --accent: #2b7e72; }
+
 .hosp-layout { display: grid; grid-template-columns: 210px minmax(0, 760px); gap: 18px; align-items: start; }
 .hosp-nav { padding: 14px; display: grid; gap: 4px; position: sticky; top: 72px; }
 .hosp-brand { display: flex; gap: 10px; align-items: center; padding: 4px 6px 12px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
-.hosp-brand .cross { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: rgba(159, 221, 237, 0.14); border: 1px solid var(--line-accent); color: var(--accent); }
-.hosp-brand strong { font-family: var(--font-display); font-size: 16px; display: block; line-height: 1.1; }
-.hosp-brand small { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
-.hosp-nav a { padding: 9px 12px; border-radius: 9px; color: var(--muted); text-decoration: none; border: 1px solid transparent; }
-.hosp-nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
-.hosp-nav a.on { color: var(--text); background: rgba(159, 221, 237, 0.12); border-color: var(--line-accent); }
+.hosp-brand .cross { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--accent); font-size: 15px; }
+.hosp-brand strong { font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-weight: 500; font-size: 16px; letter-spacing: -0.02em; display: block; line-height: 1.1; }
+.hosp-brand small { display: block; color: var(--muted); font: 500 10px/1.6 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.hosp-nav a { padding: 9px 12px; border-radius: var(--radius-sm); color: var(--muted); text-decoration: none; border: 1px solid transparent; font: 500 11px/1.4 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.hosp-nav a:hover { color: var(--text); background: var(--glass-hover); }
+.hosp-nav a.on { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); box-shadow: inset 2px 0 0 var(--accent); }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.page-head .display { font-size: 30px; }
+.page-head .display { font-size: 30px; letter-spacing: var(--disp-track); line-height: 1.05; }
+.page-head .eyebrow { margin-bottom: 4px; }
 .form-card { max-width: 560px; }
+.hosp-nav a:focus-visible, .hosp-brand .cross { outline-offset: 2px; }
+/* the fee line is a note about money: tabular, quiet */
+#fee-line { font-size: 12.5px; }
 @media (max-width: 900px) {
   .hosp-layout { grid-template-columns: 1fr; }
   .hosp-nav { position: static; display: flex; flex-wrap: wrap; }

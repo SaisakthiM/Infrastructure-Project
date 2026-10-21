@@ -39,8 +39,8 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle: stri
       <div className="glass accent">
         <div className="bd">
           <div className="eyebrow">The Reading Room</div>
-          <h1 className="display" style={{ margin: "4px 0 4px", fontSize: 30 }}>{title}</h1>
-          <p className="muted" style={{ margin: "0 0 16px" }}>{subtitle}</p>
+          <h1 className="display rr-auth-title">{title}</h1>
+          <p className="muted rr-auth-lede">{subtitle}</p>
           {children}
         </div>
       </div>
@@ -147,7 +147,7 @@ function NoteCard({ note, onEdit, onDelete }: { note: Note; onEdit: () => void; 
   const preview = note.content.length > 150 ? note.content.slice(0, 150) + "…" : note.content;
   return (
     <article className="glass rr-note">
-      <div className="bd" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <div className="bd rr-col">
         <h3>{note.title}</h3>
         <p>{preview}</p>
         <footer>
@@ -208,8 +208,8 @@ function HomePage({ onNav, onEditNote }: { onNav: (p: Page) => void; onEditNote:
   return (
     <main className="rr-page">
       <div className="rr-head">
-        <h1 className="display">Your notes <small className="muted" style={{ fontSize: 14 }}>{notes.length}</small></h1>
-        <input className="in" style={{ width: 220 }} placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <h1 className="display">Your notes <small className="muted rr-count">{notes.length}</small></h1>
+        <input className="in rr-search" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <button className="btn primary" onClick={() => onNav("addnote")}>+ New note</button>
         <button className="btn ghost" onClick={logout}>Sign out of notes</button>
       </div>

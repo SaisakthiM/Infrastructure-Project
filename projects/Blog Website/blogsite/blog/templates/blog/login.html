@@ -1,21 +1,24 @@
 {% extends "blog/layout.html" %}
 {% block title %}Login — Inkwell{% endblock %}
 {% block content %}
-<div style="max-width:420px;margin:1.5rem auto;">
-  <div class="glass accent" style="padding:2rem;border-radius:18px;">
+<div class="narrow-xs">
+  <div class="glass accent card-shell">
     <div class="eyebrow">Inkwell · Mini City</div>
-    <h1 class="display" style="font-size:2rem;margin:.3rem 0 .3rem;">Welcome back</h1>
-    <p class="muted" style="margin:0 0 1.4rem;">Sign in to continue to Inkwell</p>
-    <form method="post" style="display:flex;flex-direction:column;gap:1rem;">
+    <h1 class="display auth-title">Welcome back</h1>
+    <p class="muted auth-lede">Sign in to continue to Inkwell</p>
+    <form method="post" class="stack-form">
       {% csrf_token %}
       {% for field in form %}
-        <div><label>{{ field.label }}</label>{{ field }}{% for e in field.errors %}<p class="bad" style="font-size:.8rem;margin-top:.25rem;">{{ e }}</p>{% endfor %}</div>
+        <div>
+          <label>{{ field.label }}</label>{{ field }}
+          {% for e in field.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
       {% endfor %}
-      {% if form.non_field_errors %}<p class="bad" style="font-size:.85rem;">{{ form.non_field_errors }}</p>{% endif %}
-      <button type="submit" class="btn-primary" style="margin-top:.3rem;">Sign in</button>
+      {% if form.non_field_errors %}<p class="field-error">{{ form.non_field_errors }}</p>{% endif %}
+      <button type="submit" class="btn-primary">Sign in</button>
     </form>
     <hr class="divider">
-    <p style="text-align:center;font-size:.85rem;color:var(--muted);">New here? <a href="{% url 'register' %}" style="color:var(--accent);text-decoration:none;">Register →</a></p>
+    <p class="auth-foot">New here? <a href="{% url 'register' %}" class="link-accent">Register →</a></p>
   </div>
 </div>
 {% endblock %}

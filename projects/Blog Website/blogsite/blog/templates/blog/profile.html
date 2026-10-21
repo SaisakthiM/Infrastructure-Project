@@ -1,81 +1,68 @@
 {% extends "blog/layout.html" %}
 {% block title %}Profile — Inkwell{% endblock %}
 {% block content %}
-{% load static %}
-<div style="max-width:700px;margin:0 auto;">
-  <div class="glass" style="display:flex;align-items:center;gap:1.4rem;padding:1.6rem;border-radius:18px;margin-bottom:1.4rem;">
+<div class="narrow">
+  <div class="glass profile-head">
     {% if request.user.profile.avatar and request.user.profile.avatar.name %}
       <img src="/blog/media/{{ request.user.profile.avatar.name }}" class="avatar" alt="Your avatar">
     {% else %}
       <div class="avatar-init">{{ request.user.username|first|upper }}</div>
     {% endif %}
     <div>
-      <h1 class="display" style="font-size:1.7rem;margin:0 0 .2rem;">{{ request.user.username }}</h1>
-      {% if request.user.profile.bio %}<p class="muted" style="font-size:.95rem;line-height:1.5;">{{ request.user.profile.bio }}</p>{% else %}<p class="muted" style="font-size:.88rem;font-style:italic;">No bio yet.</p>{% endif %}
+      <h1 class="display profile-name">{{ request.user.username }}</h1>
+      {% if request.user.profile.bio %}
+        <p class="muted profile-bio">{{ request.user.profile.bio }}</p>
+      {% else %}
+        <p class="muted profile-bio is-empty">No bio yet.</p>
+      {% endif %}
     </div>
   </div>
+
   <span class="tag">Account</span>
-  <h2 class="display" style="font-size:1.5rem;margin:.5rem 0 1.3rem;">Edit profile</h2>
-  <div class="glass" style="padding:1.8rem;border-radius:18px;margin-bottom:2rem;">
-    <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:1.1rem;">
+  <h2 class="display section-title">Edit profile</h2>
+  <div class="glass card-shell profile-form">
+    <form method="post" enctype="multipart/form-data" class="stack-form">
       {% csrf_token %}
       {% for field in form %}
-        <div><label>{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="muted" style="font-size:.78rem;margin-top:.2rem;">{{ field.help_text }}</p>{% endif %}{% for e in field.errors %}<p class="bad" style="font-size:.8rem;margin-top:.25rem;">{{ e }}</p>{% endfor %}</div>
+        <div>
+          <label>{{ field.label }}</label>{{ field }}
+          {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+          {% for e in field.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
       {% endfor %}
-      <button type="submit" class="btn-primary" style="margin-top:.4rem;">Update profile</button>
+      <button type="submit" class="btn-primary">Update profile</button>
     </form>
   </div>
 
   <span class="tag">Writing</span>
-  <h2 class="display" style="font-size:1.5rem;margin:.5rem 0 1.3rem;">Your posts</h2>
-  <span class="tag">Writing</span>
-  <h2 style="font-size:1.6rem;margin-top:0.5rem;margin-bottom:1.5rem;">Your Posts</h2>
+  <h2 class="display section-title">Your posts</h2>
 
   {% if user_posts %}
-    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="stack-posts">
       {% for post in user_posts %}
-        <article class="card" style="padding:1.5rem;display:flex;gap:1.2rem;align-items:flex-start;">
+        <article class="glass post-card">
           {% if post.image and post.image.name %}
-            <img src="/blog/media/{{ post.image.name }}"
-                 style="width:6rem;height:6rem;object-fit:cover;border:1px solid #ddd8cc;flex-shrink:0;"
-                 alt="{{ post.title }}">
+            <img src="/blog/media/{{ post.image.name }}" class="post-thumb" alt="{{ post.title }}">
           {% endif %}
-          <div style="flex:1;">
-            <h3 style="font-size:1.2rem;margin-bottom:0.3rem;">
-              <a href="{% url 'post_detail' post.pk %}"
-                 style="text-decoration:none;color:var(--ink);"
-                 onmouseover="this.style.color='var(--accent)'"
-                 onmouseout="this.style.color='var(--ink)'">
-                {{ post.title }}
-              </a>
+          <div class="post-card-body">
+            <h3 class="post-card-title">
+              <a href="{% url 'post_detail' post.pk %}" class="post-title-link">{{ post.title }}</a>
             </h3>
-            <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;">
-              {{ post.created_at|date:"F j, Y" }}
-            </p>
-            <p style="font-size:0.9rem;color:#4a4438;line-height:1.6;">{{ post.content|truncatewords:20 }}</p>
-            <div style="display:flex;gap:1rem;margin-top:0.8rem;">
-              <a href="{% url 'edit_post' post.pk %}"
-                 style="font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);text-decoration:none;">Edit</a>
-              <a href="{% url 'delete_post' post.pk %}"
-                 style="font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);text-decoration:none;">Delete</a>
+            <p class="eyebrow byline">{{ post.created_at|date:"F j, Y" }}</p>
+            <p class="post-excerpt">{{ post.content|truncatewords:20 }}</p>
+            <div class="post-actions">
+              <a href="{% url 'edit_post' post.pk %}">Edit</a>
+              <a href="{% url 'delete_post' post.pk %}" class="is-danger">Delete</a>
             </div>
           </div>
         </article>
       {% endfor %}
     </div>
   {% else %}
-    <div style="text-align:center;padding:3rem 2rem;border:1px dashed #ccc5b5;">
-      <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:var(--muted);">
-        You haven't written anything yet.
-      </p>
-      <a href="{% url 'create_post' %}"
-         style="display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;">
-        Write your first post →
-      </a>
+    <div class="empty-posts">
+      <p>You haven't written anything yet.</p>
+      <a href="{% url 'create_post' %}" class="more-link">Write your first post →</a>
     </div>
   {% endif %}
-
-</div>
-{% endblock %}
 </div>
 {% endblock %}

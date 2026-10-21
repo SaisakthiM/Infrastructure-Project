@@ -60,18 +60,18 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 md:right-auto md:left-auto md:top-0 md:bottom-0 md:w-[420px] bg-[#111] border-t md:border-t-0 md:border-l border-white/10 z-50 flex flex-col rounded-t-3xl md:rounded-none"
+            className="glass fixed bottom-0 left-0 right-0 md:right-auto md:left-auto md:top-0 md:bottom-0 md:w-[420px] z-50 flex flex-col"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             style={{ maxHeight: '85vh' }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-              <h3 className="font-semibold text-sm">Comments</h3>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-                <IoClose size={20} />
+            {/* Header: the city panel head — display type, ink rule, district accent on the panel top */}
+            <div className="hd flex-shrink-0">
+              <h3 className="truncate">Comments</h3>
+              <button onClick={onClose} className="btn ghost sm" aria-label="Close comments">
+                <IoClose size={16} />
               </button>
             </div>
 

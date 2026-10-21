@@ -6,33 +6,11 @@ import { roomAPI, mediaAPI, messageAPI, authAPI } from "../services/api";
 import { formatDistanceToNow } from "date-fns";
 import { Paperclip, Send, UserPlus, Users, X, Check, CheckCheck } from "lucide-react";
 
-const AVATAR_COLORS = [
-  ["#00A884", "#025144"],
-  ["#5B8AF0", "#2B4BA0"],
-  ["#E05C8A", "#8B1A4A"],
-  ["#F5A623", "#A05000"],
-  ["#8B5CF6", "#4C1D95"],
-  ["#06B6D4", "#0E7490"],
-];
-
-function avatarColors(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[Math.abs(hash)];
-}
-
+/* Initials plates, same as the sidebar: accent wash + accent hairline + mono initial.
+   Logic (rooms, sockets, uploads) is untouched — this is a visuals-only pass. */
 function Avatar({ name, size = 38 }: { name: string; size?: number }) {
-  const [from, to] = avatarColors(name);
   return (
-    <div
-      className="rounded-full flex items-center justify-center font-semibold text-white shrink-0"
-      style={{
-        width: size,
-        height: size,
-        background: `linear-gradient(135deg, ${from}, ${to})`,
-        fontSize: size * 0.38,
-      }}
-    >
+    <div className="wa-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -147,23 +125,16 @@ export default function ChatView({ roomId, roomName }: Props) {
   const connStatus = isConnected ? "online" : wsError === "Reconnecting..." ? "reconnecting" : "connecting";
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden" style={{ background: "#0B141A" }}>
+    <div className="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden" style={{ background: "var(--bg)" }}>
       {/* Header */}
       <div className="wa-chat-header flex items-center justify-between px-4 py-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar name={roomName} size={40} />
           <div className="min-w-0">
-            <h2 className="font-semibold truncate" style={{ color: "#E9EDEF" }}>
-              {roomName}
-            </h2>
+            <h2 className="font-semibold truncate">{roomName}</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span
-                className="inline-block w-1.5 h-1.5 rounded-full"
-                style={{ background: isConnected ? "#00E676" : "#F5A623" }}
-              />
-              <p className="text-xs capitalize" style={{ color: "#8696A0" }}>
-                {connStatus}
-              </p>
+              <span className={`wa-dot ${isConnected ? "wa-dot-on" : "wa-dot-off"}`} />
+              <p className="wa-notice capitalize">{connStatus}</p>
             </div>
           </div>
         </div>
@@ -219,25 +190,24 @@ export default function ChatView({ roomId, roomName }: Props) {
                           <img
                             src={mediaAPI.resolveUrl(msg.media_url)}
                             alt="media"
-                            className="rounded-lg max-h-64 object-cover cursor-zoom-in hover:opacity-95 transition-opacity"
+                            className="max-h-64 object-cover cursor-zoom-in hover:opacity-95 transition-opacity"
+                            style={{ borderRadius: 0, display: "block" }}
                             onClick={() => setPreviewImage(mediaAPI.resolveUrl(msg.media_url))}
                             loading="lazy"
                           />
                           {msg.content && (
-                            <p className="px-1 pt-1 text-sm break-words" style={{ color: mine ? "#E9EDEF" : "#E9EDEF" }}>
-                              {msg.content}
-                            </p>
+                            <p className="px-1 pt-1 text-sm break-words">{msg.content}</p>
                           )}
                         </div>
                       ) : (
                         <p className="text-sm break-words leading-relaxed">{msg.content}</p>
                       )}
                       <div className={`flex items-center gap-1 mt-0.5 ${mine ? "justify-end" : "justify-end"}`}>
-                        <span className="text-[10px]" style={{ color: mine ? "rgba(233,237,239,0.6)" : "#8696A0" }}>
+                        <span className="wa-bubble-time">
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         {mine && (
-                          <CheckCheck className="w-3 h-3" style={{ color: "#00E676" }} />
+                          <CheckCheck className="w-3 h-3 wa-bubble-receipt" />
                         )}
                       </div>
                     </div>
@@ -252,12 +222,8 @@ export default function ChatView({ roomId, roomName }: Props) {
           <AnimatePresence>
             {uploadProgress !== null && (
               <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="px-4 pb-2">
-                <div className="rounded-full h-1.5 overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(135deg,#00E676,#00C560)" }}
-                    animate={{ width: `${uploadProgress}%` }}
-                  />
+                <div className="wa-progress">
+                  <motion.span animate={{ width: `${uploadProgress}%` }} style={{ display: "block", height: "100%" }} />
                 </div>
               </motion.div>
             )}
@@ -302,26 +268,21 @@ export default function ChatView({ roomId, roomName }: Props) {
               animate={{ width: 260, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.22 }}
-              className="border-l shrink-0 flex flex-col overflow-hidden"
-              style={{ borderColor: "rgba(134,150,160,0.15)", background: "#111B21" }}
+              className="wa-side-panel shrink-0 flex flex-col overflow-hidden"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(134,150,160,0.15)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "#E9EDEF" }}>
-                  Members ({members.length})
-                </h3>
+              <div className="wa-side-panel-head flex items-center justify-between px-4 py-3">
+                <h3 className="text-sm font-semibold">Members ({members.length})</h3>
                 <button onClick={() => setShowMembers(false)} className="wa-icon-btn">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto wa-scrollbar">
                 {members.map((m) => (
-                  <div key={m.user_id} className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "rgba(134,150,160,0.08)" }}>
+                  <div key={m.user_id} className="wa-side-panel-row flex items-center gap-3 px-4 py-3">
                     <Avatar name={m.username} size={36} />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "#E9EDEF" }}>
-                        {m.username}
-                      </p>
-                      <p className="text-xs truncate mt-0.5" style={{ color: "#8696A0" }}>
+                      <p className="text-sm font-medium truncate">{m.username}</p>
+                      <p className="text-xs truncate mt-0.5 wa-sub">
                         {formatDistanceToNow(new Date(m.last_seen_at), { addSuffix: true })}
                       </p>
                     </div>
@@ -341,7 +302,7 @@ export default function ChatView({ roomId, roomName }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowAddMember(false)}
-            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            className="wa-scrim fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.92, y: 16 }}
@@ -351,9 +312,7 @@ export default function ChatView({ roomId, roomName }: Props) {
               className="wa-modal w-full max-w-sm p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold" style={{ color: "#E9EDEF" }}>
-                  Add member
-                </h3>
+                <h3 className="wa-title wa-title-md">Add member</h3>
                 <button onClick={() => setShowAddMember(false)} className="wa-icon-btn">
                   <X className="w-4 h-4" />
                 </button>
@@ -368,29 +327,21 @@ export default function ChatView({ roomId, roomName }: Props) {
               />
               <div className="max-h-56 overflow-y-auto wa-scrollbar min-h-[80px]">
                 {addSearchTerm.length < 2 ? (
-                  <p className="text-sm text-center py-4" style={{ color: "#8696A0" }}>
-                    Type at least 2 characters
-                  </p>
+                  <p className="text-sm text-center py-4 wa-empty">Type at least 2 characters</p>
                 ) : addSearchResults.length === 0 ? (
-                  <p className="text-sm text-center py-4" style={{ color: "#8696A0" }}>
-                    No users found
-                  </p>
+                  <p className="text-sm text-center py-4 wa-empty">No users found</p>
                 ) : (
                   addSearchResults.map((u) => (
                     <button
                       key={u.id}
                       onClick={() => handleAddMember(u)}
-                      className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-left"
-                      style={{ borderBottom: "1px solid rgba(134,150,160,0.1)" }}
+                      className="w-full flex items-center gap-3 px-2 py-2.5 hover:opacity-80 transition-opacity text-left"
+                      style={{ borderBottom: "1px solid var(--line)", borderRadius: 0 }}
                     >
                       <Avatar name={u.username} size={36} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "#E9EDEF" }}>
-                          {u.username}
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: "#8696A0" }}>
-                          Tap to add
-                        </p>
+                        <p className="text-sm font-medium truncate">{u.username}</p>
+                        <p className="text-xs mt-0.5 wa-sub">Tap to add</p>
                       </div>
                     </button>
                   ))
@@ -401,7 +352,7 @@ export default function ChatView({ roomId, roomName }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Image preview */}
+      {/* Image preview — the one dark surface in the app: a photo needs an ink sheet behind it */}
       <AnimatePresence>
         {previewImage && (
           <motion.div
@@ -409,15 +360,21 @@ export default function ChatView({ roomId, roomName }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setPreviewImage(null)}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center cursor-zoom-out"
+            className="wa-scrim-dark fixed inset-0 z-50 flex items-center justify-center cursor-zoom-out"
           >
             <button
               onClick={() => setPreviewImage(null)}
               className="absolute top-4 right-4 wa-icon-btn"
+              style={{ color: "var(--paper)" }}
             >
-              <X className="w-6 h-6 text-white" />
+              <X className="w-6 h-6" />
             </button>
-            <img src={previewImage} alt="preview" className="max-h-[88vh] max-w-[92vw] rounded-xl object-contain" />
+            <img
+              src={previewImage}
+              alt="preview"
+              className="max-h-[88vh] max-w-[92vw] object-contain"
+              style={{ borderRadius: 0 }}
+            />
           </motion.div>
         )}
       </AnimatePresence>

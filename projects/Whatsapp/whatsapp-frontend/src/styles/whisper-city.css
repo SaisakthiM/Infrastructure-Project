@@ -1,39 +1,164 @@
-/* Whisper city skin: replaces custom backgrounds with the city look. wa-* classes kept intact so no component code changes. */
+/* Whisper city skin — the city layer that sits on top of the app's own .wa-* classes.
+   Loaded last (main.tsx imports styles/index.css first, then this file), so it wins over globals.css.
+
+   It owns exactly three things:
+     1. letting the 3D maquette through the page ground and the chrome it floats on,
+     2. forcing zero radius on anything Tailwind or shadcn rounds behind our back,
+     3. the district plate accents.
+   Colour and type still come from /city-core/city.css tokens — nothing here re-declares them.
+   See city-core/THEME.md. */
+
 :root {
-  --wa-bg: var(--city-bg, #06130f);
-  --wa-surface: rgba(9, 22, 17, 0.85);
-  --wa-border: rgba(0, 230, 118, 0.18);
-  --wa-border-lit: rgba(0, 230, 118, 0.42);
-  --wa-muted: #8696a0;
-  --wa-text: #e9edef;
-  --wa-accent: #00e676;
+  /* app-local aliases only; they read city tokens and are never redefined per district */
+  --wa-bg: var(--bg);
+  --wa-surface: var(--bg-raised);
+  --wa-panel: var(--glass);
+  --wa-panel-strong: var(--glass-strong);
+  --wa-border: var(--line);
+  --wa-border-lit: var(--line-strong);
+  --wa-muted: var(--muted);
+  --wa-text: var(--text);
+  --wa-accent: var(--accent);
+  --wa-accent-ink: var(--accent-ink);
 }
+
 html, body, #root { background: transparent !important; color: var(--wa-text); }
 #root { position: relative; z-index: 10; }
+
+/* the app fills its own viewport; the scene lives behind it */
+.wa-root { background: var(--wa-bg) !important; }
 .wa-auth-bg { background: transparent !important; }
-.wa-blob { display: none !important; }   /* city 3D replaces blobs */
-.wa-card {
-  background: var(--glass, rgba(9,22,17,0.82)) !important;
-  border: 1px solid var(--wa-border) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,.4) !important;
+.wa-auth-bg::before { display: none !important; }   /* the drafting grid is the scene's job */
+.wa-blob { display: none !important; }             /* the 3D scene replaces the washes */
+.wa-welcome-bg { background: transparent !important; border-left: 1px solid var(--wa-border) !important; }
+
+/* ── zero radius is a rule, not a suggestion ── */
+/* avatars, status dots and spinners stay circular; everything else is square */
+.wa-root :is([class*='rounded-md'], [class*='rounded-lg'], [class*='rounded-xl'],
+             [class*='rounded-2xl'], [class*='rounded-3xl']),
+.wa-auth-bg :is([class*='rounded-md'], [class*='rounded-lg'], [class*='rounded-xl'],
+                [class*='rounded-2xl'], [class*='rounded-3xl']) {
+  border-radius: 0 !important;
 }
-.wa-input {
-  background: rgba(255,255,255,.05) !important;
+
+/* ── panels ── */
+.wa-card {
+  background: var(--wa-panel) !important;
+  border: 1px solid var(--wa-border) !important;
+  border-top: 2px solid var(--wa-accent) !important;
+  border-radius: 0 !important;
+  backdrop-filter: blur(14px) saturate(1.04) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.04) !important;
+  box-shadow: var(--e2) !important;
+  color: var(--wa-text) !important;
+}
+
+.wa-modal {
+  background: var(--wa-panel-strong) !important;
+  border: 1px solid var(--wa-text) !important;
+  border-radius: 0 !important;
+  box-shadow: var(--e4) !important;
+}
+
+.wa-sidebar {
+  background: var(--wa-panel) !important;
+  border-right: 1px solid var(--wa-border) !important;
+  backdrop-filter: blur(14px) saturate(1.04) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.04) !important;
+}
+
+.wa-sidebar-header,
+.wa-chat-header {
+  background: color-mix(in srgb, var(--wa-surface) 82%, transparent) !important;
+  border-bottom: 1px solid var(--wa-text) !important;
+}
+
+/* ── forms ── */
+.wa-input, .wa-search-input, .wa-msg-input {
+  background: var(--wa-surface) !important;
+  border: 1px solid var(--wa-border-lit) !important;
+  border-radius: 0 !important;
+  color: var(--wa-text) !important;
+  font-family: var(--font-ui) !important;
+}
+.wa-input:focus, .wa-search-input:focus, .wa-msg-input:focus {
+  outline: none !important;
+  border-color: var(--wa-accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+.wa-input::placeholder, .wa-search-input::placeholder, .wa-msg-input::placeholder {
+  color: rgba(18, 18, 18, 0.38) !important;
+}
+
+.wa-label {
+  color: var(--wa-muted) !important;
+  font: 500 10px/1.4 var(--font-mono) !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: .35rem;
+  display: block;
+}
+
+/* ── list rows ── */
+.wa-chat-item, .wa-room-item { border-radius: 0 !important; }
+.wa-chat-item:hover, .wa-room-item:hover,
+.wa-chat-item-active, .wa-room-item[aria-selected='true'] { background: var(--wash) !important; }
+
+/* ── bubbles: outgoing is the accent plate, incoming the raised paper card ── */
+.wa-bubble,
+.wa-msg-bubble-in, .wa-msg-bubble-out {
+  border-radius: 0 !important;
+  line-height: 1.55 !important;
+}
+.wa-bubble-sent, .wa-msg-bubble-out {
+  background: var(--wa-accent) !important;
+  border: 1px solid var(--wa-accent) !important;
+  color: var(--wa-accent-ink) !important;
+}
+.wa-bubble-received, .wa-msg-bubble-in {
+  background: var(--wa-surface) !important;
   border: 1px solid var(--wa-border) !important;
   color: var(--wa-text) !important;
-  border-radius: 10px !important;
 }
-.wa-input:focus { border-color: var(--wa-accent) !important; box-shadow: 0 0 0 3px rgba(0,230,118,.18) !important; }
-.wa-label { color: var(--wa-muted) !important; font: 500 11px var(--font-ui, "DM Mono", monospace); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .3rem; display: block; }
-.wa-root, .wa-welcome-bg { background: rgba(6,13,9,.92) !important; }
-.wa-sidebar {
-  background: rgba(9,22,17,.9) !important;
-  border-right: 1px solid var(--wa-border) !important;
-  backdrop-filter: blur(10px) !important;
+
+/* timestamps, receipts and typing dots read as signage, not body copy */
+.wa-bubble-time {
+  font: 500 10px/1.4 var(--font-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: 0.04em;
 }
-.wa-room-item, .wa-msg-bubble-in, .wa-msg-bubble-out { border-radius: 12px !important; }
-.wa-msg-bubble-out { background: rgba(0,230,118,.18) !important; border: 1px solid var(--wa-border) !important; }
-.wa-msg-bubble-in  { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.1) !important; }
+.wa-typing-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--wa-circle);
+  background: var(--wa-muted);
+}
+
+/* ── buttons ── */
+.wa-btn-primary {
+  background: var(--wa-accent) !important;
+  border: 1px solid var(--wa-accent) !important;
+  color: var(--wa-accent-ink) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.wa-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wa-accent) 82%, #000) !important;
+  border-color: color-mix(in srgb, var(--wa-accent) 82%, #000) !important;
+}
+.wa-send-btn {
+  background: var(--wa-accent) !important;
+  border: 1px solid var(--wa-accent) !important;
+  color: var(--wa-accent-ink) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.wa-icon-btn { border-radius: 0 !important; color: var(--wa-muted) !important; }
+.wa-icon-btn:hover { background: var(--wash) !important; color: var(--wa-accent) !important; }
+
+/* ── overlays ── */
+.wa-scrim {
+  background: color-mix(in srgb, var(--paper) 72%, transparent) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}

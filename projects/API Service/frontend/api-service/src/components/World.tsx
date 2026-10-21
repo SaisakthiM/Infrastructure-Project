@@ -38,12 +38,12 @@ export function World() {
         if (cancelled) return
         const stage = three.createStage(document.body, {
           camera: { pos: [0, 3, 17], look: [0, 0, 0] },
-          fog: { color: 0x04070f, density: 0.003 },
+          fog: { color: 0xedeae1, density: 0.003 },
         })
         if (!stage.ok) return
-        three.skyDome(stage, 0x050b1d, 0x03050c)
-        three.particles(stage, { count: 500, color: 0xcfe3ff, area: [120, 70, 120], size: 0.22, opacity: 0.8, drift: 0.02 })
-        const sun = new three.THREE.DirectionalLight(0xfff4e0, 2.1)
+        three.skyDome(stage, 0xf7f5f0, 0xe3dfd4)
+        three.particles(stage, { count: 320, color: 0xa29a88, area: [120, 70, 120], size: 0.14, opacity: 0.4, drift: 0.02 })
+        const sun = new three.THREE.DirectionalLight(0xfff6e4, 1.7)
         sun.position.set(18, 8, 14)
         stage.scene.add(sun)
         stage.orbit({ min: 7.5, max: 30, autoRotate: true, speed: 0.4 })
@@ -106,7 +106,7 @@ export function World() {
 
   useEffect(() => {
     if (!ready || !globeRef.current) return
-    globeRef.current.setMarkers('iss', iss && Number.isFinite(iss.lat) ? [{ lat: iss.lat, lon: iss.lon, color: 0x00f0c8, size: 0.14, label: 'International Space Station' }] : [])
+    globeRef.current.setMarkers('iss', iss && Number.isFinite(iss.lat) ? [{ lat: iss.lat, lon: iss.lon, color: 0xa9741b, size: 0.14, label: 'International Space Station' }] : [])
   }, [ready, iss])
 
   async function search(e: FormEvent) {
@@ -152,12 +152,12 @@ export function World() {
             </form>
             {error && <p className="bad" role="alert">{error}</p>}
             {place && now && (
-              <div style={{ marginTop: 14 }}>
+              <div className="mt">
                 <div className="row-between">
                   <strong>📍 {place.name}{place.state ? `, ${place.state}` : ''}, {place.country}</strong>
                   {air && <span className="pill">{air.label ? `Air: ${air.label}` : 'Air: –'}</span>}
                 </div>
-                <p className="muted" style={{ textTransform: 'capitalize' }}>{now.weather?.[0]?.description}</p>
+                <p className="muted cap">{now.weather?.[0]?.description}</p>
                 <div className="stats">
                   <div className="glass stat"><div className="k">Temp</div><div className="v">{now.main ? Math.round(now.main.temp) : '–'}°</div></div>
                   <div className="glass stat"><div className="k">Humidity</div><div className="v">{now.main?.humidity ?? '–'}%</div></div>
@@ -183,11 +183,11 @@ export function World() {
         <section className="glass">
           <div className="hd">Live Earth <small>drag to rotate</small></div>
           <div className="bd">
-            <div className="row-between" style={{ marginBottom: 10 }}>
+            <div className="row-between mb">
               <span className="pill ok">🛰️ ISS</span>
               <span className="muted">{iss && Number.isFinite(iss.lat) ? `${iss.lat.toFixed(1)}°, ${iss.lon.toFixed(1)}°` : 'locating…'}</span>
             </div>
-            <div className="muted" style={{ marginBottom: 6 }}>Earthquakes M4.5+ · last 24 h ({quakes.length})</div>
+            <div className="muted mb-sm">Earthquakes M4.5+ · last 24 h ({quakes.length})</div>
             {quakes.slice(0, 8).map((q) => (
               <div className="list-row" key={q.id} onClick={() => globeRef.current?.focusOn(q.lat, q.lon)}>
                 <span>{q.place}</span>

@@ -1,19 +1,55 @@
+/* bank.css — D-01 Bank, app-local layout only.
+   Colour, type and chrome come from /city-core/city.css; nothing here re-declares a city token. */
+
+/* the city mounts its vault scene behind the app; #root stays the interactive layer */
 #root { position: relative; z-index: 10; pointer-events: none; min-height: 100vh; }
 #root * { pointer-events: auto; }
 .city-boot { min-height: 100vh; pointer-events: none !important; }
-.bk-center { min-height: 100vh; display: grid; place-items: center; padding: 84px 16px 24px; }
+
+.bk-center { min-height: 100vh; display: grid; place-items: center; padding: calc(var(--hud-h) + 28px) 16px 24px; }
 .bk-center > .glass { width: min(430px, 100%); }
-.bk-page { max-width: 1040px; margin: 0 auto; padding: 84px 18px 40px; display: grid; gap: 16px; }
+
+.bk-page { max-width: 1040px; margin: 0 auto; padding: calc(var(--hud-h) + 28px) 18px 40px; display: grid; gap: 16px; }
 .bk-hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
 @media (max-width: 760px) { .bk-hero { grid-template-columns: 1fr; } }
-.bk-balance { font: 800 clamp(34px, 6vw, 52px) var(--font-display); letter-spacing: -.02em; }
-.bk-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-.bk-act { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; padding: 14px; cursor: pointer; border-radius: 14px; border: 1px solid var(--line); background: var(--glass); color: var(--text); font: 600 13px var(--font-ui); transition: transform .15s, border-color .15s; }
-.bk-act:hover { transform: translateY(-2px); border-color: var(--line-accent); }
-.bk-act b { font: 800 20px var(--font-display); }
-.bk-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(3,6,12,.62); backdrop-filter: blur(5px); padding: 16px; }
-.bk-modal > .glass { width: min(440px, 100%); max-height: 90vh; overflow: auto; }
+
+/* the balance is the one big number on the sheet: condensed display width, tabular figures */
+.bk-balance {
+  font-family: var(--font-display);
+  font-variation-settings: 'wdth' 78;
+  font-weight: 500;
+  font-size: clamp(34px, 6vw, 52px);
+  letter-spacing: var(--disp-track);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+/* action tiles read as form rows, not cards that lift — separation is a hairline */
+.bk-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border: 1px solid var(--line); background: var(--glass); }
+.bk-act {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left;
+  padding: 14px; cursor: pointer; border: 0; border-right: 1px solid var(--line);
+  background: transparent; color: var(--text);
+  transition: background .14s, box-shadow .14s;
+}
+.bk-act:last-child { border-right: 0; }
+.bk-act:hover { background: var(--wash); box-shadow: inset 0 -2px 0 var(--accent); }
+.bk-act b { font-family: var(--font-display); font-variation-settings: 'wdth' 80; font-weight: 500; font-size: 20px; letter-spacing: var(--disp-track); }
+.bk-act span { font: 500 10px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* modals are the only thing that genuinely floats, so they are the only thing that gets a shadow */
+.bk-modal {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px;
+  background: color-mix(in srgb, var(--ink) 34%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.bk-modal > .glass { box-shadow: var(--e4); width: min(440px, 100%); max-height: 90vh; overflow: auto; }
+
 .bk-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: -6px 0 14px; }
-.bk-kv > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
-.bk-kv > div:last-child { border: 0; }
+.bk-kv > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.bk-kv > div:last-child { border-bottom: 0; }
 .bk-msg { min-height: 18px; font-size: 12px; margin: 6px 0 10px; }
+
+@media (prefers-reduced-transparency: reduce) {
+  .bk-modal { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

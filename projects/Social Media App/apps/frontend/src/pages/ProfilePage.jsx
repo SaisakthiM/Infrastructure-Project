@@ -215,11 +215,11 @@ export default function ProfilePage() {
         <div className="flex-1">
           {/* Name row */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <h1 className="text-xl font-bold">{profile.username}</h1>
+            <h1 className="display">{profile.username}</h1>
             {isMe ? (
               <button
                 onClick={() => setEditOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-white/8 hover:bg-white/12 rounded-lg text-sm font-medium transition-all"
+                className="btn sm"
               >
                 <IoPencilOutline size={14} /> Edit profile
               </button>
@@ -227,11 +227,7 @@ export default function ProfilePage() {
               <button
                 onClick={toggleFollow}
                 disabled={followLoading}
-                className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  following
-                    ? 'bg-white/8 hover:bg-red-500/20 hover:text-red-400 text-white'
-                    : 'bg-violet-600 hover:bg-violet-500 text-white'
-                }`}
+                className={`btn sm ${following ? '' : 'primary'}`}
               >
                 {followLoading ? <Spinner size="sm" /> : following ? 'Following' : 'Follow'}
               </button>
@@ -246,8 +242,8 @@ export default function ProfilePage() {
               { label: 'following', val: profile.following_count, onClick: () => setFollowModal('following') },
             ].map(({ label, val, onClick }) => (
               <button key={label} onClick={onClick} className="text-center hover:opacity-80 transition-opacity" disabled={!onClick}>
-                <p className="font-bold text-white">{formatNumber(val)}</p>
-                <p className="text-sm text-white/50">{label}</p>
+                <p className="mono text-xl font-medium">{formatNumber(val)}</p>
+                <p className="text-note text-white/50 mt-1">{label}</p>
               </button>
             ))}
           </div>
@@ -272,7 +268,7 @@ export default function ProfilePage() {
       {/* Grid */}
       {displayPosts.length === 0 ? (
         <div className="text-center py-16 text-white/30">
-          <p className="text-4xl mb-3">{tab === 'saved' ? '🔖' : '📷'}</p>
+          <p className="text-2xl mb-3">{tab === 'saved' ? '🔖' : '📷'}</p>
           <p className="font-medium">{tab === 'saved' ? 'No saved posts' : 'No posts yet'}</p>
         </div>
       ) : (
@@ -284,7 +280,7 @@ export default function ProfilePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.03 }}
               onClick={() => setSelected(post)}
-              className="relative aspect-square group overflow-hidden bg-[#111]"
+              className="relative aspect-square group overflow-hidden bg-city-ink"
             >
               {post.media?.[0] ? (
                 <img src={post.media[0].file} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />

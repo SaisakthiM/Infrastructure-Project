@@ -35,84 +35,75 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center px-4">
-      {/* Background glow */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
-      </div>
-
+    /* no page fill: city.css paints the paper ground and the district maquette shows through */
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.24 }}
         className="w-full max-w-sm"
       >
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent tracking-tight">
-            nexus
-          </h1>
-          <p className="text-white/30 text-sm mt-2">Connect with your world</p>
+        {/* District identity: plate + wordmark in condensed display, one accent rule (no glow, no gradient) */}
+        <div className="text-center mb-8">
+          <span className="plate lg mb-4">
+            <span className="code">D-06</span>
+            <span className="name">Social</span>
+          </span>
+          <h1 className="display mt-4">nexus</h1>
+          <hr className="rule-accent mx-auto" />
+          <p className="muted text-cap">Connect with your world — one register for the whole city</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-[#111] border border-white/8 rounded-2xl p-6 shadow-2xl">
-          <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="glass mb-4">
+          <div className="bd space-y-4">
             {errors.general && (
               <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bad text-center text-cap font-medium"
+                role="alert"
               >
                 {errors.general}
               </motion.p>
             )}
 
-            <div>
-              <label className="block text-xs text-white/40 mb-1.5 font-medium uppercase tracking-wider">Username</label>
+            <label className="field">Username
               <input
                 value={form.username}
                 onChange={set('username')}
                 autoComplete="username"
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 outline-none focus:border-violet-500/50 focus:bg-white/8 transition-all"
                 placeholder="your_username"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-xs text-white/40 mb-1.5 font-medium uppercase tracking-wider">Password</label>
+            <label className="field">Password
               <input
                 type="password"
                 value={form.password}
                 onChange={set('password')}
                 autoComplete="current-password"
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 outline-none focus:border-violet-500/50 focus:bg-white/8 transition-all"
                 placeholder="••••••••"
               />
-            </div>
+            </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-2.5 rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
-            >
+            <button type="submit" className="btn primary block" disabled={loading}>
               {loading && <Spinner size="sm" />}
               Log in
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
 
-        {/* Register link */}
-        <div className="mt-4 bg-[#111] border border-white/8 rounded-2xl p-4 text-center">
-          <p className="text-sm text-white/40">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-violet-400 hover:text-violet-300 font-semibold transition-colors">
-              Sign up
-            </Link>
-          </p>
+        <div className="glass">
+          <div className="bd text-center">
+            <p className="muted text-meta">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-medium text-city-accent">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>
   );
 }
-
