@@ -1,0 +1,19 @@
+/* Nexus Social · city skin — keeps all Tailwind classes intact, just overrides the dark backgrounds and borders */
+html, body { background: transparent !important; }
+#root { position: relative; z-index: 10; }
+.bg-\[#060913\], .bg-\[#0a0a0a\] { background: transparent !important; }
+/* Sidebar */
+aside { background: rgba(8,6,18,.88) !important; border-right-color: rgba(155,123,255,.18) !important; backdrop-filter: blur(14px); }
+/* Post cards, modals, drawers */
+.bg-\[#0f0f0f\], .bg-\[#111\], .bg-\[#111111\], .bg-\[#1a1a1a\], .bg-\[#161616\], .bg-\[#18181b\],
+.bg-zinc-900, .bg-zinc-950, .bg-neutral-900, .bg-neutral-950 {
+  background: var(--glass) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(155,123,255,.18) !important;
+}
+/* Accent: violet/fuchsia -> city accent */
+.from-violet-400, .to-fuchsia-400 { color: var(--accent) !important; }
+.bg-violet-500 { background: var(--accent) !important; }
+.text-violet-400, .hover\:text-violet-400:hover { color: var(--accent) !important; }
+.border-violet-500 { border-color: var(--accent) !important; }
+/* Inputs */
+input[class*="bg-"], textarea[class*="bg-"] { background: rgba(255,255,255,.05) !important; color: #e2e8f0 !important; }

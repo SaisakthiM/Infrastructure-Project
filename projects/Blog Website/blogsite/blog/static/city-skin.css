@@ -1,0 +1,39 @@
+/* Inkwell · Mini City skin — supplements the city.css tokens served by the gateway */
+body { font-family: var(--font-ui); background: transparent; color: var(--text); }
+h1,h2,h3,.nav-brand { font-family: var(--font-display); letter-spacing: -.02em; }
+a { color: inherit; }
+.card {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35); color: var(--text);
+  transition: transform .18s, border-color .18s;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--line-accent); }
+.btn-primary {
+  display: block; width: 100%; padding: .7rem 1.4rem; border: 0; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(135deg,var(--accent),#4aa3ff); color: #04121f;
+  font: 700 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; transition: filter .18s;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { display:inline-flex; align-items:center; justify-content:center; padding:.55rem 1.2rem; border: 1px solid var(--line); border-radius: 9px; color:var(--muted); text-decoration:none; font-size:13px; transition: border-color .16s; }
+.btn-secondary:hover { border-color: var(--line-accent); color: var(--text); }
+.tag { display:inline-block; padding:.18rem .55rem; border-radius: 99px; border: 1px solid var(--line-accent); font:.600 10px var(--font-ui); letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+input, textarea, select {
+  width:100%; padding:.55rem .75rem; border-radius:10px;
+  border: 1px solid var(--line); background: rgba(255,255,255,.05); color:var(--text);
+  font: 13px var(--font-ui); outline: 0; transition: border-color .18s;
+}
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
+label { display:block; font:.700 10px var(--font-ui); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.3rem; }
+.divider { border:0; border-top: 1px solid rgba(255,255,255,.07); margin: 1.4rem 0; }
+nav { background: rgba(6,9,19,.88); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); position:sticky; top:0; z-index:50; }
+.nav-brand { font-size:1.4rem; font-weight:800; background: linear-gradient(135deg,#fff 40%,var(--accent) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-decoration:none; }
+.nav-link { color:var(--muted); font-size:.8rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; text-decoration:none; padding:.35rem .7rem; border-radius:6px; transition:color .18s,background .18s; }
+.nav-link:hover, .nav-link--active { color:var(--accent); background:rgba(0,240,200,.08); }
+.nav-form { display:inline; }
+main { animation: fadeUp .35s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.msg-ok  { background: color-mix(in srgb,var(--ok)  12%,transparent); border-left:3px solid var(--ok);  padding:.7rem 1rem; color:var(--ok);  font-size:.9rem; border-radius:0 8px 8px 0; margin-bottom:1rem; }
+.msg-err { background: color-mix(in srgb,var(--bad) 12%,transparent); border-left:3px solid var(--bad); padding:.7rem 1rem; color:var(--bad); font-size:.9rem; border-radius:0 8px 8px 0; margin-bottom:1rem; }
+.avatar { width:4rem; height:4rem; border-radius:50%; object-fit:cover; border:2px solid var(--line-accent); }
+.avatar-init { width:4rem;height:4rem;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 1.6rem var(--font-display);color:var(--accent); }

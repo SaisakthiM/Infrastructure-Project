@@ -5,13 +5,11 @@ import { Upload } from './components/Upload'
 import { Ask } from './components/Ask'
 import { Library } from './components/Library'
 import { TherapistSupport } from './components/TherapistSupport'
-import { Document3DBackground } from './Document3DBackground'
 
 function App() {
     return (
 		<BrowserRouter basename="/document">
-			<Document3DBackground />
-			<div style={{ position: 'relative', zIndex: 1 }}>
+			<div className="city-ui-root">
 				<Routes>
 					<Route path='/' element={<Home></Home>}></Route>
 					<Route path='/upload' element={<Upload></Upload>}></Route>

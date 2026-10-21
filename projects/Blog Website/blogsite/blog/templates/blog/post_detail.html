@@ -1,75 +1,49 @@
 {% extends "blog/layout.html" %}
 {% block title %}{{ post.title }} — Inkwell{% endblock %}
 {% block content %}
-
-<a href="{% url 'home' %}" style="font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;">← Back to posts</a>
-
-<article style="margin-top:2rem;">
+<a href="{% url 'home' %}" class="eyebrow" style="text-decoration:none;color:var(--muted);">← Back to posts</a>
+<article style="margin-top:1.6rem;">
   <span class="tag">Article</span>
-  <h1 style="font-size:2.4rem;line-height:1.15;margin-top:0.8rem;margin-bottom:0.6rem;">{{ post.title }}</h1>
-  <p style="font-size:0.82rem;color:var(--muted);letter-spacing:0.06em;margin-bottom:2rem;">
-    BY <strong>{{ post.author }}</strong> &nbsp;·&nbsp; {{ post.created_at|date:"F j, Y" }}
+  <h1 class="display" style="font-size:clamp(1.7rem,4vw,2.6rem);margin:.5rem 0 .5rem;">{{ post.title }}</h1>
+  <p class="eyebrow" style="margin-bottom:1.6rem;">
+    {{ post.author }} · {{ post.created_at|date:"F j, Y" }}
     {% if request.user == post.author %}
-      &nbsp;·&nbsp;
-      <a href="{% url 'edit_post' post.pk %}" style="color:var(--accent2);text-decoration:none;">Edit</a>
-      &nbsp;·&nbsp;
-      <a href="{% url 'delete_post' post.pk %}" style="color:var(--accent);text-decoration:none;">Delete</a>
+      · <a href="{% url 'edit_post' post.pk %}" style="color:var(--accent);text-decoration:none;">Edit</a>
+      · <a href="{% url 'delete_post' post.pk %}" style="color:var(--bad);text-decoration:none;">Delete</a>
     {% endif %}
   </p>
-
-  <!-- Cover image -->
-  {% if post.image %}
-    <div style="margin-bottom:2rem;border:1px solid #ddd8cc;overflow:hidden;">
-      <img src="{{ post.image.url }}"
-           style="width:100%;max-height:420px;object-fit:cover;display:block;"
-           alt="{{ post.title }}">
-    </div>
-  {% endif %}
-
+  {% if post.image %}<div style="margin-bottom:1.8rem;border-radius:14px;overflow:hidden;"><img src="{{ post.image.url }}" style="width:100%;max-height:400px;object-fit:cover;display:block;" alt="{{ post.title }}"></div>{% endif %}
   <hr class="divider">
-
-  <div style="font-size:1.05rem;line-height:1.8;color:#2a2520;margin-top:1.5rem;">
-    {{ post.content|linebreaks }}
-  </div>
+  <div style="font-size:1.02rem;line-height:1.85;margin-top:1.3rem;color:#d0dae8;">{{ post.content|linebreaks }}</div>
 </article>
-
-<hr class="divider" style="margin:3rem 0;">
-
-<!-- Comments -->
+<hr class="divider" style="margin:2.5rem 0;">
 <section>
-  <h2 style="font-size:1.4rem;margin-bottom:1.5rem;">
-    Comments <span style="font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--muted);font-weight:400;">({{ comments|length }})</span>
-  </h2>
-
+  <h2 style="font-size:1.3rem;margin-bottom:1.2rem;">Comments <small class="muted" style="font-size:.85rem;font-weight:400;">({{ comments|length }})</small></h2>
   {% if comments %}
-    <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem;">
-      {% for comment in comments %}
-        <div style="padding:1rem 1.2rem;background:var(--cream);border-left:3px solid var(--accent2);">
-          <p style="font-size:0.78rem;color:var(--muted);letter-spacing:0.06em;margin-bottom:0.4rem;">
-            <strong style="color:var(--ink);">{{ comment.author }}</strong>
-          </p>
-          <p style="font-size:0.95rem;color:#3a3028;line-height:1.6;">{{ comment.content }}</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.8rem;">
+      {% for c in comments %}
+        <div class="glass" style="padding:1rem 1.2rem;border-left:3px solid var(--line-accent);">
+          <p class="eyebrow" style="margin-bottom:.35rem;">{{ c.author }}</p>
+          <p style="font-size:.94rem;line-height:1.6;color:#c0cad8;">{{ c.content }}</p>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p style="color:var(--muted);font-style:italic;margin-bottom:2rem;">No comments yet. Be the first.</p>
+    <p class="muted" style="margin-bottom:1.6rem;">No comments yet. Be the first.</p>
   {% endif %}
-
   {% if user.is_authenticated %}
-    <div class="card" style="padding:1.5rem;">
-      <h3 style="font-size:1rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Leave a comment</h3>
-      <form method="post" style="display:flex;flex-direction:column;gap:1rem;">
+    <div class="glass" style="padding:1.4rem;border-radius:16px;">
+      <h3 style="font-size:1rem;margin-bottom:1rem;">Leave a comment</h3>
+      <form method="post" style="display:flex;flex-direction:column;gap:.9rem;">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn-primary">Post Comment</button>
+        {% for field in form %}
+          <div><label>{{ field.label }}</label>{{ field }}{% for e in field.errors %}<p class="bad" style="font-size:.8rem;margin-top:.25rem;">{{ e }}</p>{% endfor %}</div>
+        {% endfor %}
+        <button type="submit" class="btn-primary" style="width:auto;align-self:flex-start;padding:.6rem 1.4rem;">Post comment</button>
       </form>
     </div>
   {% else %}
-    <p style="font-size:0.9rem;color:var(--muted);">
-      <a href="{% url 'login' %}" style="color:var(--accent);text-decoration:none;">Login</a> to leave a comment.
-    </p>
+    <p class="muted"><a href="{% url 'login' %}" style="color:var(--accent);">Sign in</a> to leave a comment.</p>
   {% endif %}
 </section>
-
 {% endblock %}

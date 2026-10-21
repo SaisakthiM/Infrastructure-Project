@@ -1,0 +1,39 @@
+/* Whisper city skin: replaces custom backgrounds with the city look. wa-* classes kept intact so no component code changes. */
+:root {
+  --wa-bg: var(--city-bg, #06130f);
+  --wa-surface: rgba(9, 22, 17, 0.85);
+  --wa-border: rgba(0, 230, 118, 0.18);
+  --wa-border-lit: rgba(0, 230, 118, 0.42);
+  --wa-muted: #8696a0;
+  --wa-text: #e9edef;
+  --wa-accent: #00e676;
+}
+html, body, #root { background: transparent !important; color: var(--wa-text); }
+#root { position: relative; z-index: 10; }
+.wa-auth-bg { background: transparent !important; }
+.wa-blob { display: none !important; }   /* city 3D replaces blobs */
+.wa-card {
+  background: var(--glass, rgba(9,22,17,0.82)) !important;
+  border: 1px solid var(--wa-border) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4) !important;
+}
+.wa-input {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid var(--wa-border) !important;
+  color: var(--wa-text) !important;
+  border-radius: 10px !important;
+}
+.wa-input:focus { border-color: var(--wa-accent) !important; box-shadow: 0 0 0 3px rgba(0,230,118,.18) !important; }
+.wa-label { color: var(--wa-muted) !important; font: 500 11px var(--font-ui, "DM Mono", monospace); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .3rem; display: block; }
+.wa-root, .wa-welcome-bg { background: rgba(6,13,9,.92) !important; }
+.wa-sidebar {
+  background: rgba(9,22,17,.9) !important;
+  border-right: 1px solid var(--wa-border) !important;
+  backdrop-filter: blur(10px) !important;
+}
+.wa-room-item, .wa-msg-bubble-in, .wa-msg-bubble-out { border-radius: 12px !important; }
+.wa-msg-bubble-out { background: rgba(0,230,118,.18) !important; border: 1px solid var(--wa-border) !important; }
+.wa-msg-bubble-in  { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.1) !important; }

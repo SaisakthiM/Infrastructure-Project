@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import CreatePostModal from '../posts/CreatePostModal';
-import Social3DBackground from './Social3DBackground';
 
 export default function Layout() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#060913] text-white relative">
-      <Social3DBackground />
+    <div className="min-h-screen text-white relative">
       <div className="relative z-10 flex min-h-screen">
         <Sidebar onCreatePost={() => setCreateOpen(true)} />
 

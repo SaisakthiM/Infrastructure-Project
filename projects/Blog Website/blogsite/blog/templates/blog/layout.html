@@ -1,261 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a9 9 0 0 1 9 9'/><path d='M4 4a16 16 0 0 1 16 16'/><circle cx='5' cy='19' r='1'/></svg>">
+  {% load static %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Inkwell 3D — Publishing Platform{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+  <title>{% block title %}Inkwell · Mini City{% endblock %}</title>
+  <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- shared city layer: tokens, .glass, .btn, .pill, 3D scene -->
+  <link rel="stylesheet" href="/city-core/city.css">
+  <script type="importmap">{"imports":{"three":"/city-core/vendor/three/three.module.js","three/addons/":"/city-core/vendor/three/addons/"}}</script>
+  <!-- Inkwell overrides -->
+  <link rel="stylesheet" href="{% static 'city-skin.css' %}">
   <style>
-    :root {
-      --bg: #060913;
-      --surface: rgba(13, 20, 36, 0.88);
-      --border: rgba(16, 185, 129, 0.25);
-      --border-lit: rgba(16, 185, 129, 0.6);
-      --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.18);
-      --cyan: #00f0c8;
-      --gold: #d8b44b;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --syne: 'Syne', sans-serif;
-      --mono: 'JetBrains Mono', 'DM Mono', monospace;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--mono);
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-      position: relative;
-    }
-    h1, h2, h3 { font-family: var(--syne); letter-spacing: -0.02em; }
-
-    #blog-3d-bg {
-      position: fixed;
-      inset: 0;
-      width: 100vw; height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .app-container {
-      position: relative;
-      z-index: 1;
-    }
-
-    nav { 
-      background: rgba(10, 16, 28, 0.92); 
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-    .nav-brand { 
-      font-family: var(--syne); 
-      font-weight: 800;
-      font-size: 1.5rem;
-      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
-    }
-    .nav-link {
-      color: #94a3b8;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-decoration: none;
-      padding: 0.4rem 0.8rem;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-    .nav-link:hover { color: var(--accent); background: rgba(16, 185, 129, 0.1); }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--cyan));
-      color: #060913;
-      padding: 0.65rem 1.5rem;
-      font-size: 0.82rem;
-      font-family: var(--syne);
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 0 16px var(--accent-glow);
-      transition: all 0.2s;
-      width: 100%;
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 24px var(--accent-glow); }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      color: var(--text);
-    }
-    .card:hover { 
-      transform: translateY(-3px); 
-      border-color: var(--border-lit);
-      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15); 
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      margin: 1.5rem 0;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      border: 1px solid #ccc5b5;
-      background: var(--paper);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input:focus, textarea:focus { border-color: var(--accent); }
-    label { 
-      font-size: 0.78rem; 
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 0.3rem;
-    }
-
-    .tag {
-      display: inline-block;
-      background: var(--cream);
-      color: var(--muted);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 0.2rem 0.6rem;
-    }
-
-    footer {
-      background: var(--ink);
-      color: #5a5448;
-      font-size: 0.8rem;
-      letter-spacing: 0.06em;
-    }
-
-    /* Page load animation */
-    main { animation: fadeUp 0.4s ease both; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    html,body{min-height:100%;background:transparent}
+    #city-app-root{position:relative;z-index:10}
   </style>
 </head>
-<body>
+<body class="city-body">
+  <script type="module">
+    const url='/city-core/city-app.js';
+    import(url).then(m=>m.startCityApp({service:'blog',title:'Inkwell',accent:'#f0a500',scene:'blog'})).catch(()=>{});
+  </script>
 
   <nav>
-    <div style="max-width:1100px;margin:0 auto;padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;">
+    <div style="max-width:1100px;margin:0 auto;padding:.85rem 1.4rem;display:flex;justify-content:space-between;align-items:center;">
       <a href="{% url 'home' %}" class="nav-brand">Inkwell</a>
-      <div style="display:flex;gap:2rem;align-items:center;">
+      <div style="display:flex;gap:1.2rem;align-items:center;">
         {% if user.is_authenticated %}
           <a href="{% url 'profile' %}" class="nav-link">Profile</a>
-          <a href="{% url 'create_post' %}" class="nav-link" style="color:var(--accent)">+ New Post</a>
-          <form method="post" action="{% url 'logout' %}" style="display:inline;">
+          <a href="{% url 'create_post' %}" class="nav-link" style="color:var(--accent)">+ New post</a>
+          <form method="post" action="{% url 'logout' %}" class="nav-form">
             {% csrf_token %}
-            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;">Logout</button>
+            <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;padding:.35rem .7rem;">Logout</button>
           </form>
         {% else %}
           <a href="{% url 'login' %}" class="nav-link">Login</a>
-          <a href="{% url 'register' %}" class="nav-link" style="color:var(--accent);">Register</a>
+          <a href="{% url 'register' %}" class="nav-link" style="color:var(--accent)">Register</a>
         {% endif %}
       </div>
     </div>
   </nav>
 
-  <main style="max-width:900px;margin:0 auto;padding:3rem 1.5rem;">
-    {% if messages %}
-      {% for message in messages %}
-        <div style="background:{% if message.tags == 'error' %}#fee2e2{% else %}#d1fae5{% endif %};border-left:3px solid {% if message.tags == 'error' %}var(--accent){% else %}#059669{% endif %};padding:0.8rem 1rem;margin-bottom:1.5rem;font-size:0.9rem;">
-          {{ message }}
-        </div>
-      {% endfor %}
-    {% endif %}
-    {% block content %}{% endblock %}
-  </main>
-
-  <footer style="text-align:center;padding:2rem 1.5rem;margin-top:4rem;">
-    <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:#3a3428;margin-bottom:0.5rem;">Inkwell</p>
-<canvas id="blog-3d-bg"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script>
-  (function initBlog3D() {
-    const canvas = document.getElementById('blog-3d-bg');
-    if (!canvas || !window.THREE) return;
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x060913, 0.025);
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 3, 16);
-
-    const grid = new THREE.GridHelper(50, 25, 0x10b981, 0x0f291e);
-    grid.position.y = -5;
-    grid.material.opacity = 0.28;
-    grid.material.transparent = true;
-    scene.add(grid);
-
-    // Rotating 3D Editorial Crystal
-    const group = new THREE.Group();
-    group.position.set(10, 2, -2);
-    scene.add(group);
-
-    const crystalGeo = new THREE.OctahedronGeometry(1.6, 0);
-    const crystalMat = new THREE.MeshBasicMaterial({ color: 0x10b981, wireframe: true });
-    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-    group.add(crystal);
-
-    const innerGeo = new THREE.OctahedronGeometry(1.1, 0);
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0x00f0c8 });
-    const inner = new THREE.Mesh(innerGeo, innerMat);
-    group.add(inner);
-
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(2.4, 0.04, 8, 48),
-      new THREE.MeshBasicMaterial({ color: 0x10b981 })
-    );
-    ring.rotation.x = Math.PI / 2;
-    group.add(ring);
-
-    let clock = new THREE.Clock();
-    function animate() {
-      requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      group.rotation.y = t * 0.4;
-      group.rotation.x = Math.sin(t * 0.3) * 0.2;
-      crystal.rotation.z = t * 0.3;
-      ring.rotation.z = t * 0.6;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  })();
-</script>
+  <div id="city-app-root">
+    <main style="max-width:900px;margin:0 auto;padding:2.5rem 1.4rem 4rem;">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="{% if message.tags == 'error' %}msg-err{% else %}msg-ok{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer style="text-align:center;padding:2rem 1.4rem;color:var(--muted);font-size:.8rem;border-top:1px solid rgba(255,255,255,.05);">
+      Inkwell · Mini City district
+    </footer>
+  </div>
 </body>
 </html>

@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, Building2, Lock, User } from "lucide-react";
 import bankService from "../services/bankService";
-import { Vault3DBackground } from "./Vault3DBackground";
 import type { BankUser } from "./Dashboard";
 
 interface LoginPageProps {
@@ -9,7 +7,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
-  const [mode, setMode] = useState<"login" | "register">("register");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,12 +27,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         mode === "register"
           ? await bankService.register(username.trim(), password)
           : await bankService.login(username.trim(), password);
-
       if (res.success) {
         onLogin({
           username: res.data.username,
           accountNumber: res.data.accountNumber,
-          accountId: res.data.accountId,
+          accountId: String(res.data.accountId),
           balance: res.data.balance,
           creditScore: res.data.creditScore,
           loanBalance: res.data.loanBalance,
@@ -50,193 +47,29 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="relative size-full flex items-center justify-center overflow-hidden bg-[#060913]">
-      {/* 3D Cyber Vault Background */}
-      <Vault3DBackground />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#060913] via-transparent to-[#060913]/60 pointer-events-none" />
-
-      {/* Card */}
-      <div
-        className="relative z-10 w-full max-w-md mx-4"
-        style={{
-          background: "rgba(255,255,255,0.08)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.18)",
-          borderRadius: "1.5rem",
-          boxShadow: "0 32px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06)",
-        }}
-      >
-        <div className="p-8">
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div
-              className="flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-              style={{ background: "linear-gradient(135deg, #d4a017, #b8860b)" }}
-            >
-              <Building2 className="w-7 h-7 text-white" />
-            </div>
-            <h1
-              className="text-white"
-              style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}
-            >
-              {mode === "register" ? "Open Bank Account" : "Welcome Back"}
-            </h1>
-            <p className="text-slate-300 mt-1" style={{ fontSize: "0.875rem" }}>
-              {mode === "register"
-                ? "Register to get your account number"
-                : "Sign in to your account"}
-            </p>
+    <main className="bk-center">
+      <form className="glass accent" onSubmit={handleSubmit}>
+        <div className="bd">
+          <div className="eyebrow">◈ City Bank</div>
+          <h1 className="display" style={{ margin: "4px 0 6px", fontSize: 32 }}>{mode === "login" ? "Welcome back" : "Open an account"}</h1>
+          <p className="muted" style={{ margin: "0 0 16px" }}>One account for every district — your balance and sign-in follow you everywhere.</p>
+          <div className="tabs-row" style={{ padding: 0, marginBottom: 14 }}>
+            <button type="button" className={mode === "login" ? "on" : ""} onClick={() => { setMode("login"); setError(""); }}>Log in</button>
+            <button type="button" className={mode === "register" ? "on" : ""} onClick={() => { setMode("register"); setError(""); }}>Create account</button>
           </div>
-
-          {/* Tabs */}
-          <div
-            className="flex rounded-xl p-1 mb-6"
-            style={{ background: "rgba(255,255,255,0.08)" }}
-          >
-            {(["register", "login"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setMode(tab);
-                  setError("");
-                }}
-                className="flex-1 py-2 rounded-lg transition-all duration-200"
-                style={{
-                  background: mode === tab ? "rgba(212,160,23,0.85)" : "transparent",
-                  color: mode === tab ? "#fff" : "rgba(255,255,255,0.6)",
-                  fontWeight: mode === tab ? 600 : 400,
-                  fontSize: "0.875rem",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                {tab === "register" ? "Register" : "Login"}
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                className="block mb-1.5"
-                style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", fontWeight: 500 }}
-              >
-                Username
-              </label>
-              <div className="relative">
-                <User
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
-                />
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl outline-none"
-                  style={{
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    color: "#fff",
-                    fontSize: "0.9rem",
-                  }}
-                  autoComplete="username"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                className="block mb-1.5"
-                style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", fontWeight: 500 }}
-              >
-                Password
-              </label>
-              <div className="relative">
-                <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl outline-none"
-                  style={{
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    color: "#fff",
-                    fontSize: "0.9rem",
-                  }}
-                  autoComplete={mode === "register" ? "new-password" : "current-password"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div
-                className="rounded-lg px-3 py-2"
-                style={{
-                  background: "rgba(220,38,38,0.2)",
-                  color: "#fca5a5",
-                  border: "1px solid rgba(220,38,38,0.3)",
-                  fontSize: "0.82rem",
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl transition-all duration-200 mt-2"
-              style={{
-                background: loading
-                  ? "rgba(212,160,23,0.5)"
-                  : "linear-gradient(135deg, #d4a017, #b8860b)",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                border: "none",
-                cursor: loading ? "not-allowed" : "pointer",
-                boxShadow: "0 4px 16px rgba(212,160,23,0.35)",
-              }}
-            >
-              {loading
-                ? mode === "register"
-                  ? "Creating Account..."
-                  : "Signing In..."
-                : mode === "register"
-                ? "Create Account"
-                : "Sign In"}
-            </button>
-          </form>
-
-          <p
-            className="text-center mt-4"
-            style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.78rem" }}
-          >
-            Secured with 256-bit encryption &bull; FDIC Insured
-          </p>
+          <label className="field">Username
+            <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="username" />
+          </label>
+          <label className="field">Password
+            <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="password" />
+          </label>
+          <label className="muted" style={{ display: "flex", gap: 8, fontSize: 12, marginBottom: 12 }}>
+            <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} /> Show password
+          </label>
+          <button className="btn primary block" disabled={loading}>{loading ? "Please wait…" : mode === "login" ? "Enter the city" : "Open my account"}</button>
+          <div className="bk-msg bad">{error}</div>
         </div>
-      </div>
-    </div>
+      </form>
+    </main>
   );
 }
