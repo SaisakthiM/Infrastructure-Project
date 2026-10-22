@@ -20,6 +20,14 @@ locals {
   shared_mysql_host = "shared-mysql"
   shared_minio_host = "shared-minio"
 
+  # The browser origin of the city, taken from the same URL the compiler
+  # frontend is built with (compiler_domain is e.g.
+  # "https://saisakthi.qzz.io/compiler/api/"). The two C++ compiler services
+  # allowlist localhost on any port plus saisakthi.qzz.io by themselves, so this
+  # only matters when the city moves to another domain -- it then follows
+  # compiler_domain automatically. "" if compiler_domain is not an absolute URL.
+  compiler_origin = try(regex("https?://[^/]+", var.compiler_domain), "")
+
   # ── Who gets what ────────────────────────────────────────────────────────
   pg_apps = {
     notes = {

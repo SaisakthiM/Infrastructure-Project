@@ -232,4 +232,3 @@ module "nginx_exporter" {
 
   depends_on = [module.gateway]
 }
-# atlantis test

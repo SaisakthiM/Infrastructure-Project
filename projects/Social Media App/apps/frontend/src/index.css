@@ -3,6 +3,10 @@
    Everything here is behaviour Tailwind cannot express: scrollbars, translucency over the 3D scene,
    and third-party toast chrome. No token is defined in this file — the registry owns them. */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* the city renders one theme: ink on paper */
   color-scheme: light;

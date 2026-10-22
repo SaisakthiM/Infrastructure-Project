@@ -30,6 +30,11 @@ public:
                 return it->second(req);
         }
 
+        // A preflight for a path with no explicit options() route still has to
+        // pass — answering it 404 is what makes the browser block the real
+        // request that follows.
+        if (req.method == "OPTIONS") return HttpResponse::preflight();
+
         return HttpResponse::notFound();
     }
 };

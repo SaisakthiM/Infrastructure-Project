@@ -35,6 +35,10 @@ func SetExtra(env, name, assignment string) error { return Set(env, extraPrefix+
 // GetExtra returns the stored `name = value` line ("" if none).
 func GetExtra(env, name string) string { return Get(env, extraPrefix+name) }
 
+// ClearExtra forgets a stored value for a declared variable, so the next
+// tfvars sync leaves it blank and terraform asks for it again.
+func ClearExtra(env, name string) error { return Delete(env, extraPrefix+name) }
+
 func ensureNL(s string) string {
 	if strings.HasSuffix(s, "\n") {
 		return s

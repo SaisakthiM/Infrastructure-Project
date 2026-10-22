@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/ui"
@@ -36,6 +37,11 @@ func Environments() []string {
 	}
 }
 
+// kindContext is the kubeconfig context prod-social's cluster installs and the
+// context every kubectl/helm/kubernetes provider in prod-social and
+// prod-infra pins itself to.
+const kindContext = "kind-social-media"
+
 // Apply runs terragrunt apply.
 // For env == "all": terragrunt run --all apply
 // For a single env: terragrunt apply [--target=<resource>] [--replace=<resource>]
@@ -50,6 +56,14 @@ func Apply(cfg *config.Config, env Environment, autoApprove bool, target string,
 	if err := ensureKindCluster(cfg, env, extraOut...); err != nil {
 		return err
 	}
+	// prod-infra is the only environment that uses ArgoCD without owning it:
+	// its kubectl_manifest.app_of_apps_observability is an argoproj.io
+	// Application written into namespace argocd. `deploy all` gets the ordering
+	// from terragrunt's dependencies block; a standalone prod-infra deploy gets
+	// it from here.
+	if env == EnvInfra {
+		waitForArgoCD(extraOut...)
+	}
 	return runTerragrunt(cfg, env, "apply", autoApprove, target, replace, extraOut...)
 }
 
@@ -57,7 +71,17 @@ func Destroy(cfg *config.Config, env Environment, autoApprove bool, extraOut ...
 	return runTerragrunt(cfg, env, "destroy", autoApprove, "", "", extraOut...)
 }
 
+// Status runs terragrunt plan. Planning prod-infra refreshes
+// kubectl_manifest.app_of_apps_observability, which fails with
+// "no kind is registered for the type v1alpha1 Application" while ArgoCD's
+// CRDs are absent — and a plan never runs the apply-time gate that would
+// have said "apply prod-social first". Warn up front instead of blocking on
+// a read-only command.
 func Status(cfg *config.Config, env Environment, extraOut ...io.Writer) error {
+	if (env == EnvInfra || env == EnvAll) && kindClusterReachable() &&
+		runHidden("kubectl", "--context", kindContext, "get", "crd", "applications.argoproj.io") != nil {
+		ui.Warn("ArgoCD is not installed in %s — planning prod-infra will report \"no kind is registered for the type v1alpha1 Application\". Apply prod-social first: social-platform deploy prod-social", kindContext)
+	}
 	return runTerragrunt(cfg, env, "plan", false, "", "", extraOut...)
 }
 
@@ -75,8 +99,24 @@ func Logs(cfg *config.Config, env Environment, extraOut ...io.Writer) error {
 	return runInDir(cfg, env, "terragrunt", args, extraOut...)
 }
 
+// needsKind reports whether an environment's Terraform touches the
+// kind-social-media cluster -- directly or through ArgoCD.
+//
+//	prod-social  owns null_resource.kind_cluster itself.
+//	prod-infra   joins the "kind" docker network from docker_container.otel_gateway
+//	             and writes an argoproj.io Application into namespace argocd.
+//	prod-manage  runs `docker network connect kind gateway`.
+//
+// All three fail with a version of "not found" when the cluster is down:
+// Terraform refreshes every kubernetes_*/kubectl_manifest in state before the
+// apply graph runs, so an unreachable API server kills the plan no matter what
+// depends_on says.
+func needsKind(env Environment) bool {
+	return env == EnvAll || env == EnvSocial || env == EnvInfra || env == EnvManage
+}
+
 // ensureKindCluster bootstraps the prod-social kind cluster before any
-// operation that touches prod-social (env == "all" or env == "prod-social").
+// operation that touches it (see needsKind).
 //
 // Why this is needed: Terraform refreshes every resource already tracked in
 // state during *both* plan and apply, regardless of depends_on ordering.
@@ -87,14 +127,14 @@ func Logs(cfg *config.Config, env Environment, extraOut ...io.Writer) error {
 // ever gets a chance to (re)create the cluster.
 //
 // Strategy: first check whether the cluster is already reachable via
-// `kubectl cluster-info --context kind-kind`. If it responds, a plain
+// `kubectl cluster-info --context kind-social-media`. If it responds, a plain
 // -target apply is enough (no state changes needed). If it is unreachable
 // (first run, cluster was deleted, API server down), pass -replace so
 // Terraform actually destroys-and-recreates the null_resource even though
 // its id is already in state -- this is exactly what manual
 // `terragrunt apply -replace=null_resource.kind_cluster` does.
 func ensureKindCluster(cfg *config.Config, env Environment, extraOut ...io.Writer) error {
-	if env != EnvAll && env != EnvSocial {
+	if !needsKind(env) {
 		return nil
 	}
 
@@ -170,10 +210,89 @@ func kindClusterReachable() bool {
 	if _, err := exec.LookPath("kubectl"); err != nil {
 		return false
 	}
-	cmd := exec.Command("kubectl", "cluster-info", "--context", "kind-social-media")
+	cmd := exec.Command("kubectl", "cluster-info", "--context", kindContext)
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	return cmd.Run() == nil
+}
+
+// waitForArgoCD blocks until prod-social's ArgoCD can actually take an
+// Application, because helm_release.argocd reporting success and ArgoCD being
+// able to reconcile are two different moments. It never fails the deploy: the
+// prod-infra Terraform gate (null_resource.prod_social_ready) is what refuses
+// with the "apply prod-social first" message, and it re-runs whenever this
+// environment's state is fresh. This only removes the pointless wait when
+// ArgoCD genuinely is not installed, and rides out the ordinary
+// "pods still starting" case that produced the intermittent
+// "argocd not found" / "no kind is registered for the type v1alpha1
+// Application" errors.
+func waitForArgoCD(extraOut ...io.Writer) {
+	// Mirrored to extraOut as well as the console: the dashboard's job log is
+	// built from those writers, and a silent 3-minute wait looks like a hung
+	// deploy from the browser.
+	w := io.MultiWriter(append([]io.Writer{os.Stdout}, extraOut...)...)
+	say := func(format string, args ...any) {
+		fmt.Fprintf(w, "  "+format+"\n", args...)
+	}
+
+	if !kindClusterReachable() {
+		say("! kind-social-media is not reachable -- prod-infra needs the cluster (the kind network and ArgoCD both live there).")
+		return
+	}
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		return
+	}
+
+	if runHidden("kubectl", "--context", kindContext, "get", "crd", "applications.argoproj.io") != nil {
+		say("! ArgoCD is not installed in %s -- apply prod-social first: social-platform deploy prod-social", kindContext)
+		return
+	}
+
+	const (
+		poll  = 5 * time.Second
+		limit = 36 // 3 minutes: a cold argocd-repo-server can take a while to pull its first image
+	)
+	for i := 0; i < limit; i++ {
+		if argocdReady() {
+			if i == 0 {
+				say("ArgoCD is ready.")
+			} else {
+				say("✓ ArgoCD is ready after %s.", (time.Duration(i) * poll).String())
+			}
+			return
+		}
+		if i == 0 {
+			say("waiting for ArgoCD (prod-social) to finish rolling out before applying prod-infra...")
+		}
+		time.Sleep(poll)
+	}
+	say("! ArgoCD still not ready after 3 minutes -- prod-infra may report ArgoCD resources as missing. Run 'social-platform deploy prod-social' and retry.")
+}
+
+// argocdReady is true when the Application CRD is registered and both
+// deployments that a sync depends on have finished rolling out: the
+// application-controller (reconciles Applications) and the repo-server (reads
+// gitops/ from var.gitops_repo_url).
+func argocdReady() bool {
+	if runHidden("kubectl", "--context", kindContext, "get", "crd", "applications.argoproj.io") != nil {
+		return false
+	}
+	for _, dep := range []string{"argocd-application-controller", "argocd-repo-server"} {
+		if runHidden("kubectl", "--context", kindContext, "-n", "argocd",
+			"rollout", "status", "deploy/"+dep, "--timeout=10s") != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// runHidden runs a command with both streams discarded and reports whether it
+// exited zero. Used for the kubectl probes above, which are polled.
+func runHidden(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run()
 }
 
 func runTerragrunt(cfg *config.Config, env Environment, command string, autoApprove bool, target string, replace string, extraOut ...io.Writer) error {

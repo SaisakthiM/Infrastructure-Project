@@ -7,6 +7,7 @@ package secrets
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -80,7 +81,35 @@ func Has(env, variable string) bool {
 	return Get(env, variable) != ""
 }
 
+// Delete removes a stored value from the keychain and from the file fallback.
+func Delete(env, variable string) error {
+	k := key(env, variable)
+	krErr := keyring.Delete(config.KeychainService, k)
+	fErr := fileDelete(k)
+	if krErr != nil && !errors.Is(krErr, keyring.ErrNotFound) && fErr != nil {
+		return fmt.Errorf("keychain: %v, file fallback: %w", krErr, fErr)
+	}
+	return nil
+}
+
+// KeychainAvailable reports whether the OS keychain answers. A missing entry is
+// an answer; a transport error (no Secret Service / D-Bus) is not.
+func KeychainAvailable() bool {
+	_, err := keyring.Get(config.KeychainService, key("_probe", "_probe"))
+	return err == nil || errors.Is(err, keyring.ErrNotFound)
+}
+
 // ─── Secret definitions ─────────────────────────────────────────────────────
+
+// What sort of value a secret is. The dashboard's Secrets register is grouped by
+// this first and by ward second, because the three kinds are filled in three
+// different ways: you invent a password, you paste a key a provider issued, or
+// you paste a whole private key file.
+const (
+	ClassCredential = "credential"
+	ClassAPIKey     = "api_key"
+	ClassSSHKey     = "ssh_key"
+)
 
 type SecretDef struct {
 	Env       string
@@ -90,38 +119,105 @@ type SecretDef struct {
 	Internal  bool
 	Default   string
 	Generate  bool
+	Class     string // one of the Class* constants; empty means infer from the key
+	App       string // the ward this belongs to; empty means infer from the key
+	Hint      string // where to obtain the value, for anything issued outside the city
 }
 
 var AllSecrets = []SecretDef{
 	// prod-docker
-	{Env: "prod-docker", Key: "docker_host", Label: "Docker socket path", Internal: true, Default: dockerHostDefault()},
-	{Env: "prod-docker", Key: "blog_db_password", Label: "Blog DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-docker", Key: "blog_minio_password", Label: "Blog MinIO password", Internal: true, Default: "minioadmin"},
-	{Env: "prod-docker", Key: "blog_secret_key", Label: "Blog Django secret key", Internal: true, Generate: true},
-	{Env: "prod-docker", Key: "notes_db_password", Label: "Notes DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-docker", Key: "bank_db_password", Label: "Bank DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-docker", Key: "doc_db_password", Label: "Document Platform DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-docker", Key: "doc_minio_password", Label: "Document Platform MinIO password", Internal: true, Default: "minioadmin"},
-	{Env: "prod-docker", Key: "doc_gemini_api_key", Label: "Gemini API key (Document Platform)"},
-	{Env: "prod-docker", Key: "doc_django_secret_key", Label: "Document Platform Django secret key", Internal: true, Default: "saisakthi"},
-	{Env: "prod-docker", Key: "api_key_weather", Label: "Weather API key"},
-	{Env: "prod-docker", Key: "whisper_db_password", Label: "Whisper DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-docker", Key: "whisper_minio_password", Label: "Whisper MinIO password", Internal: true, Default: "minioadmin"},
-	{Env: "prod-docker", Key: "whisper_jwt_secret", Label: "Whisper JWT secret", Internal: true, Default: "saisakthi"},
-	
+	{Env: "prod-docker", Key: "docker_host", Label: "Docker socket path", Internal: true, Class: ClassCredential, App: "Docker", Default: dockerHostDefault()},
+	{Env: "prod-docker", Key: "blog_db_password", Label: "Blog DB password", Internal: true, Class: ClassCredential, App: "Inkwell", Default: "saisakthi2008"},
+	{Env: "prod-docker", Key: "blog_minio_password", Label: "Blog MinIO password", Internal: true, Class: ClassCredential, App: "Inkwell", Default: "minioadmin"},
+	{Env: "prod-docker", Key: "blog_secret_key", Label: "Blog Django secret key", Internal: true, Class: ClassCredential, App: "Inkwell", Generate: true},
+	{Env: "prod-docker", Key: "notes_db_password", Label: "Notes DB password", Internal: true, Class: ClassCredential, App: "Notes", Default: "saisakthi2008"},
+	{Env: "prod-docker", Key: "bank_db_password", Label: "Bank DB password", Internal: true, Class: ClassCredential, App: "Bank Manager", Default: "saisakthi2008"},
+	{Env: "prod-docker", Key: "doc_db_password", Label: "Document Platform DB password", Internal: true, Class: ClassCredential, App: "Documents", Default: "saisakthi2008"},
+	{Env: "prod-docker", Key: "doc_minio_password", Label: "Document Platform MinIO password", Internal: true, Class: ClassCredential, App: "Documents", Default: "minioadmin"},
+	{Env: "prod-docker", Key: "doc_gemini_api_key", Label: "Gemini API key (Document Platform)", Class: ClassAPIKey, App: "Documents", Hint: "Google AI Studio → API keys → create a key. The Documents ward calls it for embeddings and answers."},
+	{Env: "prod-docker", Key: "doc_django_secret_key", Label: "Document Platform Django secret key", Internal: true, Class: ClassCredential, App: "Documents", Default: "saisakthi"},
+	{Env: "prod-docker", Key: "api_key_weather", Label: "Weather API key", Class: ClassAPIKey, App: "API & Markets", Hint: "openweathermap.org → your account → API keys (free tier is enough). The API & Markets ward calls it for /weather."},
+	{Env: "prod-docker", Key: "whisper_db_password", Label: "Whisper DB password", Internal: true, Class: ClassCredential, App: "Whisper", Default: "saisakthi2008"},
+	{Env: "prod-docker", Key: "whisper_minio_password", Label: "Whisper MinIO password", Internal: true, Class: ClassCredential, App: "Whisper", Default: "minioadmin"},
+	{Env: "prod-docker", Key: "whisper_jwt_secret", Label: "Whisper JWT secret", Internal: true, Class: ClassCredential, App: "Whisper", Default: "saisakthi"},
 
 	// prod-social
-	{Env: "prod-social", Key: "docker_host", Label: "Docker socket path (prod-social)", Internal: true, Default: dockerHostDefault()},
-	{Env: "prod-social", Key: "social_db_password", Label: "Social Media DB password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-social", Key: "social_minio_password", Label: "Social Media MinIO password", Internal: true, Default: "minioadmin"},
-	{Env: "prod-social", Key: "gitops_repo_ssh_key", Label: "ArgoCD deploy SSH private key", Multiline: true},
+	{Env: "prod-social", Key: "docker_host", Label: "Docker socket path (prod-social)", Internal: true, Class: ClassCredential, App: "Docker", Default: dockerHostDefault()},
+	{Env: "prod-social", Key: "social_db_password", Label: "Social Media DB password", Internal: true, Class: ClassCredential, App: "Social", Default: "saisakthi2008"},
+	{Env: "prod-social", Key: "social_minio_password", Label: "Social Media MinIO password", Internal: true, Class: ClassCredential, App: "Social", Default: "minioadmin"},
+	{Env: "prod-social", Key: "gitops_repo_ssh_key", Label: "ArgoCD deploy SSH private key", Multiline: true, Class: ClassSSHKey, App: "GitOps", Hint: "A read-only deploy key added to the gitops repo's Deploy keys settings. Paste the whole private key, BEGIN LINE included."},
 
 	// prod-infra
-	{Env: "prod-infra", Key: "observability_redis_password", Label: "Observability Redis password", Internal: true, Default: "saisakthi"},
-	{Env: "prod-infra", Key: "atlantis_gh_token", Label: "Atlantis GitHub personal access token"},
-	{Env: "prod-infra", Key: "atlantis_gh_webhook_secret", Label: "Atlantis GitHub webhook secret", Internal: true, Default: "saisakthi@2008"},
-	{Env: "prod-infra", Key: "n8n_basic_auth_password", Label: "n8n basic auth password", Internal: true, Default: "saisakthi2008"},
-	{Env: "prod-infra", Key: "docker_host", Label: "Docker socket path", Internal: true, Default: dockerHostDefault()},
+	{Env: "prod-infra", Key: "observability_redis_password", Label: "Observability Redis password", Internal: true, Class: ClassCredential, App: "Monitoring", Default: "saisakthi"},
+	{Env: "prod-infra", Key: "atlantis_gh_token", Label: "Atlantis GitHub personal access token", Class: ClassAPIKey, App: "Atlantis", Hint: "github.com → Settings → Developer settings → Personal access tokens → fine-grained token allowed on the infra repo with Contents:read and Pull requests:write. Atlantis plans and applies through it."},
+	{Env: "prod-infra", Key: "atlantis_gh_webhook_secret", Label: "Atlantis GitHub webhook secret", Internal: true, Class: ClassCredential, App: "Atlantis", Default: "saisakthi@2008"},
+	{Env: "prod-infra", Key: "n8n_basic_auth_password", Label: "n8n basic auth password", Internal: true, Class: ClassCredential, App: "n8n", Default: "saisakthi2008"},
+	{Env: "prod-infra", Key: "docker_host", Label: "Docker socket path", Internal: true, Class: ClassCredential, App: "Docker", Default: dockerHostDefault()},
+}
+
+// ─── Classification ──────────────────────────────────────────────────────────
+
+// ClassOf names what kind of value a declared variable is, for the dashboard's
+// Secrets register. Catalogue entries carry a Class of their own; this is the
+// fallback for the variables terraform still asks for.
+func ClassOf(name string) string {
+	n := strings.ToLower(name)
+	switch {
+	case strings.Contains(n, "ssh_key"), strings.Contains(n, "private_key"), strings.HasSuffix(n, "_pem"):
+		return ClassSSHKey
+	case strings.HasPrefix(n, "api_key_"), strings.Contains(n, "_api_key"),
+		strings.Contains(n, "apikey"), strings.HasSuffix(n, "_token"):
+		return ClassAPIKey
+	default:
+		return ClassCredential
+	}
+}
+
+// wards maps a variable prefix to the service that consumes it, so each kind can
+// be sub-divided by app. The specific prefixes come first.
+var wards = []struct{ prefix, app string }{
+	{"api_key_weather", "API & Markets"},
+	{"observability_", "Monitoring"},
+	{"atlantis_", "Atlantis"},
+	{"gitops_", "GitOps"},
+	{"n8n_", "n8n"},
+	{"whisper_", "Whisper"},
+	{"blog_", "Inkwell"},
+	{"notes_", "Notes"},
+	{"bank_", "Bank Manager"},
+	{"doc_", "Documents"},
+	{"social_", "Social"},
+	{"grocery_", "Grocery"},
+	{"housing_", "Housing"},
+	{"hospital_", "Hospital"},
+	{"compiler_", "Cloud Compiler"},
+	{"video_", "Video"},
+	{"shared_", "Shared services"},
+	{"smtp_", "Mail"},
+	{"docker_host", "Docker"},
+	{"letsencrypt_", "Gateway"},
+}
+
+func AppOf(name string) string {
+	n := strings.ToLower(name)
+	for _, w := range wards {
+		if strings.HasPrefix(n, w.prefix) {
+			return w.app
+		}
+	}
+	return "City"
+}
+
+// HintFor says where an outside credential comes from when the city cannot
+// invent it. Catalogue entries carry a sharper hint of their own.
+func HintFor(name string) string {
+	switch ClassOf(name) {
+	case ClassSSHKey:
+		return "Paste the whole private key file, the BEGIN line included."
+	case ClassAPIKey:
+		return "Paste this key from the provider's own dashboard — the city cannot invent it."
+	}
+	return ""
 }
 
 // ─── Interactive prompting ───────────────────────────────────────────────────
@@ -473,9 +569,17 @@ observability_redis_password = %q
 gitops_repo_url = %q
 
 # ─── Atlantis ───────────────────────────────────────────────
-atlantis_gh_user           = %q
-atlantis_gh_token          = %q
-atlantis_gh_webhook_secret = %q
+# Atlantis is switched off. Its container, its docker_volume, its image build
+# and the three atlantis_gh_* variable declarations all live, commented, in
+# environments/prod-infra/others.tf. Assigning them here would make Terraform
+# warn about "values for undeclared variables" on every prod-infra plan.
+# To re-enable: un-comment others.tf, then add these three lines back (as
+# atlantis_gh_user = "..." style assignments) plus the matching arguments at
+# the end of the Sprintf in generateInfraTfvars.
+#
+# The values themselves stay in the keychain regardless: `social-platform
+# release` reads prod-infra/atlantis_gh_token for its GitHub API calls, and the
+# dashboard's Secrets sheet still lists it.
 `,
 		projectsDir(cfg),
 		g("docker_host"), // FIX: was previously passed last; now matches "docker_host = %q" placeholder position
@@ -488,9 +592,6 @@ atlantis_gh_webhook_secret = %q
 		g("n8n_basic_auth_password"),
 		g("observability_redis_password"),
 		inf.GitopsRepoURL,
-		inf.AtlantisGHUser,
-		g("atlantis_gh_token"),
-		g("atlantis_gh_webhook_secret"),
 	)
 	return write(filepath.Join(envPath, "prod-infra", "terraform.tfvars"), content)
 }

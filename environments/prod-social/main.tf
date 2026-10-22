@@ -372,7 +372,14 @@ resource "helm_release" "argocd" {
   ]
 }
 
+# ExternalName Service that puts KEDA's HTTP interceptor in front of ArgoCD,
+# so the ingress below (and the HTTPScaledObject at the end of this file) can
+# scale argocd-server from zero. It is written into namespace `argocd`, which
+# nothing else creates -- helm_release.argocd does, with create_namespace.
+# Without this depends_on Terraform is free to apply it in the same parallel
+# batch as the Helm release and fail with `namespaces "argocd" not found`.
 resource "kubectl_manifest" "keda_interceptor_proxy" {
+  depends_on = [helm_release.argocd]
   yaml_body = <<-YAML
     apiVersion: v1
     kind: Service
@@ -388,7 +395,16 @@ resource "kubectl_manifest" "keda_interceptor_proxy" {
 }
 
 resource "kubernetes_ingress_v1" "argocd_server" {
-  depends_on = [helm_release.argocd]
+  # argocd-server: the backend Service must exist before the Ingress points at
+  # it; the `nginx` IngressClass itself arrives through ArgoCD
+  # (gitops/social-media/apps/ingress-nginx-app.yaml), so the app-of-apps is
+  # ordered first too. The Ingress API accepts an unknown ingressClassName, so
+  # this is about getting traffic served, not about the object being accepted.
+  depends_on = [
+    helm_release.argocd,
+    kubectl_manifest.keda_interceptor_proxy,
+    kubectl_manifest.app_of_apps_social,
+  ]
 
   metadata {
     name      = "argocd-server-ingress"
@@ -408,9 +424,9 @@ resource "kubernetes_ingress_v1" "argocd_server" {
           path_type = "Prefix"
           backend {
             service {
-              name = "keda-interceptor-proxy" # <--- CHANGE THIS
+              name = "keda-interceptor-proxy"
               port {
-                number = 8080 # <--- AND THIS
+                number = 8080
               }
             }
           }
@@ -464,8 +480,15 @@ resource "kubectl_manifest" "social_minio_secret" {
 }
 
 resource "kubectl_manifest" "app_of_apps_social" {
+  # The repo credentials Secret has to land before this Application is
+  # created: ArgoCD resolves var.gitops_repo_url the moment the Application
+  # appears, and with the secret missing it records
+  # "repository not found / ssh: unable to authenticate" on the app and only
+  # clears it on the next refresh -- which is what a "sometimes it syncs"
+  # deployment looks like from the outside.
   depends_on = [
     helm_release.argocd,
+    kubernetes_secret_v1.gitops_repo_credentials,
     kubectl_manifest.postgres_secret,
     kubectl_manifest.social_minio_secret,
   ]
@@ -474,7 +497,7 @@ resource "kubectl_manifest" "app_of_apps_social" {
     kind: Application
     metadata:
       name: social-media-app-of-apps
-      namespace: argocd        # ← ADD THIS
+      namespace: argocd
     spec:
       project: default
       source:
@@ -493,81 +516,12 @@ resource "kubectl_manifest" "app_of_apps_social" {
   YAML
 }
 
-# resource "kubernetes_namespace" "consul" {
-#   metadata {
-#     name = "consul"
-#   }
-# }
-
-
-# resource "helm_release" "consul" {
-#   name       = "consul"
-#   repository = "https://helm.releases.hashicorp.com"
-#   chart      = "consul"
-#   version    = "1.6.2"          # pin to whatever's current when you run this
-#   namespace  = kubernetes_namespace.consul.metadata[0].name
-
-#   values = [
-#     yamlencode({
-#       global = { name = "consul", datacenter = "dc1" }
-#       server = {
-#         replicas        = 1
-#         bootstrapExpect = 1
-#         extraConfig     = jsonencode({
-#           ui_config = {
-#             enabled      = true
-#             content_path = "/consul/"
-#           }
-#         })
-#       }
-#       connectInject = { enabled = false }
-#       ui            = { enabled = true }
-#       client        = { enabled = true }
-#       syncCatalog   = {
-#         enabled   = true
-#         default   = true
-#         toConsul  = true
-#         toK8S     = false
-#         k8sPrefix = ""
-#       }
-#     })
-#   ]
-# }
-
-# resource "kubectl_manifest" "consul_ingress" {
-#   yaml_body = <<-YAML
-#     apiVersion: networking.k8s.io/v1
-#     kind: Ingress
-#     metadata:
-#       name: consul-ui
-#       namespace: consul
-#     spec:
-#       ingressClassName: nginx
-#       rules:
-#         - http:
-#             paths:
-#               - path: /consul/
-#                 pathType: Prefix
-#                 backend:
-#                   service:
-#                     name: consul-ui
-#                     port:
-#                       number: 80
-#               - path: /v1
-#                 pathType: Prefix
-#                 backend:
-#                   service:
-#                     name: consul-ui
-#                     port:
-#                       number: 80
-#   YAML
-# }
 # ---------------------------------------------------------------------------
 # KEDA + HTTP add-on.
 #
 # Kept here (not gitops/) because it's cluster infrastructure Terraform
-# already owns directly in this file -- same category as helm_release.argocd
-# and helm_release.consul above, not an application workload. Light resource
+# already owns directly in this file -- same category as helm_release.argocd,
+# not an application workload. (Consul, which used to sit here, moved to others.tf.) Light resource
 # footprint on purpose, since today's pass is about cutting overhead, not
 # adding more of it.
 # ---------------------------------------------------------------------------
@@ -610,12 +564,13 @@ resource "helm_release" "keda_http_add_on" {
 # That leaves, across every .tf file in this repo, exactly one safe
 # candidate: argocd-server itself (helm_release.argocd + the ingress right
 # above). Everything else that isn't ArgoCD-managed is either:
-#   - a plain Docker container on the host (n8n, jenkins, atlantis, the
-#     docker_app-module backends, etc.) -- HTTPScaledObject is a Kubernetes
-#     CRD, it has nothing to attach to there, or
-#   - Consul, which IS in-cluster, but its UI is served by the "server"
-#     StatefulSet's own Raft-voting pods -- scaling that to/from zero risks
-#     the quorum, so it's left alone on purpose.
+#   - a plain Docker container on the host (n8n, the docker_app-module
+#     backends, etc.; Jenkins and Atlantis live in prod-infra/others.tf,
+#     commented) -- HTTPScaledObject is a Kubernetes CRD, it has nothing to
+#     attach to there, or
+#   - Consul, which is in-cluster only when others.tf is un-commented -- and
+#     its UI is served by the "server" StatefulSet's own Raft-voting pods, so
+#     scaling that to/from zero risks the quorum. Left alone on purpose.
 #
 # argocd-server is stateless (state lives in etcd + redis, not in the
 # server pod), so scale-to-zero when nobody's looking at the UI is safe.

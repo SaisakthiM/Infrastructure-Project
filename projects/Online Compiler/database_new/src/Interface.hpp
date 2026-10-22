@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "HttpParser.hpp"
 #include "HttpRequest.hpp"
+#include "Cors.hpp"
 #include "Json.hpp"
 
 
@@ -88,8 +89,12 @@ public:
         return json;
     }
 
-    void sendOk(const std::string& body) {
-        sendHttp(body, "200 OK");
+    void sendOk(const std::string& body, const HttpRequest& req) {
+        sendHttp(body, "200 OK", req);
+    }
+
+    void sendPreflight(const HttpRequest& req) {
+        sendHttp("", "204 No Content", req);
     }
 
 
@@ -104,12 +109,30 @@ private:
         return out;
     }
 
-    void sendHttp(const std::string& body, const std::string& status) {
+    // CORS is a property of who asked, not of the route, so every reply gets
+    // the same treatment: echo the Origin back only when the allowlist in
+    // Cors.hpp recognises it. Server-to-server calls carry no Origin and so
+    // carry no CORS headers.
+    void sendHttp(const std::string& body, const std::string& status,
+                  const HttpRequest& req) {
+        std::string origin = cors::responseOrigin(req);
+
         std::string response =
             "HTTP/1.1 " + status + "\r\n"
-            "Content-Type: application/json\r\n"
-            "Content-Length: " + std::to_string(body.size()) + "\r\n"
-            "Connection: close\r\n"
+            "Content-Type: application/json\r\n";
+
+        if (status.rfind("204", 0) != 0)
+            response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+
+        if (!origin.empty()) {
+            response += "Access-Control-Allow-Origin: " + origin + "\r\n";
+            response += "Vary: Origin\r\n";
+            response += "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+            response += "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
+            response += "Access-Control-Max-Age: 86400\r\n";
+        }
+
+        response += "Connection: close\r\n"
             "\r\n" + body;
         ::send(clientSocket, response.c_str(), response.size(), 0);
     }

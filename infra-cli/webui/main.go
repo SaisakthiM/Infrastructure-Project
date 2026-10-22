@@ -146,6 +146,9 @@ func main() {
 	// Source folder, git sync and Terraform variables.
 	registerSourceRoutes(mux)
 
+	// Keychain secrets and the variables still without a value.
+	registerSecretRoutes(mux)
+
 	addr := ":" + *port
 	fmt.Printf("\n  social-platform Web UI\n")
 	fmt.Printf("  Open: http://localhost%s\n\n", addr)

@@ -32,12 +32,7 @@ variable "gitops_repo_ssh_key" {
   sensitive = true
 }
 
-variable "smtp_user" {
-  type = string
-}
-
-variable "smtp_password" {
-  type      = string
-  sensitive = true
-}
+# smtp_user / smtp_password (no consumer, and no default -- so they made every
+# prod-social apply fail on a missing value) and the Consul blocks moved to
+# others.tf, commented. Un-comment them there if you re-enable Grafana SMTP.
 

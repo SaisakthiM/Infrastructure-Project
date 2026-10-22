@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/SaisakthiM/Infrastructure-Project/cli/internal/config"
@@ -25,13 +24,13 @@ type ResourceKind string
 const (
 	KindVolume    ResourceKind = "volume"
 	KindContainer ResourceKind = "container"
-	// KindImage is intentionally omitted: kreuzwerker/docker v3.x does not
-	// support terraform import for docker_image resources. Images are always
-	// rebuilt by Terraform on the next apply.
+	// KindImage is intentionally omitted: the kreuzwerker/docker provider does
+	// not support terraform import for docker_image resources. Images are
+	// always rebuilt by Terraform on the next apply.
 	KindNetwork     ResourceKind = "network"      // prod-gateway
 	KindHelmRelease ResourceKind = "helm_release" // prod-social
 	KindSecret      ResourceKind = "secret"       // prod-social (kubernetes_secret_v1)
-	KindManifest    ResourceKind = "manifest"     // prod-social (kubectl_manifest, gavinbunney provider)
+	KindManifest    ResourceKind = "manifest"     // prod-social + prod-infra (kubectl_manifest, gavinbunney provider)
 )
 
 // ImportEntry maps a Terraform resource address to its Docker lookup name,
@@ -48,12 +47,28 @@ type ImportEntry struct {
 
 // ─── prod-docker catalog ──────────────────────────────────────────────────
 
+// Everything below was re-verified against the current
+// environments/<env>/*.tf files (main.tf, shared-data.tf, and the
+// per-module `module "<name>" { name = ... }` arguments in
+// modules/docker_app and modules/networking). Keep it in step with the
+// Terraform: an address that isn't declared any more, or a container name
+// that has drifted, makes `terragrunt import` fail against the wrong object.
+//
+// Resources that now live in environments/*/others.tf (commented out: Jenkins,
+// Atlantis, Consul, Selenium) are NOT listed here — importing something the
+// config doesn't declare would create an orphan in state. Re-add the entries
+// together with the blocks when you un-comment them.
+//
+// prod-docker volumes: 24 declared in main.tf plus the 3 shared-* ones in
+// shared-data.tf. Several are deliberately kept even though nothing mounts
+// them any more (notes_*, blog_*, doc_mysql/doc_minio,
+// whisper_minio_data, compiler_*_data) — they hold the only remaining copy
+// of that old data, so they stay importable so `apply` can't delete them.
 var dockerVolumeCatalog = []ImportEntry{
 	{EnvDocker, "docker_volume.bank_dist", KindVolume, "gateway_bank-dist"},
 	{EnvDocker, "docker_volume.video_dist", KindVolume, "gateway_video-dist"},
 	{EnvDocker, "docker_volume.api_dist", KindVolume, "gateway_api-dist"},
 	{EnvDocker, "docker_volume.whisper_dist", KindVolume, "gateway_whisper-dist"},
-	{EnvDocker, "docker_volume.compiler_dist", KindVolume, "gateway_compiler-dist"},
 	{EnvDocker, "docker_volume.notes_pgdata", KindVolume, "gateway_notes-pgdata"},
 	{EnvDocker, "docker_volume.notes_static", KindVolume, "gateway_notes-static"},
 	{EnvDocker, "docker_volume.notes_media", KindVolume, "gateway_notes-media"},
@@ -67,164 +82,146 @@ var dockerVolumeCatalog = []ImportEntry{
 	{EnvDocker, "docker_volume.compiler_server_data", KindVolume, "gateway_compiler-server-data"},
 	{EnvDocker, "docker_volume.whisper_pgdata", KindVolume, "gateway_whisper-pgdata"},
 	{EnvDocker, "docker_volume.whisper_minio_data", KindVolume, "whisper_minio_data"},
+	{EnvDocker, "docker_volume.compiler_dist", KindVolume, "gateway_compiler-dist"},
+	{EnvDocker, "docker_volume.grocery_data", KindVolume, "gateway_grocery-data"},
+	{EnvDocker, "docker_volume.housing_data", KindVolume, "gateway_housing-data"},
+	{EnvDocker, "docker_volume.api_service_data", KindVolume, "gateway_api-service-data"},
+	{EnvDocker, "docker_volume.video_uploads", KindVolume, "gateway_video-uploads"},
+	{EnvDocker, "docker_volume.video_data", KindVolume, "gateway_video-data"},
+	{EnvDocker, "docker_volume.hospital_data", KindVolume, "gateway_hospital-data"},
+	{EnvDocker, "docker_volume.shared_pgdata", KindVolume, "gateway_shared-pgdata"},
+	{EnvDocker, "docker_volume.shared_mysql", KindVolume, "gateway_shared-mysql"},
+	{EnvDocker, "docker_volume.shared_minio", KindVolume, "gateway_shared-minio"},
 }
 
-// dockerContainerCatalog: "support" containers (postgres/mysql/minio sidecars
-// and *_frontend_build one-shot build containers) declared directly in
-// prod-docker/main.tf, not via the docker_app module.
+// dockerContainerCatalog: "support" containers declared directly in
+// prod-docker — the one-shot *_frontend_build containers and the shared
+// database/storage instances from shared-data.tf (plus their init jobs).
+// The app containers each come from a module and are listed separately.
 var dockerContainerCatalog = []ImportEntry{
-	{EnvDocker, "docker_container.notes_postgres", KindContainer, "notes-postgres"},
-	{EnvDocker, "docker_container.whisper-postgres", KindContainer, "gateway_whisper-pgdata"},
-	{EnvDocker, "docker_container.whisper_minio", KindContainer, "whisper-minio"},
 	{EnvDocker, "docker_container.whisper_frontend_build", KindContainer, "whisper-frontend-build"},
-	{EnvDocker, "docker_container.bank_postgres", KindContainer, "bank-postgres"},
 	{EnvDocker, "docker_container.bank_frontend_build", KindContainer, "bank-frontend-build"},
-	{EnvDocker, "docker_container.compiler_db", KindContainer, "compiler-db"},
 	{EnvDocker, "docker_container.compiler_frontend_build", KindContainer, "compiler-frontend-build"},
 	{EnvDocker, "docker_container.video_frontend_build", KindContainer, "video-frontend-build"},
-	{EnvDocker, "docker_container.blog_db", KindContainer, "blog-db"},
-	{EnvDocker, "docker_container.blog_minio", KindContainer, "blog-minio"},
-	{EnvDocker, "docker_container.blog_minio_init", KindContainer, "blog-minio-init"},
 	{EnvDocker, "docker_container.api_service_frontend_build", KindContainer, "api-service-frontend-build"},
-	{EnvDocker, "docker_container.doc_mysql", KindContainer, "doc-mysql"},
-	{EnvDocker, "docker_container.doc_minio", KindContainer, "doc-minio"},
 	{EnvDocker, "docker_container.doc_frontend_build", KindContainer, "doc-frontend-build"},
+	{EnvDocker, "docker_container.compiler_db", KindContainer, "compiler-db"},
+	{EnvDocker, "docker_container.shared_postgres", KindContainer, "shared-postgres"},
+	{EnvDocker, "docker_container.shared_postgres_init", KindContainer, "shared-postgres-init"},
+	{EnvDocker, "docker_container.shared_mysql", KindContainer, "shared-mysql"},
+	{EnvDocker, "docker_container.shared_mysql_init", KindContainer, "shared-mysql-init"},
+	{EnvDocker, "docker_container.shared_minio", KindContainer, "shared-minio"},
+	{EnvDocker, "docker_container.shared_minio_init", KindContainer, "shared-minio-init"},
 }
 
-// dockerAppContainerCatalog: docker_container.app resource created by each
-// instance of "../../modules/docker_app" inside prod-docker/main.tf.
+// dockerAppContainerCatalog: the docker_container.app resource created by
+// each "../../modules/docker_app" instance in prod-docker/main.tf. The
+// Docker name is the module's `name` argument, verbatim.
 var dockerAppContainerCatalog = []ImportEntry{
 	{EnvDocker, "module.whisper_backend.docker_container.app", KindContainer, "whisper_backend"}, // underscore, not a typo
 	{EnvDocker, "module.bank_backend.docker_container.app", KindContainer, "bank-backend"},
-	{EnvDocker, "module.compiler_server.docker_container.app", KindContainer, "compiler-server"},
 	{EnvDocker, "module.video_backend.docker_container.app", KindContainer, "video-uploader-backend"},
 	{EnvDocker, "module.hospital_management.docker_container.app", KindContainer, "hospital-management"},
 	{EnvDocker, "module.blog_website.docker_container.app", KindContainer, "blog-website"},
 	{EnvDocker, "module.api_service_backend.docker_container.app", KindContainer, "api-service-backend"},
-	{EnvDocker, "module.doc_backend.docker_container.app", KindContainer, "doc-backend"},
 	{EnvDocker, "module.grocery_backend.docker_container.app", KindContainer, "grocery-backend"},
 	{EnvDocker, "module.housing_backend.docker_container.app", KindContainer, "housing-backend"},
+	{EnvDocker, "module.doc_backend.docker_container.app", KindContainer, "doc-backend"},
+	{EnvDocker, "module.compiler_server.docker_container.app", KindContainer, "compiler-server"},
 }
 
 // ─── prod-infra catalog ────────────────────────────────────────────────────
-// Confirmed against prod-infra/main.tf via:
-//   rg "resource \"docker_(container|volume)\"" -A 6 ~/.social-platform/infra/environments/prod-infra/main.tf
-//
-// otel_gateway (line 54), jenkins (line 167), jenkins_agent (line 205),
-// atlantis (line 311), jenkins_home volume (line 160), atlantis_data volume
-// (line 266), n8n container + n8n_data volume (lines 132/136) all confirmed
-// exact — including catching that n8n_data's real name is
-// "gateway_n8n-data", not "n8n_data" as previously guessed.
-//
-// STILL UNRESOLVED: "nginx-exporter" (running per `docker ps`) did NOT
-// appear anywhere in this grep, so its actual resource address is unknown —
-// dropped from the catalog rather than leave a guess in. Also
-// module.node_exporter.docker_container.app is confirmed only via the
-// earlier apply-error log, not this grep (module-internal resources don't
-// match the "resource \"docker_container\"" pattern since they live inside
-// modules/docker_app/main.tf, referenced here only via `module "node_exporter" {...}`).
-// To find nginx-exporter, try:
-//   rg "nginx.exporter" -B 2 -A 6 ~/.social-platform/infra/environments/prod-infra/main.tf
+// Jenkins, jenkins-agent, atlantis and their volumes were moved to
+// prod-infra/others.tf (commented out), so they are dropped here too —
+// `terragrunt import` cannot target an address the config doesn't declare.
 var dockerInfraContainerCatalog = []ImportEntry{
 	{EnvInfra, "docker_container.otel_gateway", KindContainer, "otel-gateway"},
 	{EnvInfra, "docker_container.n8n", KindContainer, "n8n"},
-	{EnvInfra, "docker_container.jenkins", KindContainer, "jenkins"},
-	{EnvInfra, "docker_container.jenkins_agent", KindContainer, "jenkins-agent"},
-	{EnvInfra, "docker_container.atlantis", KindContainer, "atlantis"},
-	{EnvInfra, "module.node_exporter.docker_container.app", KindContainer, "node-exporter"}, // confirmed via error log only
+	{EnvInfra, "module.node_exporter.docker_container.app", KindContainer, "node-exporter"},
 }
 
 var dockerInfraVolumeCatalog = []ImportEntry{
-	{EnvInfra, "docker_volume.n8n_data", KindVolume, "gateway_n8n-data"}, // corrected: was "n8n_data", actually "gateway_n8n-data"
-	{EnvInfra, "docker_volume.jenkins_home", KindVolume, "jenkins_home"},
-	{EnvInfra, "docker_volume.atlantis_data", KindVolume, "gateway_atlantis-data"},
+	{EnvInfra, "docker_volume.n8n_data", KindVolume, "gateway_n8n-data"},
 }
 
 // ─── prod-gateway catalog ──────────────────────────────────────────────────
-// UNRESOLVED: the rg against prod-gateway/main.tf returned no output (the
-// prompt after it showed a non-zero exit). Running two rg commands pasted
-// together makes the second one's actual result ambiguous — re-run just
-// this one on its own:
-//   rg "resource \"docker_container\"" -A 6 ~/.social-platform/infra/environments/prod-gateway/main.tf
-// Left empty rather than guessing again — the last guess (n8n_data) turned
-// out wrong, so a second unverified entry isn't worth risking a
-// terragrunt import misfiring against the wrong container.
-var dockerGatewayContainerCatalog = []ImportEntry{}
+// The five static-content volumes are owned by prod-gateway itself (they sit
+// next to the null_resources that fill them), and nginx + nginx-exporter are
+// docker_app modules declared in the same main.tf.
+var dockerGatewayCatalog = []ImportEntry{
+	{EnvGateway, "docker_volume.intro_dist", KindVolume, "gateway_intro-dist"},
+	{EnvGateway, "docker_volume.record_dist", KindVolume, "gateway_record-dist"},
+	{EnvGateway, "docker_volume.grocery_dist", KindVolume, "gateway_grocery-dist"},
+	{EnvGateway, "docker_volume.housing_dist", KindVolume, "gateway_housing-dist"},
+	{EnvGateway, "docker_volume.city_core_dist", KindVolume, "gateway_city-core-dist"},
+	{EnvGateway, "module.gateway.docker_container.app", KindContainer, "gateway"},
+	{EnvGateway, "module.nginx_exporter.docker_container.app", KindContainer, "nginx-exporter"},
+}
 
 // ─── network catalog (all environments) ────────────────────────────────────
 // `docker network ls` on this host shows: bridge, gateway-net, host, kind,
-// none. Only "gateway-net" is a plausible Terraform-managed network — the
-// rest are Docker/kind built-ins that were never created by (and can't be
-// imported into) a docker_network resource:
-//   - bridge / host / none: Docker's built-in networks, not importable.
-//   - kind: created by the `kind` CLI itself when the cluster bootstraps,
-//     not normally a docker_network resource unless one was deliberately
-//     declared for it.
-//
-// UNRESOLVED: this catalog is intentionally left empty. Confirm the real
-// resource address (and which environment it belongs to — prod-gateway is
-// the likely candidate given KindNetwork's existing "// prod-gateway"
-// annotation above) before adding an entry, same discipline as the
-// dockerGatewayContainerCatalog note above. Run:
-//   rg "resource \"docker_network\"" -A 6 ~/.social-platform/infra/environments/*/main.tf
-// Then add entries like:
-//   {EnvGateway, "docker_network.gateway_net", KindNetwork, "gateway-net"},
-var dockerNetworkCatalog = []ImportEntry{}
+// none. Only "gateway-net" is a Terraform-managed network — it comes from
+// `module "network" { source = "../../modules/networking", name =
+// "gateway-net" }` in prod-gateway/main.tf, and modules/networking/main.tf
+// declares exactly one docker_network ("this") inside it:
+//   - bridge / host / none: Docker's built-in networks, never importable.
+//   - kind: created by the `kind` CLI when the cluster bootstraps; no
+//     docker_network resource owns it.
+var dockerNetworkCatalog = []ImportEntry{
+	{EnvGateway, "module.network.docker_network.this", KindNetwork, "gateway-net"},
+}
 
 // ─── helm release catalog (prod-social) ────────────────────────────────────
-// Confirmed: ArgoCD is installed in namespace "argocd" (see `helm list -n
-// argocd` / `kubectl get pods -n argocd` output). Import ID format for the
-// hashicorp/helm provider's helm_release resource is "<namespace>/<name>",
-// confirmed against the provider docs — NOT just the release name, and NOT
-// "name/namespace" (reversed).
+// Import ID format for the hashicorp/helm provider's helm_release is
+// "<namespace>/<name>" — confirmed against the provider docs, and it is also
+// what `helm list -A` reports, so the same string works as lookup key.
 var helmReleaseCatalog = []ImportEntry{
 	{EnvSocial, "helm_release.argocd", KindHelmRelease, "argocd/argocd"},
+	{EnvSocial, "helm_release.keda", KindHelmRelease, "keda/keda"},
+	{EnvSocial, "helm_release.keda_http_add_on", KindHelmRelease, "keda/http-add-on"},
 }
 
 // ─── kubernetes_secret_v1 catalog (prod-social) ────────────────────────────
-// Confirmed via apply log: kubernetes_secret_v1.gitops_repo_credentials at
-// main.tf line 339 already exists in the cluster as secret name
-// "coding-project-repo" — but the "already exists" error from the
-// Kubernetes API does NOT include the namespace, so it isn't safe to guess
-// here (unlike the helm_release case, where `helm list -n argocd` gave an
-// unambiguous namespace).
-//
-// UNRESOLVED: confirm the namespace before adding an entry. Check the
-// metadata block for this resource:
-//   sed -n '330,350p' ~/.social-platform/infra/environments/prod-social/main.tf
-// Import ID format (hashicorp/kubernetes provider, confirmed against provider
-// docs) is "<namespace>/<name>" — same pattern as helm_release. Once
-// confirmed, add an entry like:
-//   {EnvSocial, "kubernetes_secret_v1.gitops_repo_credentials", KindSecret, "argocd/coding-project-repo"},
-var kubernetesSecretCatalog = []ImportEntry{}
+// The hashicorp/kubernetes provider's kubernetes_secret_v1 import ID is
+// "<namespace>/<name>", same shape as helm_release. Namespace comes from the
+// resource's own metadata block in prod-social/main.tf (name
+// "coding-project-repo", namespace "argocd"), not from a guess.
+var kubernetesSecretCatalog = []ImportEntry{
+	{EnvSocial, "kubernetes_secret_v1.gitops_repo_credentials", KindSecret, "argocd/coding-project-repo"},
+}
 
-// ─── kubectl_manifest catalog (prod-social) ────────────────────────────────
+// ─── kubectl_manifest catalog (prod-social, prod-infra) ────────────────────
 // kubectl_manifest (gavinbunney/kubectl provider) resources can be arbitrary
 // Kubernetes objects of any Kind, so — unlike volumes/containers/networks/
 // secrets — there's no single `kubectl get <something> -A` call that lists
-// every possible candidate. Each entry here must be fully known up front:
-// apiVersion, Kind, name, and namespace (if namespaced) all come from the
-// main.tf yaml_body block itself, not from cluster introspection.
+// every possible candidate. Each entry here is fully known up front:
+// apiVersion, Kind, name, and namespace read straight out of the yaml_body
+// block in main.tf. Where a namespaced object's metadata omits `namespace`
+// (the two Secrets below), Kubernetes resolves it to "default".
 //
 // Import ID format (confirmed against gavinbunney/terraform-provider-kubectl
 // docs and source): a "//"-delimited string —
-//   "<apiVersion>//<Kind>//<name>"              for cluster-scoped objects
+//   "<apiVersion>//<Kind>//<name>"               for cluster-scoped objects
 //   "<apiVersion>//<Kind>//<name>//<namespace>"  for namespaced objects
 // DockerName below is (ab)used to carry this pre-built ID string directly,
 // since — unlike every other Kind above — there's no separate "docker lookup
 // name" vs. "import ID" distinction here; they're the same string.
 //
-// UNRESOLVED: intentionally empty. The one kubectl_manifest resource seen so
-// far (app_of_apps_social) already applied successfully in the last run and
-// does not need importing. If a future apply hits a "resource already
-// exists" style error for a different kubectl_manifest resource, find its
-// apiVersion/Kind/name/namespace from the yaml_body in main.tf and add an
-// entry like:
-//   {EnvSocial, "kubectl_manifest.some_resource", KindManifest, "argoproj.io/v1alpha1//Application//social-media-app-of-apps//argocd"},
-var kubectlManifestCatalog = []ImportEntry{}
+// Every entry is checked against the live kind cluster individually by
+// manifestExists(), so an object that was never created simply isn't
+// offered — no bulk listing needed.
+var kubectlManifestCatalog = []ImportEntry{
+	{EnvSocial, "kubectl_manifest.postgres_secret", KindManifest, "v1//Secret//postgres-secret//default"},
+	{EnvSocial, "kubectl_manifest.social_minio_secret", KindManifest, "v1//Secret//social-minio-secret//default"},
+	{EnvSocial, "kubectl_manifest.keda_interceptor_proxy", KindManifest, "v1//Service//keda-interceptor-proxy//argocd"},
+	{EnvSocial, "kubectl_manifest.app_of_apps_social", KindManifest, "argoproj.io/v1alpha1//Application//social-media-app-of-apps//argocd"},
+	{EnvSocial, "kubectl_manifest.httpscaledobject_argocd_server", KindManifest, "http.keda.sh/v1alpha1//HTTPScaledObject//argocd-server//argocd"},
+	{EnvInfra, "kubectl_manifest.app_of_apps_observability", KindManifest, "argoproj.io/v1alpha1//Application//observability-app-of-apps//argocd"},
+}
 
-// docker_image resources are NOT in any catalog — kreuzwerker/docker v3.x
-// does not support import for docker_image. Terraform rebuilds them on apply.
+// docker_image resources are NOT in any catalog — the kreuzwerker/docker
+// provider does not support import for docker_image. Terraform rebuilds
+// them on apply.
 
 // ImportCandidate is a resource that was found in Docker and is ready to import.
 type ImportCandidate struct {
@@ -246,7 +243,7 @@ func catalogForEnv(env Environment) []ImportEntry {
 	all = append(all, dockerAppContainerCatalog...)
 	all = append(all, dockerInfraContainerCatalog...)
 	all = append(all, dockerInfraVolumeCatalog...)
-	all = append(all, dockerGatewayContainerCatalog...)
+	all = append(all, dockerGatewayCatalog...)
 	all = append(all, dockerNetworkCatalog...)
 	all = append(all, helmReleaseCatalog...)
 	all = append(all, kubernetesSecretCatalog...)
@@ -298,27 +295,21 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 
 	var candidates []ImportCandidate
 
-	// Cache one "terragrunt state list" result per working directory: several
-	// catalog entries can share a directory (the shared environment root),
-	// while module-based app entries each get their own subdirectory (see
-	// dirForEntry), so this is keyed by resolved dir, not by environment.
-	stateCache := map[string]map[string]bool{}
-
+	// Every terragrunt unit is an environment directory: the app containers are
+	// `module "<name>"` calls inside that directory's own main.tf, not separate
+	// subdirectories, so one `terragrunt state list` per environment covers
+	// every entry in its catalog and addresses stay verbatim.
 	for _, env := range scannedEnvironments {
-		for _, entry := range catalogForEnv(env) {
-			dir, localAddr := dirForEntry(cfg, entry)
+		dir := WorkDir(cfg, env)
 
-			inState, cached := stateCache[dir]
-			if !cached {
-				var err error
-				inState, err = stateAddressesInDir(dir)
-				if err != nil {
-					ui.Warn("Could not read terraform state for %s, assuming it's empty: %v", dir, err)
-					inState = map[string]bool{}
-				}
-				stateCache[dir] = inState
-			}
-			if inState[localAddr] {
+		inState, err := stateAddressesInDir(dir)
+		if err != nil {
+			ui.Warn("Could not read terraform state for %s, assuming it's empty: %v", dir, err)
+			inState = map[string]bool{}
+		}
+
+		for _, entry := range catalogForEnv(env) {
+			if inState[entry.TFAddress] {
 				continue
 			}
 
@@ -354,67 +345,16 @@ func DetectImportCandidates(cfg *config.Config) ([]ImportCandidate, error) {
 		}
 	}
 
-	// docker_image resources are skipped — kreuzwerker/docker v3.x does not
-	// support terraform import for docker_image. They are rebuilt on next apply.
+	// docker_image resources are skipped — the kreuzwerker/docker provider
+	// does not support terraform import for docker_image. They are rebuilt
+	// on the next apply.
 
 	return candidates, nil
 }
 
-// dirForEntry returns the terragrunt working directory for entry, together
-// with the resource address to use once inside that directory.
-//
-// Most catalog entries (the "support" containers/volumes declared directly
-// in an environment's shared main.tf — e.g. docker_container.notes_postgres)
-// run from that environment's root dir (environments/<env>/) with their
-// address unchanged.
-//
-// Module-based app entries are different: each app (notes_backend,
-// whisper_backend, node_exporter, ...) is its own separate terragrunt unit
-// living in its own subdirectory under the environment
-// (environments/<env>/<app-name>/, e.g. environments/prod-docker/notes-backend/),
-// with its own terragrunt.hcl pointing straight at modules/docker_app. So
-// from inside that subdirectory the module IS the root module — the
-// resource address must NOT carry the "module.<name>." prefix, since that
-// prefix only makes sense from the parent directory's point of view (which
-// doesn't apply here: the app is its own unit, not a module call nested in
-// the parent's main.tf). The subdirectory name is the module instance name
-// from the catalog address, kebab-cased to match the repo's folder naming
-// (e.g. "notes_backend" -> "notes-backend").
-func dirForEntry(cfg *config.Config, entry ImportEntry) (dir string, localAddress string) {
-	envDir := WorkDir(cfg, entry.Env)
-	if modName, local, ok := splitModuleAddress(entry.TFAddress); ok {
-		return filepath.Join(envDir, kebabCase(modName)), local
-	}
-	return envDir, entry.TFAddress
-}
-
-// splitModuleAddress splits a resource address of the form
-// "module.<name>.<rest>" into the module instance name and the remaining
-// local address (e.g. "module.notes_backend.docker_container.app" ->
-// "notes_backend", "docker_container.app"). ok is false for addresses that
-// aren't module calls (support resources declared directly in main.tf).
-func splitModuleAddress(addr string) (moduleName, local string, ok bool) {
-	if !strings.HasPrefix(addr, "module.") {
-		return "", "", false
-	}
-	rest := strings.TrimPrefix(addr, "module.")
-	idx := strings.Index(rest, ".")
-	if idx < 0 {
-		return "", "", false
-	}
-	return rest[:idx], rest[idx+1:], true
-}
-
-// kebabCase converts a Terraform-identifier-style name (underscores) to the
-// hyphenated folder-naming convention used for per-app terragrunt units.
-func kebabCase(s string) string {
-	return strings.ReplaceAll(s, "_", "-")
-}
-
 // stateAddressesInDir returns the set of resource addresses Terraform
 // already manages in a single terragrunt working directory, via
-// `terragrunt state list`. dir may be a shared environment root or a
-// per-app unit subdirectory — see dirForEntry.
+// `terragrunt state list`.
 func stateAddressesInDir(dir string) (map[string]bool, error) {
 	if _, err := os.Stat(dir); err != nil {
 		return nil, fmt.Errorf("directory not found: %s", dir)
@@ -443,21 +383,18 @@ func stateAddressesInDir(dir string) (map[string]bool, error) {
 	return addrs, nil
 }
 
-// RunImport runs terragrunt import for a single candidate, in whichever
-// working directory that candidate actually belongs to — the shared
-// environment root for support resources, or the app's own per-module
-// subdirectory for module-based entries (see dirForEntry) — using the
-// resource address as it's addressed from inside that directory.
+// RunImport runs terragrunt import for a single candidate inside its own
+// environment directory, using the catalog address verbatim.
 func RunImport(cfg *config.Config, candidate ImportCandidate) error {
-	dir, localAddr := dirForEntry(cfg, candidate.Entry)
+	dir := WorkDir(cfg, candidate.Entry.Env)
 	if _, err := os.Stat(dir); err != nil {
 		return fmt.Errorf("%s directory not found: %s", candidate.Entry.Env, dir)
 	}
 
-	ui.Cyan.Printf("\n  $ terragrunt import %s %s\n", localAddr, candidate.ImportID)
+	ui.Cyan.Printf("\n  $ terragrunt import %s %s\n", candidate.Entry.TFAddress, candidate.ImportID)
 	ui.Dim.Printf("  working dir: %s\n\n", dir)
 
-	cmd := exec.Command("terragrunt", "import", localAddr, candidate.ImportID)
+	cmd := exec.Command("terragrunt", "import", candidate.Entry.TFAddress, candidate.ImportID)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
@@ -583,7 +520,11 @@ func listHelmReleases() (map[string]string, error) {
 		return map[string]string{}, nil // helm not installed — nothing to detect, not a hard error
 	}
 
-	out, err := exec.Command("helm", "list", "-A", "-o", "json").Output()
+	// --kube-context matches the helm provider's config_context in
+	// prod-social: the releases live in the kind cluster, and querying some
+	// other current context would offer imports for objects Terraform's own
+	// provider can't see.
+	out, err := exec.Command("helm", "list", "-A", "-o", "json", "--kube-context", kindContext).Output()
 	if err != nil {
 		return nil, err
 	}
@@ -616,7 +557,8 @@ func listKubernetesSecrets() (map[string]string, error) {
 		return map[string]string{}, nil // kubectl not installed — nothing to detect, not a hard error
 	}
 
-	out, err := exec.Command("kubectl", "get", "secrets", "-A", "-o", "json").Output()
+	out, err := exec.Command("kubectl", "--context", kindContext,
+		"get", "secrets", "-A", "-o", "json").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -675,7 +617,7 @@ func manifestExists(importID string) bool {
 		return false
 	}
 
-	args := []string{"get", kind, name, "--ignore-not-found", "-o", "name"}
+	args := []string{"--context", kindContext, "get", kind, name, "--ignore-not-found", "-o", "name"}
 	if namespace != "" {
 		args = append(args, "-n", namespace)
 	}

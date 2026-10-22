@@ -7,6 +7,7 @@
 
 #include "HttpParser.hpp"
 #include "HttpResponse.hpp"
+#include "Cors.hpp"
 #include "Router.hpp"
 #include "ThreadPool.hpp"
 
@@ -75,6 +76,11 @@ public:
                 // server is separate process on the same machine, the socket
                 // call will block only for ~1ms and the DB server handles
                 // it on its own thread pool — no deadlock possible.
+
+                // 2b. CORS is a property of who asked, not of the handler, so
+                // every response gets the same treatment: echo the Origin back
+                // only when the allowlist recognises it.
+                res.allowOrigin = cors::responseOrigin(req);
 
                 // 3. Send response
                 std::string raw = res.toString();

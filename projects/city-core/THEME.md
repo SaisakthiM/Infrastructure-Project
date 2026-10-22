@@ -94,3 +94,10 @@ React/Tailwind apps bridge through their local `theme.css`, which maps shadcn na
 
 Apps to keep in sync: Bank, Hospital, Blog, Social, Video, API Service, Document, Grocery, Housing, Compiler,
 Whisper, and the 3D home `intro/v3`.
+
+**One sanctioned copy:** `infra-cli/webui/static/index.html` (the deploy dashboard on `:9000`). It is served by a
+Go binary from `//go:embed`, on a different origin than the gateway, so it cannot load `/city-core/city.css`.
+It carries its own literal copy of the §1 tokens and of the maquette palette in `cluster3d.js`. When a token
+changes here, change it there — that duplication is deliberate, not a collision. It must stay paper: radius `0`,
+`--paper #f4f2ed`, ink `#121212`, the district plate as every panel header, and the terminal sheet as the only
+dark surface.

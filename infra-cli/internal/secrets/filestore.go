@@ -43,6 +43,28 @@ func fileGet(k string) (string, bool) {
 	return v, ok && v != ""
 }
 
+func fileDelete(k string) error {
+	fileMu.Lock()
+	defer fileMu.Unlock()
+	m := readFileStore()
+	if _, ok := m[k]; !ok {
+		return nil
+	}
+	delete(m, k)
+	b, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(config.Dir(), 0700); err != nil {
+		return err
+	}
+	tmp := fileStorePath() + ".tmp"
+	if err := os.WriteFile(tmp, b, 0600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, fileStorePath())
+}
+
 func fileSet(k, v string) error {
 	fileMu.Lock()
 	defer fileMu.Unlock()

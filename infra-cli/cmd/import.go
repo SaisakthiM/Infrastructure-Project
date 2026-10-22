@@ -11,19 +11,28 @@ import (
 
 var importCmd = &cobra.Command{
 	Use:   "import-state",
-	Short: "Import existing Docker resources into Terraform state (prod-docker)",
-	Long: `Detects running Docker containers, volumes, and images that belong to the
-prod-docker Terragrunt environment and imports them into Terraform state.
+	Short: "Import existing Docker, Helm and Kubernetes resources into Terraform state",
+	Long: `Detects running Docker containers, volumes and networks, Helm releases and
+in-cluster Kubernetes Secrets/manifests that the prod-docker, prod-infra,
+prod-gateway and prod-social environments expect, and imports the ones that
+already exist but aren't tracked yet into that environment's Terraform state.
 
 This is useful after modifying resources outside of Terraform (e.g. manual
-docker run / docker volume create) to avoid Terraform trying to recreate them
-and wasting disk space.
+docker run / docker volume create, or a helm install) to avoid Terraform
+trying to recreate them and failing with "already exists".
 
 How it works:
-  1. Queries docker ps -a, docker volume ls, and docker images.
-  2. Matches results against the known prod-docker resource catalog.
+  1. Queries docker ps -a / volume ls / network ls, helm list -A and
+     kubectl (all against the kind-social-media context for cluster objects).
+  2. Matches results against the per-environment catalogs in
+     internal/deploy/import.go and skips anything already in that
+     environment's "terragrunt state list".
   3. Shows each match and asks for confirmation before running import.
-  4. Runs: terragrunt import <resource_address> <docker_id>`,
+  4. Runs: terragrunt import <resource_address> <import_id>
+     from that environment's own directory.
+
+docker_image resources are never offered: the kreuzwerker/docker provider
+doesn't support importing them, and Terraform rebuilds them on apply.`,
 	Example: `  social-platform import-state          # interactive, confirm each resource
   social-platform import-state --yes    # auto-confirm all found resources`,
 	RunE: runImport,
@@ -44,7 +53,7 @@ func runImport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("infrastructure not found — run 'social-platform install' first")
 	}
 
-	ui.Info("Scanning Docker for existing prod-docker resources...")
+	ui.Info("Scanning Docker, Helm and the kind cluster for importable prod-docker, prod-infra, prod-gateway and prod-social resources...")
 	fmt.Println()
 
 	candidates, err := deploy.DetectImportCandidates(cfg)

@@ -14,6 +14,17 @@ resources:
   - 11-microservice-java-deployment.yaml
   - 12-kafka-statefulset.yaml
   - 13-kafka-service.yaml
+  # 08-microservice-go-deployment.yaml points SPRING/GO caches at Service
+  # "redis" and 11-microservice-java-deployment.yaml at Service "cassandra" --
+  # both Deploys were in this list, their backends were not, so the two
+  # microservices came up CrashLoopBackOff with "redis: Name or service not
+  # known" / "cassandra: Name or service not known" while ArgoCD still called
+  # the app Healthy. cassandra:5.0 is pre-imported onto every kind node by
+  # prod-social's null_resource.kind_images, same as cp-kafka.
+  - 14-cassandra-statefulset.yaml
+  - 15-cassandra-service.yaml
+  - 16-redis-deployment.yaml
+  - 17-redis-service.yaml
   - 18-minio-service.yaml
   - 19-minio-deployment.yaml
   - 20-ingress-api.yaml

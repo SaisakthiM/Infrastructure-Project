@@ -46,7 +46,7 @@ its API server) actually exists.`,
 	Example: `  social-platform deploy                                     # deploy all
   social-platform deploy --env prod-docker                   # single env
   social-platform deploy --auto-approve                      # skip prompt
-  social-platform deploy --env prod-docker --target docker_container.blog_db
+  social-platform deploy --env prod-docker --target docker_container.shared_mysql
   social-platform deploy --env prod-social --replace null_resource.kind_cluster`,
 	RunE: runDeploy,
 }
@@ -57,9 +57,9 @@ func init() {
 	deployCmd.Flags().BoolVar(&deployAutoApprove, "auto-approve", false,
 		"Skip interactive approval prompt (passes -auto-approve to terraform)")
 	deployCmd.Flags().StringVar(&deployTarget, "target", "",
-		"Target a specific resource address (e.g. docker_container.blog_db). Single --env required.")
+		"Target a specific resource address (e.g. docker_container.shared_mysql). Single --env required.")
 	deployCmd.Flags().StringVar(&deployReplace, "replace", "",
-		"Force a specific resource address to be destroyed and recreated (e.g. docker_container.blog_db). Single --env required.")
+		"Force a specific resource address to be destroyed and recreated (e.g. module.blog_website.docker_container.app). Single --env required.")
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {

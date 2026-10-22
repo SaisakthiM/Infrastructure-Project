@@ -26,8 +26,12 @@ type HistoryItem = {
 // and only for `vite dev` / direct-port use fall back to the compiler server on localhost:9090.
 
 const API_URL: string = (() => {
+  // Every call site passes a path that starts with "/", so the base must not
+  // end with one: compiler_domain is configured as ".../compiler/api/" and
+  // ".../compiler/api//login" is a route the C++ router does not know.
+  const trim = (url: string) => url.replace(/\/+$/, "");
   const env = (import.meta as any).env?.VITE_API_URL;
-  if (env) return env;
+  if (env) return trim(env);
   const { hostname, port, origin } = window.location;
   const local = hostname === "localhost" || hostname === "127.0.0.1";
   return local && port && port !== "80" && port !== "443" ? "http://localhost:9090" : `${origin}/compiler/api`;

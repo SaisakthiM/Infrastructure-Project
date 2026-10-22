@@ -90,21 +90,6 @@ resource "docker_image" "bank_backend" {
   }
 }
 
-# resource "docker_image" "bank_frontend_build" {
-#   name         = "bank-frontend-build:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Bank Manager/frontend")
-#     dockerfile = "Dockerfile.prod"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Bank Manager/frontend", "**") :
-#       filesha256("${var.projects_dir}/Bank Manager/frontend/${f}")
-#       if !can(regex("(\\.git|node_modules|dist)", f))
-#     ]))
-#   }
-# }
 
 resource "docker_image" "blog_website" {
   name         = "blogsite:latest"
@@ -122,37 +107,6 @@ resource "docker_image" "blog_website" {
   }
 }
 
-# resource "docker_image" "hospital_management" {
-#   name         = "hospital_management:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/hospital_management")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/hospital_management", "**") :
-#       filesha256("${var.projects_dir}/hospital_management/${f}")
-#       if !can(regex("(\\.git|__pycache__|\\.pyc|staticfiles|media)", f))
-#     ]))
-#   }
-# }
-
-# resource "docker_image" "video_backend" {
-#   name         = "video-uploader-backend:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Video Uploader/Main/backend")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Video Uploader/Main/backend", "**") :
-#       filesha256("${var.projects_dir}/Video Uploader/Main/backend/${f}")
-#       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
-#     ]))
-#   }
-# }
 
 resource "docker_image" "video_frontend_build" {
   name         = "video-frontend-build:latest"
@@ -170,21 +124,6 @@ resource "docker_image" "video_frontend_build" {
   }
 }
 
-# resource "docker_image" "api_service_backend" {
-#   name         = "api-service-backend:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/API Service/backend")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${trimsuffix(var.projects_dir, "/")}/API Service/backend", "**") :
-#       filesha256("${trimsuffix(var.projects_dir, "/")}/API Service/backend/${f}")
-#       if !can(regex("(\\.git|__pycache__|\\.pyc)", f))
-#     ]))
-#   }
-# }
 
 resource "docker_image" "api_service_frontend_build" {
   name         = "api-service-frontend:latest"
@@ -250,21 +189,6 @@ resource "docker_image" "whisper_backend" {
   }
 }
 
-# resource "docker_image" "whisper_frontend" {
-#   name         = "whisper-frontend:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Whatsapp/whatsapp-frontend")
-#     dockerfile = "Dockerfile.prod"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Whatsapp/whatsapp-frontend", "**") :
-#       filesha256("${var.projects_dir}/Whatsapp/whatsapp-frontend/${f}")
-#       if !can(regex("(\\.git|node_modules|dist)", f))
-#     ]))
-#   }
-# }
 
 resource "docker_image" "compiler_frontend" {
   name         = "compiler-frontend:latest"
@@ -279,6 +203,38 @@ resource "docker_image" "compiler_frontend" {
       for f in fileset("${var.projects_dir}/Online Compiler/compiler-frontend", "**") :
       filesha256("${var.projects_dir}/Online Compiler/compiler-frontend/${f}")
       if !can(regex("(\\.git|node_modules|dist)", f))
+    ]))
+  }
+}
+
+resource "docker_image" "compiler_db" {
+  name         = "online_compiler_db:latest"
+  keep_locally = true
+  build {
+    context    = abspath("${var.projects_dir}/Online Compiler/database_new")
+    dockerfile = "Dockerfile"
+  }
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/Online Compiler/database_new", "**") :
+      filesha256("${var.projects_dir}/Online Compiler/database_new/${f}")
+      if !can(regex("(\\.git|\\.dockerignore|dbserver|\\.o|data/)", f))
+    ]))
+  }
+}
+
+resource "docker_image" "compiler_server" {
+  name         = "online_compiler_server:latest"
+  keep_locally = true
+  build {
+    context    = abspath("${var.projects_dir}/Online Compiler/server_new")
+    dockerfile = "Dockerfile"
+  }
+  triggers = {
+    dir_sha = sha256(join("", [
+      for f in fileset("${var.projects_dir}/Online Compiler/server_new", "**") :
+      filesha256("${var.projects_dir}/Online Compiler/server_new/${f}")
+      if !can(regex("(\\.git|\\.dockerignore|^server$|\\.o|users\\.db)", f))
     ]))
   }
 }
@@ -375,90 +331,6 @@ resource "docker_container" "bank_frontend_build" {
   }
 }
 
-# resource "docker_image" "compiler_db" {
-#   name         = "online_compiler_db:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Online Compiler/database_new")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Online Compiler/database_new", "**") :
-#       filesha256("${var.projects_dir}/Online Compiler/database_new/${f}")
-#       if !can(regex("(\\.git|\\.dockerignore|dbserver|\\.o|data/)", f))
-#     ]))
-#   }
-# }
-
-# resource "docker_image" "compiler_server" {
-#   name         = "online_compiler_server:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Online Compiler/server_new")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Online Compiler/server_new", "**") :
-#       filesha256("${var.projects_dir}/Online Compiler/server_new/${f}")
-#       if !can(regex("(\\.git|\\.dockerignore|^server$|\\.o|users\\.db)", f))
-#     ]))
-#   }
-# }
-
-# resource "docker_container" "compiler_db" {
-#   # --- resource optimization pass ---
-#   memory = 256   # MB, hard ceiling
-#   cpus   = "0.3"
-#   name                  = "compiler-db"
-#   image                 = docker_image.compiler_db.image_id
-#   restart               = "unless-stopped"
-#   destroy_grace_seconds = 30
-#   must_run              = true
-
-#   networks_advanced { name = "gateway-net" }
-
-#   mounts {
-#     source = docker_volume.compiler_db_data.name
-#     target = "/app/data"
-#     type   = "volume"
-#   }
-
-#   # Not exposed externally — only the auth server talks to it
-#   # over the gateway-net by container name "compiler-db"
-
-#   healthcheck {
-#     test         = ["CMD-SHELL", "curl -sf 'http://localhost:8080/search?database_name=x&table_name=y&id=1' || exit 0"]
-#     interval     = "5s"
-#     timeout      = "3s"
-#     retries      = 5
-#     start_period = "5s"
-#   }
-# }
-
-# module "compiler_server" {
-#   # --- resource optimization pass ---
-#   # NOTE: modules/docker_app must declare `memory` (number, MB) and
-#   # `cpus` (string) variables and forward them to its docker_container
-#   # resource for these two lines to actually do anything -- see the
-#   # module patch in the chat reply.
-#   memory = 512
-#   cpus   = "0.5"
-#   source        = "../../modules/docker_app"
-#   name          = "compiler-server"
-#   image         = docker_image.compiler_server.image_id
-#   internal_port = 9090
-#   external_port = 0          # nginx proxies it — not exposed directly
-#   network       = "gateway-net"
-
-#   env = [
-#     "DB_HOST=compiler-db",   # container name on gateway-net
-#     "DB_PORT=8080",
-#   ]
-
-#   depends_on = [docker_container.compiler_db]
-# }
 
 resource "docker_container" "compiler_frontend_build" {
   # --- resource optimization pass ---
@@ -477,6 +349,71 @@ resource "docker_container" "compiler_frontend_build" {
     target = "/dist"
     type   = "volume"
   }
+}
+
+# ── Online Compiler backend (D-10) ────────────────────────────────────────────
+# compiler-db is the C++ store behind the auth server's history; it is not
+# published on any port -- only compiler-server reaches it, by container name
+# over gateway-net. compiler-server is the browser-facing API that nginx
+# proxies at /compiler/api/.
+resource "docker_container" "compiler_db" {
+  # --- resource optimization pass ---
+  memory = 256   # MB, hard ceiling
+  cpus   = "0.3"
+  name                  = "compiler-db"
+  image                 = docker_image.compiler_db.image_id
+  restart               = "unless-stopped"
+  destroy_grace_seconds = 30
+  must_run              = true
+
+  networks_advanced { name = "gateway-net" }
+
+  mounts {
+    source = docker_volume.compiler_db_data.name
+    target = "/app/data"
+    type   = "volume"
+  }
+
+  # Nothing in the browser talks to this container, but it shares the C++ CORS
+  # allowlist with compiler-server, so the same list is passed through.
+  env = [
+    "CORS_ALLOWED_ORIGINS=${local.compiler_origin}",
+  ]
+
+  healthcheck {
+    test         = ["CMD-SHELL", "curl -sf 'http://localhost:8080/search?database_name=x&table_name=y&id=1' || exit 0"]
+    interval     = "5s"
+    timeout      = "3s"
+    retries      = 5
+    start_period = "5s"
+  }
+}
+
+module "compiler_server" {
+  # --- resource optimization pass ---
+  # NOTE: modules/docker_app must declare `memory` (number, MB) and
+  # `cpus` (string) variables and forward them to its docker_container
+  # resource for these two lines to actually do anything -- see the
+  # module patch in the chat reply.
+  memory = 512
+  cpus   = "0.5"
+  source        = "../../modules/docker_app"
+  name          = "compiler-server"
+  image         = docker_image.compiler_server.image_id
+  internal_port = 9090
+  external_port = 0          # nginx proxies it — not exposed directly
+  network       = "gateway-net"
+
+  env = [
+    "DB_HOST=compiler-db",   # container name on gateway-net
+    "DB_PORT=8080",
+    # The C++ server answers CORS from this list plus its built-in defaults
+    # (any localhost/127.x dev-server origin and saisakthi.qzz.io), so this is
+    # what keeps the city origin allowed when the domain changes.
+    "CORS_ALLOWED_ORIGINS=${local.compiler_origin}",
+  ]
+
+  depends_on = [docker_container.compiler_db]
 }
 
 
@@ -726,89 +663,6 @@ resource "docker_container" "doc_frontend_build" {
 
 
 
-# # ---------------------------------------------------------------------------
-# # Selenium (Chrome grid) for local test runs -- built from the compose at
-# # ${var.projects_dir}/Selenium (services: "selenium" = selenium/standalone-chrome,
-# # "java" = the test runner built from Selenium/java/selenium/Dockerfile).
-# #
-# # Capped at 8 cores / 12GB combined so your own Chrome + VS Code still have
-# # headroom on the host -- see the resource-optimization thread. shm_size
-# # mirrors the compose file's `shm_size: 2gb`; Chrome needs real /dev/shm or
-# # it crashes mid-session under any real load.
-# # ---------------------------------------------------------------------------
-# resource "docker_volume" "selenium_chrome_profiles" {
-#   # Declared in the source docker-compose.yml (top-level `volumes:
-#   # chrome_profiles`) but not actually mounted by either service there --
-#   # kept here 1:1 with the compose for now. Add a `volumes { }` block below
-#   # if you start mounting it.
-#   name = "selenium_chrome-profiles"
-# }
-
-# resource "docker_image" "selenium_chrome" {
-#   name         = "selenium/standalone-chrome:latest"
-#   keep_locally = true
-# }
-
-# resource "docker_container" "selenium_chrome" {
-#   name    = "selenium"
-#   image   = docker_image.selenium_chrome.image_id
-#   restart = "unless-stopped"
-
-#   env = [
-#     "SE_NODE_MAX_SESSIONS=2",
-#     "SE_NODE_OVERRIDE_MAX_SESSIONS=true",
-#   ]
-
-#   # Chrome/webdriver is the heavy half of the 8-core/12GB budget.
-#   memory   = 8192   # MB
-#   cpus     = "6"
-#   shm_size = 2048   # MB == compose's `shm_size: 2gb`
-
-#   ports {
-#     internal = 4444
-#     external = 4444
-#   }
-#   ports {
-#     internal = 7900   # noVNC -- drop this block if you don't need to watch it run
-#     external = 7900
-#   }
-
-#   networks_advanced { name = "gateway-net" }
-# }
-
-# resource "docker_image" "selenium_java" {
-#   name         = "selenium-java-runner:latest"
-#   keep_locally = true
-#   build {
-#     context    = abspath("${var.projects_dir}/Selenium/java/selenium")
-#     dockerfile = "Dockerfile"
-#   }
-#   triggers = {
-#     dir_sha = sha256(join("", [
-#       for f in fileset("${var.projects_dir}/Selenium/java/selenium", "**") :
-#       filesha256("${var.projects_dir}/Selenium/java/selenium/${f}")
-#       if !can(regex("(\\.git|target|__pycache__)", f))
-#     ]))
-#   }
-# }
-
-# resource "docker_container" "selenium_java" {
-#   name     = "selenium-java-runner"
-#   image    = docker_image.selenium_java.image_id
-#   must_run = true
-#   restart  = "unless-stopped"
-
-#   memory = 4096
-#   cpus   = "2"
-
-#   env = [
-#     "JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+DisableExplicitGC",
-#     "SE_JAVA_OPTS=-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100",
-#   ]
-
-#   networks_advanced { name = "gateway-net" }
-#   depends_on = [docker_container.selenium_chrome]
-# }
 
 # ---------------------------------------------------------------------------
 # Converted from docker_image.api_service_backend — provider build-context bug workaround.

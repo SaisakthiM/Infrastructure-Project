@@ -18,6 +18,13 @@ static void handleClient(int clientFd,
     std::cout << "[thread " << std::this_thread::get_id() << "] "
               << req.method << " " << req.path << "\n";
 
+    // A browser preflight carries no work — answer it before touching the DB
+    // lock so it cannot queue behind a slow write.
+    if (req.method == "OPTIONS") {
+        iface.sendPreflight(req);
+        iface.closeClient();
+        return;
+    }
 
     Route r = Interface::route(req);
     std::string response;
@@ -54,7 +61,7 @@ static void handleClient(int clientFd,
         }
     }
 
-    iface.sendOk(response); // Ensure sendOk sends CORS headers (see Step 2)
+    iface.sendOk(response, req);
 
     iface.closeClient();
 }
