@@ -137,10 +137,22 @@ function fitTerm(t) {
   textarea{font-size:12px;line-height:1.5;resize:vertical}
   select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--wash)}
   input::placeholder,textarea::placeholder{color:var(--faint)}
+  /* Native chrome off: the select arrow and the checkbox square were the last
+     two things on the sheet drawn by Windows instead of by this stylesheet. */
+  select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:32px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5 10 4.5' fill='none' stroke='%23121212' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;background-size:11px 11px}
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:15px;height:15px;
+    padding:0;margin:0;vertical-align:-2px;background:var(--paper);border:1px solid var(--line-strong);
+    cursor:pointer;display:inline-grid;place-content:center;transition:border-color .15s,background .15s}
+  input[type=checkbox]:hover{border-color:var(--accent)}
+  input[type=checkbox]:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--wash)}
+  input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+  input[type=checkbox]:checked::after{content:"";width:8px;height:4px;margin-top:-2px;
+    border-left:1.6px solid var(--paper);border-bottom:1.6px solid var(--paper);transform:rotate(-45deg)}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
   .form-check{display:flex;align-items:center;gap:8px;padding:8px 0}
-  .form-check input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
   .form-check label{margin:0;text-transform:none;font-size:13px;color:var(--text);
                     font-weight:400;letter-spacing:-.011em;font-family:var(--font-ui)}
 
@@ -278,6 +290,12 @@ function fitTerm(t) {
   @keyframes varflash { 0% { box-shadow: 0 0 0 0 rgba(169,116,27,.55); } 100% { box-shadow: 0 0 0 14px transparent; } }
 
   /* secrets register: keychain rows, ruled like the state table */
+  /* The register's placeholder, error and "reading" lines sit between two cards
+     straight over the 3D backdrop — on paper they read as a note instead of a
+     hole in the page. */
+  #sec-groups > p.muted { display:block; margin:0 0 14px; padding:14px 16px; font-size:12px;
+    background:rgba(251,250,247,.9); border:1px solid var(--line);
+    border-left:3px solid var(--accent); backdrop-filter:blur(14px); }
   .sec-group { border: 1px solid var(--line); border-left: 3px solid var(--accent);
     margin-bottom: 14px; background: rgba(251,250,247,.9); backdrop-filter: blur(14px); }
   .sec-group > header { display: flex; align-items: center; gap: 10px; padding: 9px 12px;

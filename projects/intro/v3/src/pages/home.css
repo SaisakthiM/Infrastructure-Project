@@ -33,9 +33,11 @@
 .city-header nav .hw-nav-city svg { width: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 
 /* ── Welcome card extras ─────────────────────────────────────────────────── */
+/* The primary button and the secondary link are one row. As bare inline
+   siblings they shared a line box, so the link hung off the button's padded
+   baseline and its margin-top pushed it further out of line. */
+.hw-enter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 .hw-secondary {
-  display: inline-block;
-  margin-top: 16px;
   color: var(--muted);
   font: 500 var(--label)/1.5 var(--font-mono);
   letter-spacing: var(--label-track);

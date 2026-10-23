@@ -1268,12 +1268,14 @@ export default function Home() {
             Backend and distributed systems engineer. Guide the robot around the grounds to explore my
             projects, stack, and live infrastructure, then step into the full city.
           </p>
-          <button className="enter-button" onClick={start}>
-            Enter the world <ArrowIcon />
-          </button>
-          <Link className="hw-secondary" to="/city">
-            Or skip to the walkable city
-          </Link>
+          <div className="hw-enter-row">
+            <button className="enter-button" onClick={start}>
+              Enter the world <ArrowIcon />
+            </button>
+            <Link className="hw-secondary" to="/city">
+              Or skip to the walkable city
+            </Link>
+          </div>
           <div className="control-row">
             <span><b>WASD</b> move</span>
             <span><b>Drag</b> orbit</span>
