@@ -92,7 +92,10 @@ resource "null_resource" "prod_social_ready" {
       # syncing: the controller that reconciles Applications and the repo
       # server that has to read gitops/ from var.gitops_repo_url.
       for deploy in argocd-application-controller argocd-repo-server; do
-        kubectl --context "$CTX" -n argocd rollout status "deploy/$deploy" --timeout=300s
+        kubectl --context "$CTX" -n argocd rollout status \
+        statefulset/argocd-application-controller --timeout=300s
+        kubectl --context "$CTX" -n argocd rollout status \
+        deployment/argocd-repo-server --timeout=300s
       done
     EOT
   }
