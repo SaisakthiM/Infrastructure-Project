@@ -577,8 +577,8 @@ gitops_repo_url = %q
 # atlantis_gh_user = "..." style assignments) plus the matching arguments at
 # the end of the Sprintf in generateInfraTfvars.
 #
-# The values themselves stay in the keychain regardless: `social-platform
-# release` reads prod-infra/atlantis_gh_token for its GitHub API calls, and the
+# The values themselves stay in the keychain regardless: social-platform
+# release reads prod-infra/atlantis_gh_token for its GitHub API calls, and the
 # dashboard's Secrets sheet still lists it.
 `,
 		projectsDir(cfg),
