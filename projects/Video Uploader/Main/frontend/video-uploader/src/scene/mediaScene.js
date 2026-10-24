@@ -50,7 +50,7 @@ export function buildMediaScene({ stage, three, onSelect }) {
     r.play('Dance', { once: true })
     stage.interactive(r.root, { label: 'Projectionist bot', onClick: () => r.play('ThumbsUp', { once: true }) })
   })
-  loadSkyline(stage, { span: 170, z: -90, tint: 0.45 })
+  loadSkyline(stage, { span: 150, z: -34, tint: 0.42 })
 
   function clearFrames() {
     offs.splice(0).forEach((off) => off())

@@ -12,8 +12,10 @@
   <style>
     :root { --accent: #966e35; }
     /* the grid spans the full width, so it must stay transparent to clicks or it shields the 3D plots
-       under it — city.css already re-enables pointer events on the .glass panels inside */
-    .housing { display: grid; grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 360px); gap: 16px; align-items: start; pointer-events: none; }
+       under it — city.css already re-enables pointer events on the .glass panels inside.
+       Rails cap at 330px: the estate map has to be reachable, and a plot that projects behind a panel
+       is one you cannot select, buy or collect rent on. */
+    .housing { display: grid; grid-template-columns: minmax(260px, 330px) 1fr minmax(260px, 330px); gap: 16px; align-items: start; pointer-events: none; }
     .housing .mid { min-height: 40vh; }
     .legend { display: flex; flex-wrap: wrap; gap: 12px; font: 500 10px/1.6 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
@@ -30,7 +32,9 @@
     .dot-mine { background: var(--accent); }
     .dot-other { background: var(--muted); }
     .tight { margin-top: 4px; }
-    @media (max-width: 1100px) { .housing { grid-template-columns: 1fr; } .housing .mid { display: none; } }
+    /* narrow screens: the rails stack, but the estate is the product — the mid cell becomes a clear band
+       at the top so the plots stay visible and clickable instead of hiding under two full-width panels. */
+    @media (max-width: 1100px) { .housing { grid-template-columns: 1fr; } .housing .mid { order: -1; min-height: 46vh; } }
   </style>
   <script type="importmap">
   { "imports": { "three": "/city-core/vendor/three/three.module.js", "three/addons/": "/city-core/vendor/three/addons/" } }

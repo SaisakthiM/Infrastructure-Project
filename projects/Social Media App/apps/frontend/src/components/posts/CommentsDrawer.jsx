@@ -56,7 +56,7 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
       {open && (
         <>
           <motion.div
-            className="fixed left-0 right-0 top-[var(--hud-h)] bottom-0 bg-zinc-950/60 backdrop-blur-sm z-[70]"
+            className="city-scrim fixed left-0 right-0 top-[var(--hud-h)] bottom-0 z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

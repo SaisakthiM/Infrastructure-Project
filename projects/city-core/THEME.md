@@ -73,6 +73,11 @@ font/accent link.
   no extra marks to count.
 - Motion: one orchestrated moment (panel rules draw in left-to-right, 240ms) and the blinking `_` after the balance,
   which means *connected to the bank*. Nothing else animates. All of it off under `prefers-reduced-motion`.
+- **The HUD band is untouchable.** `.city-hud` is fixed at `top:0`, `height: var(--hud-h)` (56px), `z-index: 60`, and it is
+  mounted outside every app's own DOM. Any ward header, sticky nav or full-height page must clear it twice over: reserve
+  the band in flow (`padding-top: var(--hud-h)`) *and* stick below it (`top: var(--hud-h)`) — `top: 0` hides a ward's own
+  navigation behind the balance chip. `.city-ui` already does this; hand-built layouts (Inkwell's `nav`, Social's `Layout`)
+  must do it themselves. Overlays (`z-index: 70`) and the login gate (120) sit above the band.
 
 ## 4. The 3D world
 
@@ -84,6 +89,17 @@ font/accent link.
 - `glowMat()` keeps its signature but clamps emissive to a matte 0.0–0.35 — no neon on a paper city.
 - Particles are dust motes `#A29A88`, low opacity, never coloured by accent.
 - `labelSprite()` defaults to ink text on 94% paper.
+- **`loadSkyline(stage, {span, z, tint})` parks the shared `city.glb` as a backdrop, never a room.** `z` is the model's
+  *near edge*, not its centre — a ward that asks for `z: -34` gets the closest block 34 units behind the origin, so the
+  camera cannot end up standing inside the street. `tint` is how much of the model's own colour survives; the rest is
+  mixed toward `MODEL.skyLow`, the way haze does. It used to *multiply* the colour, which made the distance darker than
+  the paper ground and turned every wide ward into a dim asphalt close-up. Keep `tint` at ~0.42 for page backdrops.
+- **A backdrop is a backdrop: `mountScene()` fades the canvas itself** (`SCENES[kind].veil`, default 0.72; social 0.5,
+  blog 0.55, chat 0.62). Opacity on the canvas is the only veil that is guaranteed to stay *under* the app's content —
+  a paper div above it would win on any page whose text is not positioned. Text-first districts get the heaviest wash.
+- **`parallax` is per scene and stays small behind reading** (`0.28–0.35`). At 0.9 the whole backdrop slid a third of its
+  width across the screen with the pointer and pulled the eye off the words. Districts whose 3D *is* the app (grocery,
+  housing) orbit instead; give those a `min` distance and a `maxPolarAngle` that can never lose the model.
 
 ## 5. Who owns what
 

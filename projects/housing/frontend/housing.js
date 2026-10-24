@@ -22,10 +22,14 @@ let me = null;
 let selectedId = null;
 const SPACING = 4.6;
 
-/* ───────────── 3D ───────────── */
+/* ───────────── 3D ─────────────
+ * The grid is 6 × 4 at 4.6 spacing, so plots reach x ±11.5 and z ±6.9. The camera has to sit above and
+ * back far enough to hold the whole estate plus the tallest tower label (y 10.2) — and the orbit must
+ * never let a drag dive into the street: this district is a map you click, so losing the plots inside a
+ * close-up is losing the ward. */
 const stage = createStage(document.body, {
-  camera: { pos: [0, 15, 19], look: [0, 0, 0] },
-  fog: { color: 0xedeae1, density: 0.01 },
+  camera: { pos: [0, 19, 25], look: [0, 1.5, -2] },
+  fog: { color: 0xedeae1, density: 0.008 },
   exposure: 1.05,
 });
 const plotNodes = new Map(); // id -> { group, pad, ring, house, label }
@@ -38,7 +42,9 @@ if (stage.ok) {
   floor(stage, { size: 90, color: 0xedeae1 });
   groundGrid(stage, { color: 0x121212, opacity: 0.08, size: 120, divisions: 120 });
   particles(stage, { count: 130, color: 0xa29a88, area: [60, 14, 50], size: 0.13, drift: 0.1, opacity: 0.4 });
-  stage.orbit({ target: [0, 0.5, 0], min: 10, max: 42, maxPolar: Math.PI * 0.47, autoRotate: true, speed: 0.25 });
+  /* min keeps the whole estate in shot even at the end of a pinch; maxPolar stops the camera reaching
+     the ground plane, where a plot is indistinguishable from the asphalt next to it. */
+  stage.orbit({ target: [0, 1, 0], min: 21, max: 46, maxPolar: Math.PI * 0.42, autoRotate: true, speed: 0.18 });
 
   const warm = new THREE.PointLight(0xfff6e4, 10, 50);
   warm.position.set(0, 12, 6);
@@ -49,7 +55,7 @@ if (stage.ok) {
     r.play('Wave', { once: true });
     stage.interactive(r.root, { label: 'Estate agent bot', onClick: () => r.play('ThumbsUp', { once: true }) });
   });
-  loadSkyline(stage, { span: 190, z: -80, tint: 0.45 });
+  loadSkyline(stage, { span: 150, z: -34, tint: 0.42 });
 }
 
 const posOf = (p) => [(p.x - (grid.width - 1) / 2) * SPACING, (p.y - (grid.height - 1) / 2) * SPACING];

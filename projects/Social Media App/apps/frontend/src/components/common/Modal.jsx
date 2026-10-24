@@ -14,7 +14,10 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
 
   /* portalled to <body>: #root is its own stacking context (index.css: z-index 10), so a sheet rendered
      inside the app can never rise above the fixed HUD (z-60). z-[70] plus the HUD band offset keeps the
-     bank chip visible and the modal above everything the district draws. */
+     bank chip visible and the modal above everything the district draws.
+     The backdrop is .city-scrim (city.css): the ward behind a dialog fades to paper, the way it does
+     behind the login gate — an ink wash turned the daylight city into a night scene and still let the
+     3D bleed around the sheet. */
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -25,7 +28,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs"
+            className="city-scrim absolute inset-0"
             onClick={onClose}
           />
           {/* city panel: .glass gives the paper sheet + ink hairline, :has(> .hd) paints the district accent rule on top */}

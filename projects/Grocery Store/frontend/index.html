@@ -12,8 +12,10 @@
   <style>
     /* tokens come from /city-core/city.css; the grocery accent is set by City.mountHud from the district registry */
     /* the grid spans the full width, so it must stay transparent to clicks or it shields the 3D shelves
-       under it — city.css already re-enables pointer events on the .glass panels inside */
-    .shop { display: grid; grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px); gap: 16px; align-items: start; pointer-events: none; }
+       under it — city.css already re-enables pointer events on the .glass panels inside.
+       The rails are capped at 330px because the corridor between them is the shop: a product slot that
+       projects behind a panel cannot be clicked, and the outer columns used to sit exactly there. */
+    .shop { display: grid; grid-template-columns: minmax(260px, 330px) 1fr minmax(260px, 330px); gap: 16px; align-items: start; pointer-events: none; }
     .shop .mid { min-height: 40vh; }
     .tabs-row { margin: 6px; }
     .line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -32,7 +34,9 @@
     .flush-top { margin-top: 0; }
     .unit { font-size: 16px; }
     .clock-out { margin-top: 12px; }
-    @media (max-width: 1100px) { .shop { grid-template-columns: 1fr; } .shop .mid { display: none; } }
+    /* narrow screens: the rails stack, but the shelves must not vanish behind them — the mid cell moves
+       to the top as a clear band so the store stays visible and clickable on a phone. */
+    @media (max-width: 1100px) { .shop { grid-template-columns: 1fr; } .shop .mid { order: -1; min-height: 46vh; } }
   </style>
   <script type="importmap">
   { "imports": { "three": "/city-core/vendor/three/three.module.js", "three/addons/": "/city-core/vendor/three/addons/" } }

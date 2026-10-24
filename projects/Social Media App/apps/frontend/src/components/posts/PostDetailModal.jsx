@@ -17,11 +17,12 @@ export default function PostDetailModal({ post: initialPost, onClose }) {
   const { saved, toggle: toggleSave } = useSave(post, update);
 
   /* portalled to <body> so the sheet and its scrim clear the fixed HUD band (see Modal.jsx);
-     the scrim deliberately stops at --hud-h — the ward plate and bank balance stay visible. */
+     the scrim deliberately stops at --hud-h — the ward plate and bank balance stay visible.
+     .city-scrim, not an ink wash: this district is daylight paper (THEME.md §4). */
   return createPortal(
     <>
       <motion.div
-        className="fixed left-0 right-0 top-[var(--hud-h)] bottom-0 bg-zinc-950/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+        className="city-scrim fixed left-0 right-0 top-[var(--hud-h)] bottom-0 z-[70] flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

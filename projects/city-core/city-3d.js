@@ -76,6 +76,8 @@ export const ease = {
   outCubic: (k) => 1 - Math.pow(1 - k, 3),
 };
 
+const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+
 /* ───────────────────────── stage ───────────────────────── */
 
 function webglAvailable() {
@@ -670,8 +672,19 @@ export function loadGLB(url) {
   return gltfCache.get(url);
 }
 
-/** the shared skyline (your city.glb), normalised and parked behind the scene */
-export async function loadSkyline(stage, { span = 150, z = -70, y = -0.1, tint = 0.55 } = {}) {
+/**
+ * The shared skyline (your city.glb), normalised and parked behind the scene.
+ *
+ * `z` is the model's NEAR edge, not its centre: the model is depth-spanned (a 150-unit span reaches
+ * 75 units either way), so a caller who asks for z:-85 and gets a centre there has a backdrop whose
+ * first block sits 10 units in front of the origin — under the camera. Parking the near edge where it
+ * was asked keeps every ward's skyline a backdrop instead of a room it is standing in.
+ *
+ * `tint` is how much of the model's own colour survives; the rest is mixed toward the overcast sky, the
+ * way fog does. It used to multiply the colour, which made the distance darker than the paper ground —
+ * the opposite of daylight, and the reason the wards read as a dim asphalt close-up.
+ */
+export async function loadSkyline(stage, { span = 150, z = -46, y = -0.1, tint = 0.5 } = {}) {
   if (!stage.ok) return null;
   const gltf = await loadGLB(ASSETS.skyline);
   if (!gltf) return null;
@@ -681,14 +694,15 @@ export async function loadSkyline(stage, { span = 150, z = -70, y = -0.1, tint =
   const center = box.getCenter(new THREE.Vector3());
   const k = span / Math.max(size.x, size.z, 0.001);
   root.scale.setScalar(k);
-  root.position.set(-center.x * k, -box.min.y * k + y, -center.z * k + z);
+  root.position.set(-center.x * k, -box.min.y * k + y, -center.z * k + z - (size.z * k) / 2);
+  const haze = new THREE.Color(MODEL.skyLow);
   root.traverse((o) => {
     if (!o.isMesh) return;
     o.frustumCulled = true;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     o.material = mats.map((m) => {
       const c = m.clone();
-      if (c.color) c.color.multiplyScalar(tint);
+      if (c.color) c.color.lerp(haze, 1 - clamp01(tint));
       return c;
     });
     if (o.material.length === 1) o.material = o.material[0];

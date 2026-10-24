@@ -99,7 +99,7 @@ export function mountSkin(options = {}) {
       kit.skyDome(stage, theme.sky[0], theme.sky[1]);
       kit.floor(stage, { size: 90, color: 0xedeae1 });
       (name === 'notes' ? buildNotes : buildWhisper)(kit, stage, theme);
-      kit.loadSkyline(stage, { span: 170, z: -85, tint: 0.4 });
+      kit.loadSkyline(stage, { span: 150, z: -32, tint: 0.42 });
       root.classList.add('city-skin-3d');
     } catch (err) {
       console.warn('[city-skin] 3D backdrop unavailable, keeping the glass theme only', err);

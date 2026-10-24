@@ -9,9 +9,14 @@ html, body { min-height: 100%; }
 body { background: transparent; color: var(--text); font-family: var(--font-ui); margin: 0; }
 #city-app-root { position: relative; z-index: 10; }
 
-/* ───────── masthead ───────── */
+/* ───────── masthead ─────────
+ * The city HUD is a fixed 56px band across the top of every ward (city.css --hud-h / .city-hud,
+ * z-index 60). This nav is the first thing in the document, so at top:0 it both started under the band
+ * and stuck there — the whole ward bar, "+ New post" and Login included, sat behind the balance chip.
+ * The body reserves the band and the nav sticks just below it. */
+body.city-body { padding-top: var(--hud-h); }
 nav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: var(--hud-h); z-index: 50;
   background: var(--glass-strong);
   border-bottom: 1px solid var(--line);
   -webkit-backdrop-filter: blur(14px) saturate(1.04);

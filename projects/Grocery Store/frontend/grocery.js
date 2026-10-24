@@ -20,11 +20,15 @@ let products = [];
 let category = 'all';
 const cart = new Map(); // product id -> qty
 
-/* ───────────── scene ───────────── */
+/* ───────────── scene ─────────────
+ * The shop is the thing you click, so it lives in the corridor between the two rails (index.html caps
+ * them at 330px) and the camera keeps enough distance to project the whole row into it. Parallax is the
+ * pointer's pull on the camera: at 0.9 the shelves slid sideways far enough to park an outer column
+ * behind a panel, which is what "some shelves won't click" actually was. */
 const stage = createStage(document.body, {
-  camera: { pos: [0, 3.8, 10.5], look: [0, 2.1, -4] },
+  camera: { pos: [0, 4.1, 12.5], look: [0, 2.2, -4] },
   fog: { color: MODEL.ground, density: 0.016 },
-  parallax: 0.9,
+  parallax: 0.4,
 });
 
 const shelfGroup = new THREE.Group();
@@ -77,7 +81,7 @@ function buildStore() {
     r.play('Wave', { once: true });
     stage.interactive(r.root, { label: 'Shopkeeper bot', onClick: () => r.play('ThumbsUp', { once: true }) });
   });
-  loadSkyline(stage, { span: 170, z: -95, tint: 0.45 });
+  loadSkyline(stage, { span: 150, z: -30, tint: 0.42 });
 }
 
 /* procedural produce so the shelves look stocked without any model downloads */
@@ -150,7 +154,11 @@ function slotPosition(i, total) {
   const perLevel = Math.ceil(total / 3);
   const level = Math.floor(i / perLevel);
   const col = i % perLevel;
-  const x = (col - (perLevel - 1) / 2) * 3.7;
+  /* a shelf row may not be wider than the clickable corridor: ±5.4 world units is what still lands
+     between the rails at this camera distance, so a big catalogue packs tighter instead of running
+     out from under a panel, where a slot is visible but unclickable. */
+  const pitch = Math.min(3.7, perLevel > 1 ? 10.8 / (perLevel - 1) : 3.7);
+  const x = (col - (perLevel - 1) / 2) * pitch;
   return [x, 0.45 + level * 1.4, -5];
 }
 

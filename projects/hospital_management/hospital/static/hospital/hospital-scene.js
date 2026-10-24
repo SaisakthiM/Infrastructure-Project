@@ -116,7 +116,7 @@ async function build() {
       onClick: () => robot.play(['ThumbsUp', 'Yes', 'Dance'][Math.floor(Math.random() * 3)], { once: true }),
     });
   }
-  loadSkyline(stage, { span: 170, z: -85, tint: 0.5 });
+  loadSkyline(stage, { span: 150, z: -32, tint: 0.42 });
 
   /* page-specific camera: lists/forms push the scene to the right so the panel stays readable */
   if (page !== 'dashboard') stage.flyTo([-1, 5.5, 18], [5, 3, 0], 1.2);

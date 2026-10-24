@@ -142,22 +142,25 @@ const SCENES = {
     },
   },
 
-  /* ───────── social: a plaza of model figures linked by hairline connections ───────── */
+  /* ───────── social: a plaza of model figures linked by hairline connections ─────────
+     The feed is the page, so the constellation orbits a point twelve units behind the origin: it reads
+     at the edges and under the text instead of floating through the post cards. */
   social: {
-    camera: { pos: [0, 6, 17], look: [0, 3, 0] }, fog: { color: MODEL.ground, density: 0.016 },
+    camera: { pos: [0, 7, 22], look: [0, 3.5, -8] }, fog: { color: MODEL.ground, density: 0.019 },
+    parallax: 0.3, veil: 0.5,
     build(s, accent) {
       skyDome(s, MODEL.skyTop, MODEL.skyLow); floor(s, { color: MODEL.ground }); groundGrid(s, { opacity: 0.08 });
       const palette = [accent, PALETTE.grocery, PALETTE.housing, PALETTE.blog, PALETTE.api];
       const orbs = [];
-      for (let i = 0; i < 16; i++) {
-        const o = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.35, 0.8), 24, 16), glowMat(palette[i % palette.length], 0.6));
-        o.userData = { a: rnd(0, 6.28), r: rnd(3, 10), y: rnd(1.5, 7), sp: rnd(0.08, 0.3) }; s.scene.add(o); orbs.push(o);
+      for (let i = 0; i < 14; i++) {
+        const o = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.5, 1.2), 24, 16), glowMat(palette[i % palette.length], 0.45));
+        o.userData = { a: rnd(0, 6.28), r: rnd(7, 16), y: rnd(1.5, 9), sp: rnd(0.05, 0.16) }; s.scene.add(o); orbs.push(o);
       }
       const geo = new THREE.BufferGeometry(); const N = orbs.length * 2;
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
-      const links = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.22 })); s.scene.add(links);
+      const links = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.16 })); s.scene.add(links);
       s.onFrame((dt, t) => {
-        orbs.forEach((o) => { const u = o.userData; const a = u.a + t * u.sp; o.position.set(Math.cos(a) * u.r, u.y + Math.sin(t + u.a) * 0.4, Math.sin(a) * u.r * 0.6 - 2); });
+        orbs.forEach((o) => { const u = o.userData; const a = u.a + t * u.sp; o.position.set(Math.cos(a) * u.r, u.y + Math.sin(t + u.a) * 0.4, Math.sin(a) * u.r * 0.6 - 12); });
         const p = geo.attributes.position;
         orbs.forEach((o, i) => { const n = orbs[(i + 3) % orbs.length]; p.setXYZ(i * 2, o.position.x, o.position.y, o.position.z); p.setXYZ(i * 2 + 1, n.position.x, n.position.y, n.position.z); });
         p.needsUpdate = true;
@@ -167,10 +170,11 @@ const SCENES = {
 
   /* ───────── chat: message cards drifting up over the model skyline ───────── */
   chat: {
-    camera: { pos: [0, 5, 16], look: [0, 4, -4] }, fog: { color: MODEL.ground, density: 0.014 },
+    camera: { pos: [0, 5, 18], look: [0, 4, -6] }, fog: { color: MODEL.ground, density: 0.016 },
+    parallax: 0.35, veil: 0.62,
     build(s, accent) {
       skyDome(s, MODEL.skyTop, MODEL.skyLow); floor(s, { color: MODEL.ground });
-      loadSkyline(s, { tint: 0.88 }).catch(() => {});
+      loadSkyline(s, { span: 150, z: -30, tint: 0.42 }).catch(() => {});
       const bubbles = [];
       for (let i = 0; i < 26; i++) {
         const out = i % 2 === 0;
@@ -182,27 +186,38 @@ const SCENES = {
     },
   },
 
-  /* ───────── blog: newsprint towers on a press floor ───────── */
+  /* ───────── blog: newsprint towers on a press floor ─────────
+     Inkwell is the one district that is mostly prose, so its skyline is a horizon, not a ring: the
+     blocks are laid in a band well behind the page and the camera looks down it from above the text.
+     A circle around the origin put a 11-unit tower five units from the lens and the page vanished. */
   blog: {
-    camera: { pos: [0, 5, 16], look: [0, 3.5, 0] }, fog: { color: MODEL.ground, density: 0.017 },
+    camera: { pos: [0, 9, 30], look: [0, 6.5, -26] }, fog: { color: MODEL.ground, density: 0.019 },
+    parallax: 0.28, veil: 0.55,
     build(s, accent) {
       skyDome(s, MODEL.skyTop, MODEL.skyLow); floor(s, { color: MODEL.ground }); groundGrid(s, { opacity: 0.08 });
       const ts = [];
-      for (let i = 0; i < 18; i++) {
-        const a = (i / 18) * Math.PI * 2; const r = rnd(8, 15);
-        const t = tower({ w: rnd(1.4, 2.4), h: rnd(3, 11), d: rnd(1.4, 2.4), color: i % 3 ? accent : PALETTE.ink, seed: i, glow: 0.7 });
-        t.position.set(Math.cos(a) * r, 0, Math.sin(a) * r - 4); s.scene.add(t); ts.push(t);
+      for (let i = 0; i < 22; i++) {
+        const z = -20 - Math.abs(rnd(0, 42));
+        const t = tower({ w: rnd(2, 3.4), h: rnd(7, 20), d: rnd(2, 3.4), color: i % 4 ? accent : PALETTE.ink, seed: i, glow: 0.5 });
+        t.position.set(rnd(-48, 48), 0, z); s.scene.add(t); ts.push(t);
       }
-      particles(s, { color: MODEL.dust, count: 140, area: [44, 16, 36], size: 0.12, opacity: 0.28 });
-      s.onFrame((dt, t) => ts.forEach((m, i) => { m.userData.cap.material.emissiveIntensity = 0.1 + Math.sin(t * 1.4 + i) * 0.05; }));
+      particles(s, { color: MODEL.dust, count: 110, area: [60, 16, 40], size: 0.12, opacity: 0.2 });
+      s.onFrame((dt, t) => ts.forEach((m, i) => { m.userData.cap.material.emissiveIntensity = 0.08 + Math.sin(t * 1.4 + i) * 0.04; }));
     },
   },
 };
 
 export function mountScene(kind = 'vault', { accent = '#0f6e9c', container = document.body } = {}) {
   const def = SCENES[kind] || SCENES.vault;
-  const stage = createStage(container, { camera: def.camera, fog: def.fog, parallax: 0.9, passive: true });
+  /* parallax is the camera's answer to the pointer. Behind a page of text it has to stay small: 0.9
+     slid the whole backdrop a third of its width across the screen and pulled the eye off the words. */
+  const stage = createStage(container, { camera: def.camera, fog: def.fog, parallax: def.parallax ?? 0.35, passive: true });
   if (stage.ok) {
+    /* The veil is the canvas's own opacity, not an overlay above the page. A paper div would have to
+       guess the app's stacking (and would sit on top of any content that is not positioned); fading the
+       backdrop itself keeps it under every ward's UI by construction and lets the model sink into the
+       same paper the page is printed on. Text-first districts get the heaviest wash. */
+    stage.canvas.style.opacity = String(def.veil ?? 0.72);
     try { def.build(stage, col(accent).getHex()); } catch (e) { console.warn('[city] scene failed', e); }
   }
   return stage;
