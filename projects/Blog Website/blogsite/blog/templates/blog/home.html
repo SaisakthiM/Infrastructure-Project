@@ -17,7 +17,9 @@
           <h2 class="post-card-title">
             <a href="{% url 'post_detail' post.pk %}" class="post-title-link">{{ post.title }}</a>
           </h2>
-          <p class="eyebrow byline">{{ post.author }} · {{ post.created_at|date:"F j, Y" }}</p>
+          {% comment %}A city hand-off writer is "citizen-<account>" (views.CITY_USER_PREFIX); the bank's
+             own customer name is what readers should see, so prefer it and fall back to the handle.{% endcomment %}
+          <p class="eyebrow byline">{{ post.author.first_name|default:post.author.username }} · {{ post.created_at|date:"F j, Y" }}</p>
           <p class="post-excerpt">{{ post.content|truncatewords:28 }}</p>
           <a href="{% url 'post_detail' post.pk %}" class="more-link">Continue reading →</a>
         </div>

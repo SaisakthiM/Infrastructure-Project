@@ -18,17 +18,17 @@ function UserResult({ user }) {
       <Link to={`/profile/${user.username}`} className="flex items-center gap-3 group flex-1 min-w-0">
         <Avatar user={user} size="md" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white group-hover:text-violet-400 transition-colors truncate">
+          <p className="text-sm font-semibold text-zinc-950 group-hover:text-violet-400 transition-colors truncate">
             {user.profile_name || user.username}
           </p>
-          <p className="text-xs text-white/40 truncate">@{user.username}</p>
+          <p className="text-xs text-zinc-500 truncate">@{user.username}</p>
         </div>
       </Link>
       {!isMe && (
         <button
           onClick={toggle}
           className={`ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-            following ? 'bg-white/8 text-white hover:bg-white/12' : 'bg-violet-600 text-white hover:bg-violet-500'
+            following ? 'bg-violet-500/10 text-violet-400 hover:bg-violet-500/10' : 'bg-violet-600 text-city-on-accent hover:bg-violet-500'
           }`}
         >
           {following ? 'Following' : 'Follow'}
@@ -77,16 +77,16 @@ export default function SearchPage() {
 
       {/* Search input */}
       <div className="relative mb-5">
-        <IoSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+        <IoSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
         <input
           value={query}
           onChange={handleChange}
           placeholder="Search people, posts…"
           autoFocus
-          className="w-full bg-white/6 border border-white/8 rounded-2xl pl-10 pr-10 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 transition-all"
+          className="w-full bg-zinc-950/5 border border-zinc-950/10 rounded-2xl pl-10 pr-10 py-3 text-sm text-zinc-950 placeholder-zinc-400 outline-none focus:border-violet-500/50 transition-all"
         />
         {query && (
-          <button onClick={clear} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors">
+          <button onClick={clear} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-950 transition-colors">
             <IoClose size={16} />
           </button>
         )}
@@ -99,13 +99,13 @@ export default function SearchPage() {
       {!loading && searched && (
         <>
           {/* Tabs */}
-          <div className="flex gap-1 mb-4 bg-white/5 rounded-xl p-1">
+          <div className="flex gap-1 mb-4 bg-zinc-950/5 rounded-xl p-1">
             {['users', 'posts'].map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
-                  tab === t ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'
+                  tab === t ? 'bg-zinc-950/10 text-zinc-950' : 'text-zinc-500 hover:text-zinc-950'
                 }`}
               >
                 {t} {t === 'users' ? `(${users.length})` : `(${posts.length})`}
@@ -117,22 +117,22 @@ export default function SearchPage() {
             {tab === 'users' && (
               <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {users.length === 0
-                  ? <p className="text-center text-white/30 py-8 text-sm">No users found for "{query}"</p>
-                  : <div className="divide-y divide-white/5">{users.map((u) => <UserResult key={u.id} user={u} />)}</div>
+                  ? <p className="text-center text-zinc-500 py-8 text-sm">No users found for "{query}"</p>
+                  : <div className="divide-y divide-zinc-950/10">{users.map((u) => <UserResult key={u.id} user={u} />)}</div>
                 }
               </motion.div>
             )}
             {tab === 'posts' && (
               <motion.div key="posts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {posts.length === 0
-                  ? <p className="text-center text-white/30 py-8 text-sm">No posts found for "{query}"</p>
+                  ? <p className="text-center text-zinc-500 py-8 text-sm">No posts found for "{query}"</p>
                   : (
                     <div className="grid grid-cols-3 gap-0.5">
                       {posts.map((p) => (
                         <Link key={p.id} to={`/post/${p.id}`} className="aspect-square bg-[#111] overflow-hidden group">
                           {p.media?.[0]
                             ? <img src={p.media[0].file} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            : <div className="w-full h-full flex items-center justify-center p-3"><p className="text-white/40 text-xs line-clamp-4">{p.content}</p></div>
+                            : <div className="w-full h-full flex items-center justify-center p-3"><p className="text-zinc-500 text-xs line-clamp-4">{p.content}</p></div>
                           }
                         </Link>
                       ))}
@@ -146,7 +146,7 @@ export default function SearchPage() {
       )}
 
       {!searched && !loading && (
-        <div className="text-center py-16 text-white/20">
+        <div className="text-center py-16 text-zinc-500">
           <IoSearch size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">Search for people or posts</p>
         </div>

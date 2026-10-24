@@ -7,6 +7,7 @@ urlpatterns = [
     path('edit/<int:pk>/', views.edit_post, name='edit_post'),
     path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),        # ← custom view now
+    path('city-login/', views.city_login, name='city_login'),  # city bank session → Inkwell session
     path('logout/', views.logout_view, name='logout'),     # ← custom view now
     path('profile/', views.profile, name='profile'),
     path('post/new/', views.create_post, name='create_post'),

@@ -31,7 +31,7 @@ export default function HomePage() {
           )}
 
           {!loading && posts.length === 0 && (
-            <div className="text-center py-20 text-white/30">
+            <div className="text-center py-20 text-zinc-500">
               <p className="text-2xl mb-3">📭</p>
               <p className="font-medium">Your feed is empty</p>
               <p className="text-sm mt-1">Follow people to see their posts here</p>
@@ -56,7 +56,7 @@ export default function HomePage() {
 
       {/* Right panel - desktop only */}
       <div className="hidden lg:block w-80 flex-shrink-0">
-        <div className="sticky top-6">
+        <div className="sticky top-[calc(var(--hud-h)_+_1rem)]">
           <RightPanel />
         </div>
       </div>

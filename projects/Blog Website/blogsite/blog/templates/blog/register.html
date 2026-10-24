@@ -17,6 +17,7 @@
       {% endfor %}
       <button type="submit" class="btn-primary">Create account</button>
     </form>
+    {% include "blog/_city_handoff.html" %}
     <hr class="divider">
     <p class="auth-foot">Already have an account? <a href="{% url 'login' %}" class="link-accent">Sign in →</a></p>
   </div>

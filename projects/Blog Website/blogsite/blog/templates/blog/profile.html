@@ -6,10 +6,11 @@
     {% if request.user.profile.avatar and request.user.profile.avatar.name %}
       <img src="/blog/media/{{ request.user.profile.avatar.name }}" class="avatar" alt="Your avatar">
     {% else %}
-      <div class="avatar-init">{{ request.user.username|first|upper }}</div>
+      <div class="avatar-init">{{ request.user.first_name|default:request.user.username|first|upper }}</div>
     {% endif %}
     <div>
-      <h1 class="display profile-name">{{ request.user.username }}</h1>
+      {% comment %}A hand-off writer's handle is "citizen-<account>"; the bank name is what they recognise.{% endcomment %}
+      <h1 class="display profile-name">{{ request.user.first_name|default:request.user.username }}</h1>
       {% if request.user.profile.bio %}
         <p class="muted profile-bio">{{ request.user.profile.bio }}</p>
       {% else %}

@@ -110,6 +110,8 @@ function stubStage() {
  * @param {object} opts
  *   camera: { fov, pos:[x,y,z], look:[x,y,z] }  fog: {color, density}  parallax: number (0 disables)
  *   exposure, pixelRatioMax, lights: false to skip default lighting
+ *   passive: true for a page backdrop — the canvas takes no clicks (the app's own UI owns them) and the
+ *   camera is fed by window pointer moves instead. Pick/tooltip/orbit need the canvas, so never combine.
  */
 export function createStage(container = document.body, opts = {}) {
   if (!webglAvailable()) return stubStage();
@@ -124,6 +126,8 @@ export function createStage(container = document.body, opts = {}) {
 
   const canvas = document.createElement('canvas');
   canvas.className = 'city-canvas' + (container === document.body ? ' fixed' : '');
+  const passive = !!opts.passive;
+  if (passive) canvas.style.pointerEvents = 'none';
   container.prepend(canvas);
 
   let renderer;
@@ -223,13 +227,7 @@ export function createStage(container = document.body, opts = {}) {
     });
   }
 
-  function onMove(e) {
-    const r = canvas.getBoundingClientRect();
-    pointer.px = e.clientX;
-    pointer.py = e.clientY;
-    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
-    pointer.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
-    pointer.inside = true;
+  function updateHover() {
     const hit = pick();
     if (hit !== hovered) {
       if (hovered) {
@@ -246,8 +244,18 @@ export function createStage(container = document.body, opts = {}) {
     if (hovered && hovered.cfg.label) {
       tip.hidden = false;
       tip.textContent = typeof hovered.cfg.label === 'function' ? hovered.cfg.label(hovered.object) : hovered.cfg.label;
-      tip.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+      tip.style.transform = `translate(${pointer.px + 14}px, ${pointer.py + 14}px)`;
     } else tip.hidden = true;
+  }
+
+  function onMove(e) {
+    const r = canvas.getBoundingClientRect();
+    pointer.px = e.clientX;
+    pointer.py = e.clientY;
+    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+    pointer.inside = true;
+    updateHover();
   }
   let downAt = null;
   const onDown = (e) => {
@@ -270,10 +278,21 @@ export function createStage(container = document.body, opts = {}) {
     }
     tip.hidden = true;
   };
-  canvas.addEventListener('pointermove', onMove);
-  canvas.addEventListener('pointerdown', onDown);
-  canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointerleave', onLeave);
+  let offWindow = () => {};
+  if (passive) {
+    // the page owns every click; the camera still follows the pointer, read from the window
+    const onWindowMove = (e) => {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -((e.clientY / window.innerHeight) * 2 - 1);
+    };
+    window.addEventListener('pointermove', onWindowMove, { passive: true });
+    offWindow = () => window.removeEventListener('pointermove', onWindowMove);
+  } else {
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointerleave', onLeave);
+  }
 
   /* frame loop with adaptive resolution */
   let slow = 0;
@@ -313,6 +332,10 @@ export function createStage(container = document.body, opts = {}) {
       look.lerp(baseLook, Math.min(1, dt * 4));
       camera.lookAt(look);
     }
+
+    /* the camera keeps moving (parallax, orbit, auto-rotate), so re-pick every frame — a hover computed
+       once on pointermove points at whatever object has since drifted out from under the cursor */
+    if (!passive && pointer.inside && picks.length) updateHover();
 
     frameFns.forEach((fn) => fn(dt, t));
     renderer.render(scene, camera);
@@ -380,10 +403,12 @@ export function createStage(container = document.body, opts = {}) {
       disposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
-      canvas.removeEventListener('pointermove', onMove);
-      canvas.removeEventListener('pointerdown', onDown);
-      canvas.removeEventListener('pointerup', onUp);
-      canvas.removeEventListener('pointerleave', onLeave);
+      if (!passive) {
+        canvas.removeEventListener('pointermove', onMove);
+        canvas.removeEventListener('pointerdown', onDown);
+        canvas.removeEventListener('pointerup', onUp);
+        canvas.removeEventListener('pointerleave', onLeave);
+      } else offWindow();
       controls?.dispose();
       tip.remove();
       scene.traverse((o) => {

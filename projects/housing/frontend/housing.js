@@ -1,7 +1,7 @@
 // Housing district — a 3D neighbourhood. Everything with money in it goes through the city bank.
 import City from '/city-core/city-core.js';
 import {
-  createStage, THREE, PALETTE, skyDome, floor, groundGrid, particles, glowMat, glassMat, tower,
+  createStage, THREE, PALETTE, MODEL, ease, skyDome, floor, groundGrid, particles, glowMat, glassMat, tower,
   labelSprite, loadRobot, loadSkyline,
 } from '/city-core/city-3d.js';
 
@@ -29,6 +29,8 @@ const stage = createStage(document.body, {
   exposure: 1.05,
 });
 const plotNodes = new Map(); // id -> { group, pad, ring, house, label }
+const seenTier = new Map(); // id -> last tier drawn: a real change animates, a 20 s re-render does not
+let firstMap = true;
 const offs = [];
 
 if (stage.ok) {
@@ -104,6 +106,41 @@ function buildHouse(tier) {
   return g;
 }
 
+function ghostHouse() {
+  const g = new THREE.Group();
+  const faint = (c, o) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, transparent: true, opacity: o });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.2, 1.8), faint(MODEL.bodyAlt, 0.34));
+  body.position.y = 0.6;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.75, 1, 4), faint(MODEL.trim, 0.3));
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 1.7;
+  // an ink hairline keeps the planning outline on the same sheet as the built houses
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.3 }),
+  );
+  wire.position.y = 0.6;
+  g.add(body, roof, wire);
+  return g;
+}
+
+/* a house arriving on a plot: it grows out of the pad instead of popping into existence */
+function riseIn(node) {
+  if (!stage.ok || stage.motion < 1) return;
+  const t0 = performance.now();
+  const off = stage.onFrame(() => {
+    const k = Math.min(1, (performance.now() - t0) / 900);
+    const e = ease.outCubic(k);
+    node.scale.y = 0.04 + 0.96 * e;
+    node.position.y = 0.16 - 0.3 * (1 - e);
+    if (k >= 1) {
+      node.scale.y = 1;
+      node.position.y = 0.16;
+      off();
+    }
+  });
+}
+
 function disposeTree(obj) {
   obj.traverse((o) => {
     o.geometry?.dispose?.();
@@ -146,10 +183,12 @@ function renderMap() {
       const house = buildHouse(p.tier);
       house.position.y = 0.16;
       group.add(house);
-    }
+      if (!firstMap && seenTier.get(p.id) !== p.tier) riseIn(house);
+    } else group.add(ghostHouse());
+    seenTier.set(p.id, p.tier || null);
     const text = p.owner ? p.owner : 'FOR SALE';
     const label = labelSprite(text, { size: 0.55 });
-    label.position.y = p.tier === 'tower' ? 10.2 : p.tier === 'apartment' ? 5.2 : p.tier === 'villa' ? 3.2 : p.tier ? 3 : 1.4;
+    label.position.y = p.tier === 'tower' ? 10.2 : p.tier === 'apartment' ? 5.2 : p.tier === 'villa' ? 3.2 : p.tier ? 3 : 2.7;
     group.add(label);
 
     stage.scene.add(group);
@@ -161,6 +200,7 @@ function renderMap() {
       }),
     );
   });
+  firstMap = false;
   highlight();
 }
 
@@ -172,20 +212,27 @@ function highlight() {
 }
 
 /* ───────────── data ───────────── */
+const json = (r) => {
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+};
+
 async function loadAll() {
-  try {
-    const [cat, g, stats] = await Promise.all([
-      catalog ? Promise.resolve(catalog) : fetch(`${API}/catalog/`).then((r) => r.json()),
-      fetch(`${API}/plots/`).then((r) => r.json()),
-      fetch(`${API}/stats/`).then((r) => r.json()),
-    ]);
-    catalog = cat;
-    grid = g;
-    $('stats-line').textContent = `${stats.occupied}/${stats.plots} homes · ${stats.residents} residents`;
-  } catch {
-    $('stats-line').textContent = 'housing office offline';
-    return;
-  }
+  /* each endpoint on its own: one hiccup must not blank the neighbourhood — the plots are what makes
+     this district look like a place, so they are the last thing to disappear. */
+  const [cat, g, stats] = await Promise.allSettled([
+    catalog ? Promise.resolve(catalog) : fetch(`${API}/catalog/`).then(json),
+    fetch(`${API}/plots/`).then(json),
+    fetch(`${API}/stats/`).then(json),
+  ]);
+  if (cat.status === 'fulfilled') catalog = cat.value;
+  if (g.status === 'fulfilled') grid = g.value;
+  $('stats-line').textContent =
+    stats.status === 'fulfilled'
+      ? `${stats.value.occupied}/${stats.value.plots} homes · ${stats.value.residents} residents`
+      : g.status === 'fulfilled'
+        ? 'rent ledger unreachable'
+        : 'housing office offline';
   await loadMe();
   renderMap();
   renderLeft();

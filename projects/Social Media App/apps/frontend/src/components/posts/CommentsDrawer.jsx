@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose, IoPaperPlane, IoHeartOutline } from 'react-icons/io5';
 import { postsAPI } from '../../api';
@@ -48,19 +49,21 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
     } catch {}
   };
 
-  return (
+  /* portalled to <body> — see Modal.jsx: inside #root the drawer can never cover the HUD band (z-60),
+     and the post card that opens it is a .glass sheet whose backdrop-filter would clip a fixed child. */
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed left-0 right-0 top-[var(--hud-h)] bottom-0 bg-zinc-950/60 backdrop-blur-sm z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
           <motion.div
-            className="glass fixed bottom-0 left-0 right-0 md:right-auto md:left-auto md:top-0 md:bottom-0 md:w-[420px] z-50 flex flex-col"
+            className="glass fixed bottom-0 left-0 right-0 md:right-auto md:left-auto md:top-[var(--hud-h)] md:bottom-0 md:w-[420px] z-[70] flex flex-col"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -78,7 +81,7 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
             {/* Comments list */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
               {comments.length === 0 && (
-                <p className="text-center text-white/30 text-sm py-8">No comments yet. Be the first!</p>
+                <p className="text-center text-zinc-500 text-sm py-8">No comments yet. Be the first!</p>
               )}
               {comments.map((c) => (
                 <div key={c.id} className="flex gap-3 group">
@@ -87,17 +90,17 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
                   </Link>
                   <div className="flex-1">
                     <p className="text-sm">
-                      <Link to={`/profile/${c.author.username}`} className="font-semibold text-white hover:text-violet-400 transition-colors mr-1.5">
+                      <Link to={`/profile/${c.author.username}`} className="font-semibold text-zinc-950 hover:text-violet-400 transition-colors mr-1.5">
                         {c.author.username}
                       </Link>
-                      <span className="text-white/70">{c.content}</span>
+                      <span className="text-zinc-700">{c.content}</span>
                     </p>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-white/30">{timeAgo(c.created_at)}</span>
+                      <span className="text-xs text-zinc-500">{timeAgo(c.created_at)}</span>
                       {c.author.id === user?.id && (
                         <button
                           onClick={() => deleteComment(c.id)}
-                          className="text-xs text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                          className="text-xs text-zinc-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           Delete
                         </button>
@@ -109,17 +112,17 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
                         <Avatar user={r.author} size="xs" />
                         <div>
                           <p className="text-sm">
-                            <Link to={`/profile/${r.author.username}`} className="font-semibold text-white mr-1.5">
+                            <Link to={`/profile/${r.author.username}`} className="font-semibold text-zinc-950 mr-1.5">
                               {r.author.username}
                             </Link>
-                            <span className="text-white/70">{r.content}</span>
+                            <span className="text-zinc-700">{r.content}</span>
                           </p>
-                          <span className="text-xs text-white/30">{timeAgo(r.created_at)}</span>
+                          <span className="text-xs text-zinc-500">{timeAgo(r.created_at)}</span>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <button className="text-white/20 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 mt-1">
+                  <button className="text-zinc-500 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 mt-1">
                     <IoHeartOutline size={14} />
                   </button>
                 </div>
@@ -127,14 +130,14 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
             </div>
 
             {/* Input */}
-            <form onSubmit={submit} className="flex items-center gap-3 px-4 py-3 border-t border-white/10 flex-shrink-0">
+            <form onSubmit={submit} className="flex items-center gap-3 px-4 py-3 border-t border-zinc-950/10 flex-shrink-0">
               <Avatar user={user} size="sm" />
               <input
                 ref={inputRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Add a comment…"
-                className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
+                className="flex-1 bg-transparent text-sm text-zinc-950 placeholder-zinc-400 outline-none"
               />
               <button
                 type="submit"
@@ -147,7 +150,8 @@ export default function CommentsDrawer({ open, onClose, post, onUpdate }) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

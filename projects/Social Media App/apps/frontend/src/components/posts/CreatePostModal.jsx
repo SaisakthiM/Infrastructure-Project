@@ -68,7 +68,7 @@ export default function CreatePostModal({ open, onClose }) {
           <Avatar user={user} size="md" />
           <div>
             <p className="text-sm font-semibold">{user?.profile_name || user?.username}</p>
-            <p className="text-xs text-white/40">@{user?.username}</p>
+            <p className="text-xs text-zinc-500">@{user?.username}</p>
           </div>
         </div>
 
@@ -78,7 +78,7 @@ export default function CreatePostModal({ open, onClose }) {
           onChange={(e) => setContent(e.target.value)}
           placeholder="What's on your mind?"
           rows={4}
-          className="w-full bg-transparent text-white/90 placeholder-white/25 text-sm leading-relaxed resize-none outline-none"
+          className="w-full bg-transparent text-zinc-900 placeholder-zinc-400 text-sm leading-relaxed resize-none outline-none"
           autoFocus
         />
 
@@ -94,7 +94,7 @@ export default function CreatePostModal({ open, onClose }) {
                 )}
                 <button
                   onClick={() => removeFile(i)}
-                  className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 bg-zinc-950/70 text-city-on-accent rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <IoClose size={14} />
                 </button>
@@ -106,20 +106,20 @@ export default function CreatePostModal({ open, onClose }) {
         {/* Upload zone */}
         {previews.length === 0 && (
           <div
-            className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5 transition-all"
+            className="border-2 border-dashed border-zinc-950/10 rounded-xl p-6 text-center cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5 transition-all"
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => fileRef.current?.click()}
           >
-            <IoCloudUploadOutline size={28} className="mx-auto text-white/30 mb-2" />
-            <p className="text-sm text-white/40">Drop photos/videos here or <span className="text-violet-400">browse</span></p>
+            <IoCloudUploadOutline size={28} className="mx-auto text-zinc-500 mb-2" />
+            <p className="text-sm text-zinc-500">Drop photos/videos here or <span className="text-violet-400">browse</span></p>
           </div>
         )}
 
         {previews.length > 0 && (
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-950 transition-colors"
           >
             <IoImageOutline size={16} /> Add more
           </button>
@@ -135,19 +135,19 @@ export default function CreatePostModal({ open, onClose }) {
         />
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <span className="text-xs text-white/25">{content.length} chars</span>
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-950/10">
+          <span className="text-xs text-zinc-500">{content.length} chars</span>
           <div className="flex gap-2">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-xl"
+              className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-950 transition-colors rounded-xl"
             >
               Cancel
             </button>
             <button
               onClick={submit}
               disabled={loading || (!content.trim() && files.length === 0)}
-              className="px-5 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all flex items-center gap-2"
+              className="px-5 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-city-on-accent text-sm font-semibold rounded-xl transition-all flex items-center gap-2"
             >
               {loading && <Spinner size="sm" />}
               Share

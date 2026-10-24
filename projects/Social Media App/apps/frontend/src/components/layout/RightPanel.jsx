@@ -14,16 +14,16 @@ function SuggestedUser({ user }) {
       <Link to={`/profile/${user.username}`} className="flex items-center gap-2.5 group min-w-0">
         <Avatar user={user} size="sm" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white group-hover:text-violet-400 transition-colors truncate leading-tight">
+          <p className="text-sm font-semibold text-zinc-950 group-hover:text-violet-400 transition-colors truncate leading-tight">
             {user.profile_name || user.username}
           </p>
-          <p className="text-xs text-white/30 truncate">@{user.username}</p>
+          <p className="text-xs text-zinc-500 truncate">@{user.username}</p>
         </div>
       </Link>
       <button
         onClick={toggle}
         className={`flex-shrink-0 ml-2 text-xs font-semibold transition-colors ${
-          following ? 'text-white/40 hover:text-white' : 'text-violet-400 hover:text-violet-300'
+          following ? 'text-zinc-500 hover:text-zinc-950' : 'text-violet-400 hover:text-violet-300'
         }`}
       >
         {following ? 'Following' : 'Follow'}
@@ -51,7 +51,7 @@ export default function RightPanel() {
         <Avatar user={user} size="md" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">{user?.profile_name || user?.username}</p>
-          <p className="text-xs text-white/40 truncate">@{user?.username}</p>
+          <p className="text-xs text-zinc-500 truncate">@{user?.username}</p>
         </div>
         <Link to={`/profile/${user?.username}`} className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors flex-shrink-0">
           View
@@ -62,7 +62,7 @@ export default function RightPanel() {
       {(loading || suggested.length > 0) && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Suggested for you</p>
+            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Suggested for you</p>
           </div>
           <div className="space-y-3">
             {loading
@@ -73,7 +73,7 @@ export default function RightPanel() {
         </div>
       )}
 
-      <p className="text-mini text-white/15 leading-relaxed">
+      <p className="text-mini text-zinc-500 leading-relaxed">
         © 2025 Nexus · Built with React + Django
       </p>
     </div>

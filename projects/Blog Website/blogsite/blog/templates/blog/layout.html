@@ -15,13 +15,66 @@
   <script type="importmap">{"imports":{"three":"/city-core/vendor/three/three.module.js","three/addons/":"/city-core/vendor/three/addons/"}}</script>
   <!-- Inkwell overrides -->
   <link rel="stylesheet" href="{% static 'city-skin.css' %}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
 <body class="city-body">
   <script type="module">
+    /* Inkwell keeps its own accounts (AGENTS.md §9), so the city gate stays off here: with it on, a
+       citizen holding no bank session would get a non-dismissible bank overlay over the ward's own
+       Login / Register and could not reach the credentials they already have. The bank hand-off below
+       still signs in anyone who does hold a city session, so one login is the normal path. */
     import('/city-core/city-app.js')
-      .then(m => m.startCityApp({ service: 'blog', title: 'Inkwell', scene: 'blog' }))
+      .then(m => m.startCityApp({ service: 'blog', title: 'Inkwell', scene: 'blog', requireLogin: false }))
       .catch(() => {});
   </script>
+
+  {% if user.is_authenticated %}
+    <script type="module">
+      // Django knows this citizen: drop the city hand-off bookkeeping so a later logout can start clean.
+      try { sessionStorage.removeItem('inkwell.city-bridge'); } catch (e) {}
+    </script>
+  {% elif request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
+    <script type="module">
+      /* One login for the city. A citizen already signed in at the bank (D-01) is signed in here too,
+         instead of having to register a second account to be able to post. Django re-verifies the bank
+         token at the bank itself (POST city-login/), so this never trusts the browser's word.
+         Not on the ward's own Login / Register pages: someone who navigates there wants to choose an
+         account, so those pages offer the same hand-off as a button instead (blog/_city_handoff.html).
+         Two pieces of bookkeeping: a per-tab attempt counter, because a ward session needs cookies and
+         a blocked cookie jar would otherwise turn the reload below into a loop; and the citizen's own
+         logout, which the hand-off must respect until they ask to be signed in again. */
+      const ATTEMPTS = 'inkwell.city-bridge';
+      const SIGNED_OUT = 'inkwell.signed-out';
+      const nav = document.querySelector('.nav-form');
+      if (nav) nav.addEventListener('submit', () => {
+        // read the city session straight from its documented storage key: this has to land before the
+        // ward logs out, and a module import here would resolve after the page is already navigating.
+        let account = '';
+        try { account = String(JSON.parse(localStorage.getItem('city.session') || '{}').accountId ?? ''); } catch (e) {}
+        try { sessionStorage.setItem(SIGNED_OUT, account); } catch (e) {}
+      });
+      import('/city-core/city-core.js').then(({ City }) => City.ready).then(async () => {
+        if (!City.session) return;                     // no bank session: Login / Register stay as they are
+        const account = String(City.session.accountId);
+        let signedOut = '';
+        let tried = 0;
+        try {
+          signedOut = sessionStorage.getItem(SIGNED_OUT) || '';
+          tried = Number(sessionStorage.getItem(ATTEMPTS) || 0);
+        } catch (e) {}
+        if (signedOut === account) return;             // they logged out of this ward on purpose
+        if (tried >= 2) return;
+        sessionStorage.setItem(ATTEMPTS, String(tried + 1));
+        const token = document.querySelector('meta[name="csrf-token"]');
+        const headers = { ...City.identityHeaders(), 'X-CSRFToken': token ? token.content : '' };
+        try {
+          const res = await fetch("{% url 'city_login' %}", { method: 'POST', headers });
+          const data = await res.json();
+          if (data.ok && data.changed) location.reload();
+        } catch (e) { /* bank or ward unreachable: the ward login form still works */ }
+      }).catch(() => {});
+    </script>
+  {% endif %}
 
   <nav>
     <div class="nav-inner">

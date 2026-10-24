@@ -20,23 +20,23 @@ function ConvItem({ conv, active, onClick, me }) {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${
-        active ? 'bg-violet-500/12' : 'hover:bg-white/4'
+        active ? 'bg-violet-500/10' : 'hover:bg-zinc-950/5'
       }`}
     >
       <Avatar user={other} size="md" />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-sm font-semibold truncate">{other?.profile_name || other?.username}</p>
-          {last && <p className="text-mini text-white/25 flex-shrink-0">{timeAgo(last.created_at)}</p>}
+          {last && <p className="text-mini text-zinc-500 flex-shrink-0">{timeAgo(last.created_at)}</p>}
         </div>
         {last && (
-          <p className={`text-xs truncate mt-0.5 ${conv.unread_count > 0 ? 'text-white font-medium' : 'text-white/40'}`}>
+          <p className={`text-xs truncate mt-0.5 ${conv.unread_count > 0 ? 'text-zinc-950 font-medium' : 'text-zinc-500'}`}>
             {last.sender?.id === me?.id ? 'You: ' : ''}{last.content}
           </p>
         )}
       </div>
       {conv.unread_count > 0 && (
-        <span className="flex-shrink-0 bg-violet-500 text-white text-note font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+        <span className="flex-shrink-0 bg-violet-500 text-city-on-accent text-note font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
           {conv.unread_count}
         </span>
       )}
@@ -93,14 +93,14 @@ function ChatPanel({ convId, me, onBack }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8 flex-shrink-0">
-        <button onClick={onBack} className="md:hidden text-white/50 hover:text-white mr-1">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-950/10 flex-shrink-0">
+        <button onClick={onBack} className="md:hidden text-zinc-500 hover:text-zinc-950 mr-1">
           <IoChevronBack size={22} />
         </button>
         <Avatar user={other} size="sm" />
         <div>
           <p className="text-sm font-semibold">{other?.profile_name || other?.username}</p>
-          <p className="text-xs text-white/30">@{other?.username}</p>
+          <p className="text-xs text-zinc-500">@{other?.username}</p>
         </div>
       </div>
 
@@ -115,12 +115,12 @@ function ChatPanel({ convId, me, onBack }) {
               <div className={`max-w-[72%] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
                 <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                   isMe
-                    ? 'bg-violet-600 text-white rounded-br-sm'
-                    : 'bg-white/8 text-white/90 rounded-bl-sm'
+                    ? 'bg-violet-600 text-city-on-accent rounded-br-sm'
+                    : 'bg-city-raised text-zinc-900 rounded-bl-sm border border-city-line'
                 }`}>
                   {msg.content}
                 </div>
-                <p className="text-note text-white/20 px-1">{timeAgo(msg.created_at)}</p>
+                <p className="text-note text-zinc-500 px-1">{timeAgo(msg.created_at)}</p>
               </div>
             </div>
           );
@@ -129,8 +129,8 @@ function ChatPanel({ convId, me, onBack }) {
       </div>
 
       {/* Input */}
-      <form onSubmit={send} className="flex items-center gap-2 px-3 py-3 border-t border-white/8 flex-shrink-0">
-        <button type="button" onClick={() => fileRef.current?.click()} className="text-white/30 hover:text-white transition-colors flex-shrink-0">
+      <form onSubmit={send} className="flex items-center gap-2 px-3 py-3 border-t border-zinc-950/10 flex-shrink-0">
+        <button type="button" onClick={() => fileRef.current?.click()} className="text-zinc-500 hover:text-zinc-950 transition-colors flex-shrink-0">
           <IoImageOutline size={20} />
         </button>
         <input ref={fileRef} type="file" className="hidden" accept="image/*,video/*" />
@@ -138,12 +138,12 @@ function ChatPanel({ convId, me, onBack }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Message…"
-          className="flex-1 bg-white/6 border border-white/8 rounded-xl px-4 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-violet-500/40 transition-all"
+          className="flex-1 bg-zinc-950/5 border border-zinc-950/10 rounded-xl px-4 py-2 text-sm text-zinc-950 placeholder-zinc-400 outline-none focus:border-violet-500/40 transition-all"
         />
         <button
           type="submit"
           disabled={!text.trim() || sending}
-          className="flex-shrink-0 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 text-white rounded-xl p-2.5 transition-all"
+          className="flex-shrink-0 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 text-city-on-accent rounded-xl p-2.5 transition-all"
         >
           {sending ? <Spinner size="sm" /> : <IoPaperPlane size={16} />}
         </button>
@@ -189,19 +189,19 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-0px)] flex max-w-4xl mx-auto border-x border-white/5">
+    <div className="h-[calc(100vh_-_var(--hud-h))] flex max-w-4xl mx-auto border-x border-zinc-950/10">
       {/* Conversations list */}
-      <div className={`${active ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-white/8 flex-shrink-0`}>
-        <div className="px-4 py-4 border-b border-white/8">
+      <div className={`${active ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-zinc-950/10 flex-shrink-0`}>
+        <div className="px-4 py-4 border-b border-zinc-950/10">
           <h2 className="display mb-3">Messages</h2>
           {/* New conversation search */}
           <div className="relative">
-            <IoSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <IoSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               value={newSearch}
               onChange={(e) => { setNewSearch(e.target.value); searchUsers(e.target.value); }}
               placeholder="New conversation…"
-              className="w-full bg-white/6 border border-white/8 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-white/25 outline-none focus:border-violet-500/40 transition-all"
+              className="w-full bg-zinc-950/5 border border-zinc-950/10 rounded-xl pl-9 pr-3 py-2 text-xs text-zinc-950 placeholder-zinc-400 outline-none focus:border-violet-500/40 transition-all"
             />
           </div>
           {searchResults.length > 0 && (
@@ -210,12 +210,12 @@ export default function MessagesPage() {
                 <button
                   key={u.id}
                   onClick={() => startConv(u.username)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-950/5 transition-colors"
                 >
                   <Avatar user={u} size="sm" />
                   <div className="text-left">
                     <p className="text-xs font-semibold">{u.profile_name || u.username}</p>
-                    <p className="text-mini text-white/40">@{u.username}</p>
+                    <p className="text-mini text-zinc-500">@{u.username}</p>
                   </div>
                 </button>
               ))}
@@ -226,7 +226,7 @@ export default function MessagesPage() {
         <div className="flex-1 overflow-y-auto px-2 py-2">
           {loading && <div className="flex justify-center py-8"><Spinner /></div>}
           {!loading && convs.length === 0 && (
-            <p className="text-center text-white/25 text-sm py-10">No conversations yet</p>
+            <p className="text-center text-zinc-500 text-sm py-10">No conversations yet</p>
           )}
           {convs.map((c) => (
             <ConvItem
@@ -245,7 +245,7 @@ export default function MessagesPage() {
         {active ? (
           <ChatPanel convId={active} me={user} onBack={() => setActive(null)} />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-white/20">
+          <div className="flex-1 flex items-center justify-center text-zinc-500">
             <div className="text-center">
               <p className="text-2xl mb-3">💬</p>
               <p className="text-sm font-medium">Select a conversation</p>

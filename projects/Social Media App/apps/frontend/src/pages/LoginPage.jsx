@@ -36,7 +36,7 @@ export default function LoginPage() {
 
   return (
     /* no page fill: city.css paints the paper ground and the district maquette shows through */
-    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 pt-[calc(var(--hud-h)_+_2.5rem)]">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
