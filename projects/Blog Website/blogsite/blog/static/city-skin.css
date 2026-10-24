@@ -184,6 +184,13 @@ input::placeholder, textarea::placeholder { color: rgba(18, 18, 18, 0.38); opaci
 .confirm-copy { color: var(--text-dim); line-height: 1.65; margin: 0 0 1.4rem; }
 .confirm-title { font-size: 1.8rem; letter-spacing: var(--disp-track); margin: 0.7rem 0 0.9rem; }
 .auth-foot { text-align: center; font-size: 0.85rem; color: var(--muted); }
+/* The city hand-off panel (blog/_city_handoff.html): an offered alternative to the ward's own form,
+   so it reads as its own step rather than part of it. Hidden until city-core reports a bank session. */
+.city-handoff { display: flex; flex-direction: column; gap: 0.55rem; }
+.city-handoff[hidden] { display: none; }
+.handoff-note { margin: 0; font-size: 0.85rem; }
+.handoff-name { color: var(--text); font-weight: 600; }
+.handoff-status { margin: 0; }
 .site-foot { text-align: center; padding: 2rem 1.4rem; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); }
 .profile-form { margin-bottom: 2rem; }
 

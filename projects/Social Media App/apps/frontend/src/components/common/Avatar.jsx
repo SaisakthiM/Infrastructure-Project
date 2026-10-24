@@ -30,7 +30,7 @@ export default function Avatar({ user, size = 'md', className = '', ring = false
       onClick={onClick}
       className={`
         ${sizeClass} rounded-full flex-shrink-0 flex items-center justify-center
-        bg-violet-400 text-white font-medium
+        bg-violet-400 text-city-on-accent font-medium
         ${ringClass} ${className} ${onClick ? 'cursor-pointer' : ''}
       `}
     >

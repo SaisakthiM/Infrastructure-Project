@@ -108,6 +108,9 @@ export default {
           text: 'var(--text, #121212)',
           muted: 'var(--muted, rgba(18, 18, 18, 0.56))',
           accent: 'var(--accent, #4a5aa6)',
+          // the registry's light-for-dark foreground (--accent-ink): filled accent buttons, the story
+          // viewer and media wells. White (#fff) is not a city colour, so never paint text with it.
+          'on-accent': 'var(--accent-ink, #f8f7f3)',
           ok: 'var(--ok, #3f7139)',
           warn: 'var(--warn, #a9741b)',
           bad: 'var(--bad, #a33a2e)',

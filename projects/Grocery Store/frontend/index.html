@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="/city-core/city.css">
   <style>
     /* tokens come from /city-core/city.css; the grocery accent is set by City.mountHud from the district registry */
-    .shop { display: grid; grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px); gap: 16px; align-items: start; }
-    .shop .mid { pointer-events: none; min-height: 40vh; }
+    /* the grid spans the full width, so it must stay transparent to clicks or it shields the 3D shelves
+       under it — city.css already re-enables pointer events on the .glass panels inside */
+    .shop { display: grid; grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px); gap: 16px; align-items: start; pointer-events: none; }
+    .shop .mid { min-height: 40vh; }
     .tabs-row { margin: 6px; }
     .line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
     .line:last-child { border: 0; }

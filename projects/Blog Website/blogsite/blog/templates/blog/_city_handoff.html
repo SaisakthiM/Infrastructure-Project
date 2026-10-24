@@ -1,0 +1,47 @@
+{% comment %}
+  One login for the city, offered here rather than imposed. A citizen already signed in at the bank
+  (D-01) can open Inkwell as that identity instead of registering a second account just to be able
+  to post, and the panel only appears once city-core reports a real bank session, so it is never a
+  dead button. That hand-off is deliberately offered on the Login and Register pages only: a citizen
+  who clicks Login to pick a ward account would otherwise never see the form — the auto hand-off in
+  layout.html stands down on those two pages, and this panel takes its place. The two identities
+  stay separate (AGENTS.md §9), and the ward verifies the bank token itself (POST city-login/), so
+  this page never trusts a name the browser claims.
+{% endcomment %}
+<div class="city-handoff" hidden>
+  <hr class="divider">
+  <p class="muted handoff-note">Signed in at the city bank as <strong class="handoff-name">you</strong>.</p>
+  <button type="button" class="btn-primary handoff-btn">Continue with the bank account</button>
+  <p class="field-help handoff-status">Posts here appear under your bank name.</p>
+</div>
+<script type="module">
+  import('/city-core/city-core.js')
+    .then(({ City }) => City.ready)
+    .then(() => {
+      const box = document.querySelector('.city-handoff');
+      if (!box || !City.session) return;
+      const name = box.querySelector('.handoff-name');
+      const note = box.querySelector('.handoff-status');
+      const btn = box.querySelector('.handoff-btn');
+      name.textContent = City.session.customerName || City.session.username;
+      box.hidden = false;
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const csrf = document.querySelector('meta[name="csrf-token"]');
+        try {
+          const res = await fetch("{% url 'city_login' %}", {
+            method: 'POST',
+            headers: { ...City.identityHeaders(), 'X-CSRFToken': csrf ? csrf.content : '' },
+          });
+          const data = await res.json();
+          if (data.ok && data.changed) { location.href = "{% url 'home' %}"; return; }
+          if (data.ok) { note.textContent = `Inkwell already has you signed in as ${data.username}.`; return; }
+          note.textContent = data.error || 'The bank did not answer — sign in with an Inkwell account.';
+        } catch (e) {
+          note.textContent = 'Inkwell did not answer — sign in with an Inkwell account.';
+        }
+        btn.disabled = false;
+      });
+    })
+    .catch(() => {});
+</script>

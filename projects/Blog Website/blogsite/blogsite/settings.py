@@ -44,6 +44,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # listing context_processors replaces the defaults, and the default set includes csrf.
+                # Without it {% csrf_token %} renders nothing and every POST form here 403s: login,
+                # register, comment, profile and "Publish post" included.
+                'django.template.context_processors.csrf',
             ],
         },
     },

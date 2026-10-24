@@ -54,17 +54,17 @@ export default function PostCard({ post, onUpdate, onRemove }) {
         <Link to={`/profile/${post.author.username}`} className="flex items-center gap-2.5 group">
           <Avatar user={post.author} size="sm" />
           <div>
-            <p className="text-sm font-semibold text-white group-hover:text-violet-400 transition-colors leading-tight">
+            <p className="text-sm font-semibold text-zinc-950 group-hover:text-violet-400 transition-colors leading-tight">
               {post.author.profile_name || post.author.username}
             </p>
-            <p className="text-xs text-white/40">@{post.author.username} · {timeAgo(post.created_at)}</p>
+            <p className="text-xs text-zinc-500">@{post.author.username} · {timeAgo(post.created_at)}</p>
           </div>
         </Link>
         {isOwner && (
           <div className="relative">
             <button
               onClick={() => setShowMenu((s) => !s)}
-              className="text-white/30 hover:text-white p-1 rounded-lg transition-colors"
+              className="text-zinc-500 hover:text-zinc-950 p-1 rounded-lg transition-colors"
             >
               <IoEllipsisHorizontal size={18} />
             </button>
@@ -91,7 +91,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
 
       {/* Media */}
       {post.media?.length > 0 && (
-        <div className="relative bg-black" onDoubleClick={handleDoubleTap}>
+        <div className="relative bg-zinc-950" onDoubleClick={handleDoubleTap}>
           <img
             src={post.media[mediaIdx].file}
             alt=""
@@ -104,7 +104,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
                 <button
                   key={i}
                   onClick={() => setMediaIdx(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === mediaIdx ? 'bg-white w-3' : 'bg-white/40'}`}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === mediaIdx ? 'bg-city-on-accent w-3 opacity-100' : 'bg-city-on-accent opacity-50'}`}
                 />
               ))}
             </div>
@@ -118,7 +118,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
           <div className="flex items-center gap-4">
             <button
               onClick={toggleLike}
-              className={`transition-all active:scale-90 ${liked ? 'text-red-500' : 'text-white/60 hover:text-white'}`}
+              className={`transition-all active:scale-90 ${liked ? 'text-red-500' : 'text-zinc-600 hover:text-zinc-950'}`}
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -133,17 +133,17 @@ export default function PostCard({ post, onUpdate, onRemove }) {
             </button>
             <button
               onClick={() => setShowComments(true)}
-              className="text-white/60 hover:text-white transition-colors"
+              className="text-zinc-600 hover:text-zinc-950 transition-colors"
             >
               <IoChatbubbleOutline size={21} />
             </button>
-            <button className="text-white/60 hover:text-white transition-colors">
+            <button className="text-zinc-600 hover:text-zinc-950 transition-colors">
               <IoPaperPlaneOutline size={21} />
             </button>
           </div>
           <button
             onClick={toggleSave}
-            className={`transition-all ${saved ? 'text-violet-400' : 'text-white/60 hover:text-white'}`}
+            className={`transition-all ${saved ? 'text-violet-400' : 'text-zinc-600 hover:text-zinc-950'}`}
           >
             {saved ? <IoBookmark size={21} /> : <IoBookmarkOutline size={21} />}
           </button>
@@ -151,13 +151,13 @@ export default function PostCard({ post, onUpdate, onRemove }) {
 
         {/* Counts */}
         {likesCount > 0 && (
-          <p className="text-sm font-semibold text-white mb-1">{formatNumber(likesCount)} likes</p>
+          <p className="text-sm font-semibold text-zinc-950 mb-1">{formatNumber(likesCount)} likes</p>
         )}
 
         {/* Caption */}
         {post.content && (
-          <p className="text-sm text-white/80 leading-relaxed">
-            <Link to={`/profile/${post.author.username}`} className="font-semibold text-white mr-1.5 hover:text-violet-400 transition-colors">
+          <p className="text-sm text-zinc-800 leading-relaxed">
+            <Link to={`/profile/${post.author.username}`} className="font-semibold text-zinc-950 mr-1.5 hover:text-violet-400 transition-colors">
               {post.author.username}
             </Link>
             {post.content}
@@ -168,7 +168,7 @@ export default function PostCard({ post, onUpdate, onRemove }) {
         {post.comments_count > 0 && (
           <button
             onClick={() => setShowComments(true)}
-            className="text-sm text-white/30 hover:text-white/60 transition-colors mt-1 block"
+            className="text-sm text-zinc-500 hover:text-zinc-600 transition-colors mt-1 block"
           >
             View all {post.comments_count} comments
           </button>

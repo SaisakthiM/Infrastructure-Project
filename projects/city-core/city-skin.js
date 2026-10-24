@@ -81,7 +81,6 @@ export function mountSkin(options = {}) {
   mounted = state;
   let cancelled = false;
   let stage = null;
-  let offPointer = () => {};
 
   const start = async () => {
     try {
@@ -92,18 +91,10 @@ export function mountSkin(options = {}) {
         fog: { color: theme.fog, density: 0.014 },
         parallax: 1.1,
         pixelRatioMax: 1.5,
+        passive: true, // the app owns every click; the scene is a backdrop
       });
       if (!stage.ok) return; // no WebGL: the CSS gradient fallback in city-skin.css takes over
-      stage.canvas.style.pointerEvents = 'none'; // the app owns every click
       stage.canvas.classList.add('city-skin-canvas');
-
-      // the app covers the canvas, so feed the pointer to the camera ourselves
-      const onMove = (e) => {
-        stage.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-        stage.pointer.y = -((e.clientY / window.innerHeight) * 2 - 1);
-      };
-      window.addEventListener('pointermove', onMove, { passive: true });
-      offPointer = () => window.removeEventListener('pointermove', onMove);
 
       kit.skyDome(stage, theme.sky[0], theme.sky[1]);
       kit.floor(stage, { size: 90, color: 0xedeae1 });
@@ -119,7 +110,6 @@ export function mountSkin(options = {}) {
 
   state.dispose = () => {
     cancelled = true;
-    offPointer();
     stage?.dispose?.();
     root.classList.remove('city-skin', 'city-skin-' + name, 'city-skin-3d');
     mounted = null;

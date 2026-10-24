@@ -17,6 +17,7 @@
       {% if form.non_field_errors %}<p class="field-error">{{ form.non_field_errors }}</p>{% endif %}
       <button type="submit" class="btn-primary">Sign in</button>
     </form>
+    {% include "blog/_city_handoff.html" %}
     <hr class="divider">
     <p class="auth-foot">New here? <a href="{% url 'register' %}" class="link-accent">Register →</a></p>
   </div>

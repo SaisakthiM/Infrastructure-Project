@@ -7,11 +7,11 @@ import { Spinner } from '../components/common/Loaders';
 import { timeAgo } from '../utils';
 
 const LABELS = {
-  like:    (sender) => <><span className="font-semibold text-white">{sender}</span> liked your post</>,
-  comment: (sender) => <><span className="font-semibold text-white">{sender}</span> commented on your post</>,
-  follow:  (sender) => <><span className="font-semibold text-white">{sender}</span> started following you</>,
-  mention: (sender) => <><span className="font-semibold text-white">{sender}</span> mentioned you</>,
-  reply:   (sender) => <><span className="font-semibold text-white">{sender}</span> replied to your comment</>,
+  like:    (sender) => <><span className="font-semibold text-zinc-950">{sender}</span> liked your post</>,
+  comment: (sender) => <><span className="font-semibold text-zinc-950">{sender}</span> commented on your post</>,
+  follow:  (sender) => <><span className="font-semibold text-zinc-950">{sender}</span> started following you</>,
+  mention: (sender) => <><span className="font-semibold text-zinc-950">{sender}</span> mentioned you</>,
+  reply:   (sender) => <><span className="font-semibold text-zinc-950">{sender}</span> replied to your comment</>,
 };
 
 export default function NotificationsPage() {
@@ -35,7 +35,7 @@ export default function NotificationsPage() {
       )}
 
       {!loading && notifs.length === 0 && (
-        <div className="text-center py-20 text-white/30">
+        <div className="text-center py-20 text-zinc-500">
           <p className="text-2xl mb-3">🔔</p>
           <p className="font-medium">No notifications yet</p>
         </div>
@@ -49,7 +49,7 @@ export default function NotificationsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03 }}
             className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
-              !n.is_read ? 'bg-violet-500/8' : 'hover:bg-white/4'
+              !n.is_read ? 'bg-violet-500/10' : 'hover:bg-zinc-950/5'
             }`}
           >
             <Link to={`/profile/${n.sender.username}`} className="flex-shrink-0 relative">
@@ -60,10 +60,10 @@ export default function NotificationsPage() {
             </Link>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white/70 leading-snug">
+              <p className="text-sm text-zinc-700 leading-snug">
                 {LABELS[n.notif_type]?.(n.sender.profile_name || n.sender.username) ?? n.notif_type}
               </p>
-              <p className="text-xs text-white/30 mt-0.5">{timeAgo(n.created_at)}</p>
+              <p className="text-xs text-zinc-500 mt-0.5">{timeAgo(n.created_at)}</p>
             </div>
 
             {n.post?.media?.[0] && (

@@ -201,7 +201,7 @@ const SCENES = {
 
 export function mountScene(kind = 'vault', { accent = '#0f6e9c', container = document.body } = {}) {
   const def = SCENES[kind] || SCENES.vault;
-  const stage = createStage(container, { camera: def.camera, fog: def.fog, parallax: 0.9 });
+  const stage = createStage(container, { camera: def.camera, fog: def.fog, parallax: 0.9, passive: true });
   if (stage.ok) {
     try { def.build(stage, col(accent).getHex()); } catch (e) { console.warn('[city] scene failed', e); }
   }

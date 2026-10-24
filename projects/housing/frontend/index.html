@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="/city-core/city.css">
   <style>
     :root { --accent: #966e35; }
-    .housing { display: grid; grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 360px); gap: 16px; align-items: start; }
-    .housing .mid { pointer-events: none; min-height: 40vh; }
+    /* the grid spans the full width, so it must stay transparent to clicks or it shields the 3D plots
+       under it — city.css already re-enables pointer events on the .glass panels inside */
+    .housing { display: grid; grid-template-columns: minmax(280px, 360px) 1fr minmax(280px, 360px); gap: 16px; align-items: start; pointer-events: none; }
+    .housing .mid { min-height: 40vh; }
     .legend { display: flex; flex-wrap: wrap; gap: 12px; font: 500 10px/1.6 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
     .prop { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }

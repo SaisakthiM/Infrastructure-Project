@@ -517,6 +517,11 @@ module "blog_website" {
     "DEBUG=False",
     "ALLOWED_HOSTS=${var.blog_allowed_hosts}",
     "MINIO_PUBLIC_URL=http://localhost/blog/minio",
+    # Inkwell verifies a city hand-off login by replaying the citizen's bank token against the bank
+    # itself (blog/city_bank.py), exactly like grocery/housing/api. Without this it falls back to the
+    # same default, so the ward still works -- the line is here so the bank address is one visible
+    # fact per ward in the deploy, not a hard-coded guess in app code.
+    "BANK_API_URL=http://bank-backend:8080/api",
     "MYSQLCLIENT_LDFLAGS=`pkg-config mysqlclient --libs`",
     "MYSQLCLIENT_CFLAGS=`pkg-config mysqlclient --cflags`",
   ]

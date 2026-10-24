@@ -17,7 +17,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${
-        active ? 'border-white text-white' : 'border-transparent text-white/30 hover:text-white/60'
+        active ? 'border-zinc-950 text-zinc-950' : 'border-transparent text-zinc-500 hover:text-zinc-600'
       }`}
     >
       <Icon size={15} /> {label}
@@ -85,34 +85,34 @@ function EditProfileModal({ open, onClose, user, onSaved }) {
           { k: 'website',      label: 'Website',      placeholder: 'https://yoursite.com' },
         ].map(({ k, label, placeholder, textarea }) => (
           <div key={k}>
-            <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider font-medium">{label}</label>
+            <label className="block text-xs text-zinc-500 mb-1.5 uppercase tracking-wider font-medium">{label}</label>
             {textarea ? (
               <textarea
                 value={form[k]}
                 onChange={set(k)}
                 rows={3}
                 placeholder={placeholder}
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 outline-none focus:border-violet-500/50 resize-none transition-all"
+                className="w-full bg-zinc-950/5 border border-zinc-950/10 rounded-xl px-3 py-2.5 text-zinc-950 text-sm placeholder-zinc-400 outline-none focus:border-violet-500/50 resize-none transition-all"
               />
             ) : (
               <input
                 value={form[k]}
                 onChange={set(k)}
                 placeholder={placeholder}
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 outline-none focus:border-violet-500/50 transition-all"
+                className="w-full bg-zinc-950/5 border border-zinc-950/10 rounded-xl px-3 py-2.5 text-zinc-950 text-sm placeholder-zinc-400 outline-none focus:border-violet-500/50 transition-all"
               />
             )}
           </div>
         ))}
 
         <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-sm text-white/50 hover:text-white transition-colors">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-zinc-950/10 text-sm text-zinc-500 hover:text-zinc-950 transition-colors">
             Cancel
           </button>
           <button
             onClick={submit}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-city-on-accent text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Spinner size="sm" />} Save
           </button>
@@ -135,7 +135,7 @@ function FollowListModal({ open, onClose, title, username, type }) {
 
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
-      <div className="divide-y divide-white/5 max-h-80 overflow-y-auto">
+      <div className="divide-y divide-zinc-950/10 max-h-80 overflow-y-auto">
         {loading && (
           <div className="p-4 space-y-4">
             {Array.from({ length: 4 }).map((_, i) => <UserCardSkeleton key={i} />)}
@@ -147,13 +147,13 @@ function FollowListModal({ open, onClose, title, username, type }) {
               <Avatar user={u} size="sm" />
               <div>
                 <p className="text-sm font-semibold">{u.profile_name || u.username}</p>
-                <p className="text-xs text-white/40">@{u.username}</p>
+                <p className="text-xs text-zinc-500">@{u.username}</p>
               </div>
             </div>
           </div>
         ))}
         {!loading && users.length === 0 && (
-          <p className="text-center text-white/30 text-sm py-8">None yet</p>
+          <p className="text-center text-zinc-500 text-sm py-8">None yet</p>
         )}
       </div>
     </Modal>
@@ -243,14 +243,14 @@ export default function ProfilePage() {
             ].map(({ label, val, onClick }) => (
               <button key={label} onClick={onClick} className="text-center hover:opacity-80 transition-opacity" disabled={!onClick}>
                 <p className="mono text-xl font-medium">{formatNumber(val)}</p>
-                <p className="text-note text-white/50 mt-1">{label}</p>
+                <p className="text-note text-zinc-500 mt-1">{label}</p>
               </button>
             ))}
           </div>
 
           {/* Bio */}
           {profile.profile_name && <p className="font-semibold text-sm">{profile.profile_name}</p>}
-          {profile.bio && <p className="text-sm text-white/60 mt-1 leading-relaxed">{profile.bio}</p>}
+          {profile.bio && <p className="text-sm text-zinc-600 mt-1 leading-relaxed">{profile.bio}</p>}
           {profile.website && (
             <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:underline mt-1 block">
               {profile.website}
@@ -260,14 +260,14 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-t border-white/8 flex justify-center gap-8 mb-4">
+      <div className="border-t border-zinc-950/10 flex justify-center gap-8 mb-4">
         <TabButton active={tab === 'posts'} onClick={() => setTab('posts')} icon={IoGrid} label="Posts" />
         {isMe && <TabButton active={tab === 'saved'} onClick={() => setTab('saved')} icon={IoBookmarkOutline} label="Saved" />}
       </div>
 
       {/* Grid */}
       {displayPosts.length === 0 ? (
-        <div className="text-center py-16 text-white/30">
+        <div className="text-center py-16 text-zinc-500">
           <p className="text-2xl mb-3">{tab === 'saved' ? '🔖' : '📷'}</p>
           <p className="font-medium">{tab === 'saved' ? 'No saved posts' : 'No posts yet'}</p>
         </div>
@@ -280,16 +280,16 @@ export default function ProfilePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.03 }}
               onClick={() => setSelected(post)}
-              className="relative aspect-square group overflow-hidden bg-city-ink"
+              className="relative aspect-square group overflow-hidden bg-city-raised"
             >
               {post.media?.[0] ? (
                 <img src={post.media[0].file} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-white/5 p-3">
-                  <p className="text-white/40 text-xs line-clamp-4 text-left">{post.content}</p>
+                <div className="w-full h-full flex items-center justify-center p-3">
+                  <p className="text-zinc-600 text-xs line-clamp-4 text-left">{post.content}</p>
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-zinc-950/40 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.button>
           ))}
         </div>

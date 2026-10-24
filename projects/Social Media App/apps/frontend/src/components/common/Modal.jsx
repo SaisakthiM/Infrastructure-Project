@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose } from 'react-icons/io5';
 
@@ -11,17 +12,20 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
 
   const widths = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-full' };
 
-  return (
+  /* portalled to <body>: #root is its own stacking context (index.css: z-index 10), so a sheet rendered
+     inside the app can never rise above the fixed HUD (z-60). z-[70] plus the HUD band offset keeps the
+     bank chip visible and the modal above everything the district draws. */
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed left-0 right-0 top-[var(--hud-h)] bottom-0 z-[70] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs"
             onClick={onClose}
           />
           {/* city panel: .glass gives the paper sheet + ink hairline, :has(> .hd) paints the district accent rule on top */}
@@ -44,7 +48,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="absolute top-2 right-2 z-10 text-white/40 hover:text-white transition-colors"
+                className="absolute top-2 right-2 z-10 text-zinc-500 hover:text-zinc-950 transition-colors"
               >
                 <IoClose size={20} />
               </button>
@@ -53,7 +57,8 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 
