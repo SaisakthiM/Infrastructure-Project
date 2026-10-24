@@ -718,7 +718,11 @@ resource "null_resource" "bank_frontend_build_image" {
       # Containers reference the content-hash tag, so a rebuild also replaces the running container.
       echo "Building $IMAGE:$TAG from $BUILD_DIR ..."
       cd "$BUILD_DIR"
-      docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+      docker build \
+      -f Dockerfile.prod \
+      -t "$IMAGE:$TAG" \
+      -t "$IMAGE:latest" \
+      .
       echo "Build complete."
     EOT
   }

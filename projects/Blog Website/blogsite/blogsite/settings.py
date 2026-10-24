@@ -142,7 +142,9 @@ USE_TZ = True
 
 MEDIA_URL = '/blog/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-STATIC_URL = '/static/'
+# The gateway serves Inkwell under /blog/, so the static prefix must carry it:
+# a bare /static/ resolves to the intro page's SPA fallback (HTML served as CSS).
+STATIC_URL = '/blog/static/'
 STATIC_ROOT = BASE_DIR / 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'blog' / 'static']
 
